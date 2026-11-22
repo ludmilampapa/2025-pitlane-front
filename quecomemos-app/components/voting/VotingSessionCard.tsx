@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Clock, Users, Trophy, Vote, Plus, CheckCircle } from 'lucide-react';
+import { Clock, Users, Trophy, Vote, Plus, CheckCircle, Shuffle } from 'lucide-react';
 import { useUser } from '@/lib/contexts/UserContext';
 import { useGlobalNotification } from '@/lib/contexts/NotificationContext';
 import { useVoting } from '@/lib/contexts/VotingContext';
@@ -16,6 +16,9 @@ import { VotingTimer } from './VotingTimer';
 import { ProposeMealModal } from './ProposeMealModal';
 import { EarlyCompletionModal } from './EarlyCompletionModal';
 import type { VotingSession, MealProposal } from './types';
+import { API_BASE_URL } from '@/lib/config/api';
+import { DietaryCompatibilityBadge } from './DietaryCompatibilityBadge';
+import { toast } from 'sonner';
 
 interface VotingSessionCardProps {
   session: VotingSession;
@@ -31,6 +34,7 @@ export function VotingSessionCard({ session: initialSession, onVotingComplete, c
   const [loading, setLoading] = useState(false);
   const [showProposeMeal, setShowProposeMeal] = useState(false);
   const [showEarlyCompletion, setShowEarlyCompletion] = useState(false);
+  const [groupRestrictions, setGroupRestrictions] = useState<DietaryRestriction[]>([]);
 
   const userId = userData?.profile?.id;
 
@@ -61,11 +65,27 @@ export function VotingSessionCard({ session: initialSession, onVotingComplete, c
           description: `Group meal from voting session: ${completedSession.title || 'Meal Vote'}`,
           quantity: 1
         })
-          .then(() => {
-            showSuccess(
-              '✅ Consumption Registered!',
-              `"${winnerName}" has been added to your group's consumption history.`
-            );
+          .then((consumption) => {
+            toast.success('Consumo registrado', {
+              description: `"${winnerName}" se añadió al historial del grupo.`,
+              action: consumption.ConsumptionID ? {
+                label: 'Deshacer',
+                onClick: () => {
+                  fetch(`${API_BASE_URL}/consumptions/${consumption.ConsumptionID}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ profileId: userId }),
+                  }).then((response) => {
+                    if (!response.ok) throw new Error('Could not undo consumption');
+                    toast.success('Consumo deshecho');
+                    onVotingComplete?.();
+                    refreshSession();
+                  }).catch((error: unknown) => {
+                    toast.error(error instanceof Error ? error.message : 'No se pudo deshacer');
+                  });
+                },
+              } : undefined,
+            });
             // Trigger parent refresh for Recent Activity
             onVotingComplete?.();
             // Notify listeners via VotingContext
@@ -216,13 +236,33 @@ export function VotingSessionCard({ session: initialSession, onVotingComplete, c
       // Auto-create consumption
       if (userId && result.session?.winnerMealId) {
         try {
-          await VotingService.createConsumptionFromVote(updatedSession.VotingSessionID, {
+          const consumption = await VotingService.createConsumptionFromVote(updatedSession.VotingSessionID, {
             profileId: userId,
             name: winnerName,
             description: `Group meal from voting session: ${updatedSession.title || 'Meal Vote'}`,
             quantity: 1
+          }) as { ConsumptionID?: number };
+
+          toast.success('Consumo registrado', {
+            description: `"${winnerName}" se añadió al historial del grupo.`,
+            action: consumption.ConsumptionID ? {
+              label: 'Deshacer',
+              onClick: () => {
+                fetch(`${API_BASE_URL}/consumptions/${consumption.ConsumptionID}`, {
+                  method: 'DELETE',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ profileId: userId }),
+                }).then((response) => {
+                  if (!response.ok) throw new Error('Could not undo consumption');
+                  toast.success('Consumo deshecho');
+                  onVotingComplete?.();
+                  refreshSession();
+                }).catch((error: unknown) => {
+                  toast.error(error instanceof Error ? error.message : 'No se pudo deshacer');
+                });
+              },
+            } : undefined,
           });
-          showSuccess('✅ Consumption Registered!', `"${winnerName}" has been added to your group's consumption history.`);
           // Trigger parent refresh and notify other listeners
           onVotingComplete?.();
           notifyVotingCompleted(updatedSession.VotingSessionID);
@@ -260,13 +300,33 @@ export function VotingSessionCard({ session: initialSession, onVotingComplete, c
       // Auto-create consumption
       if (userId && result.session?.winnerMealId) {
         try {
-          await VotingService.createConsumptionFromVote(updatedSession.VotingSessionID, {
+          const consumption = await VotingService.createConsumptionFromVote(updatedSession.VotingSessionID, {
             profileId: userId,
             name: winnerName,
             description: `Group meal from voting session: ${updatedSession.title || 'Meal Vote'}`,
             quantity: 1
+          }) as { ConsumptionID?: number };
+
+          toast.success('Consumo registrado', {
+            description: `"${winnerName}" se añadió al historial del grupo.`,
+            action: consumption.ConsumptionID ? {
+              label: 'Deshacer',
+              onClick: () => {
+                fetch(`${API_BASE_URL}/consumptions/${consumption.ConsumptionID}`, {
+                  method: 'DELETE',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ profileId: userId }),
+                }).then((response) => {
+                  if (!response.ok) throw new Error('Could not undo consumption');
+                  toast.success('Consumo deshecho');
+                  onVotingComplete?.();
+                  refreshSession();
+                }).catch((error: unknown) => {
+                  toast.error(error instanceof Error ? error.message : 'No se pudo deshacer');
+                });
+              },
+            } : undefined,
           });
-          showSuccess('✅ Consumption Registered!', `"${winnerName}" has been added to your group's consumption history.`);
           // Trigger parent refresh and notify other listeners
           onVotingComplete?.();
           notifyVotingCompleted(updatedSession.VotingSessionID);
@@ -340,7 +400,25 @@ export function VotingSessionCard({ session: initialSession, onVotingComplete, c
         voterId: userId,
         voteType: 'up'
       });
-      showSuccess('Vote Cast!', 'Your vote has been recorded.');
+      toast.success('Vote Cast!', {
+        description: 'Podés deshacerlo mientras la votación siga activa.',
+        action: {
+          label: 'Deshacer',
+          onClick: () => {
+            fetch(`${API_BASE_URL}/voting/sessions/${updatedSession.VotingSessionID}/proposals/${proposalId}/vote`, {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ voterId: userId }),
+            }).then(async (response) => {
+              if (!response.ok) throw new Error((await response.json() as { error?: string }).error || 'Could not undo vote');
+              toast.success('Voto deshecho');
+              refreshSession();
+            }).catch((error: unknown) => {
+              toast.error(error instanceof Error ? error.message : 'No se pudo deshacer el voto');
+            });
+          },
+        },
+      });
       
       // Refresh after a short delay to get accurate server state
       if (!isOffline) {
@@ -437,13 +515,33 @@ export function VotingSessionCard({ session: initialSession, onVotingComplete, c
         setTimeout(async () => {
           if (userId && result.completionResult?.session?.winnerMealId) {
             try {
-              await VotingService.createConsumptionFromVote(updatedSession.VotingSessionID, {
+              const consumption = await VotingService.createConsumptionFromVote(updatedSession.VotingSessionID, {
                 profileId: userId,
                 name: winnerName,
                 description: `Group meal from voting session: ${updatedSession.title || 'Meal Vote'}`,
                 quantity: 1
+              }) as { ConsumptionID?: number };
+
+              toast.success('Consumo registrado', {
+                description: `"${winnerName}" se añadió al historial del grupo.`,
+                action: consumption.ConsumptionID ? {
+                  label: 'Deshacer',
+                  onClick: () => {
+                    fetch(`${API_BASE_URL}/consumptions/${consumption.ConsumptionID}`, {
+                      method: 'DELETE',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ profileId: userId }),
+                    }).then((response) => {
+                      if (!response.ok) throw new Error('Could not undo consumption');
+                      toast.success('Consumo deshecho');
+                      onVotingComplete?.();
+                      refreshSession();
+                    }).catch((error: unknown) => {
+                      toast.error(error instanceof Error ? error.message : 'No se pudo deshacer');
+                    });
+                  },
+                } : undefined,
               });
-              showSuccess('✅ Consumption Registered!', `"${winnerName}" has been added to your group's consumption history.`);
             } catch (consumptionError) {
               console.error('Error creating consumption:', consumptionError);
               const errorMessage = consumptionError instanceof Error ? consumptionError.message : '';
@@ -474,6 +572,22 @@ export function VotingSessionCard({ session: initialSession, onVotingComplete, c
       setLoading(false);
     }
   };
+
+  // Fetch group dietary restrictions
+  useEffect(() => {
+    const groupId = initialSession.groupId;
+    if (!groupId) return;
+
+    fetch(`${API_BASE_URL}/groups/${groupId}/dietary-info`)
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Failed to load group dietary information');
+        const data = await response.json() as { dietaryRestrictions?: DietaryRestriction[] };
+        setGroupRestrictions(data.dietaryRestrictions || []);
+      })
+      .catch((error: unknown) => {
+        console.error('Error loading group dietary restrictions:', error);
+      });
+  }, [initialSession.groupId]);
 
   const getStatusBadge = () => {
     switch (updatedSession.status) {
@@ -510,6 +624,36 @@ export function VotingSessionCard({ session: initialSession, onVotingComplete, c
     }
     
     return 100;
+  };
+
+  // Detect ties - multiple proposals with the highest vote count
+  const tiedProposals = (updatedSession.proposals || []).filter((proposal) =>
+    proposal.isActive && proposal.voteCount === Math.max(...(updatedSession.proposals || []).map((item) => item.voteCount), 0)
+  );
+  const isTie = updatedSession.status === 'voting_phase' && tiedProposals.length > 1;
+
+  const handleTieBreaker = async () => {
+    if (!isGroupOwner && !isGroupAdmin) {
+      showError('Access Denied', 'Only group admins can use the tie breaker.');
+      return;
+    }
+
+    const selected = tiedProposals[Math.floor(Math.random() * tiedProposals.length)];
+    if (!selected) return;
+
+    setLoading(true);
+    try {
+      const result = await VotingService.completeVotingSession(updatedSession.VotingSessionID);
+      showSuccess('Tie resolved!', `Random selection chose "${selected.meal.name}". The server finalized the session.`);
+      if (result.session?.winnerMealId || selected.meal.MealID) {
+        refreshSession();
+        onVotingComplete?.();
+      }
+    } catch (error) {
+      showError('Could not resolve tie', error instanceof Error ? error.message : 'Try again');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -721,6 +865,7 @@ export function VotingSessionCard({ session: initialSession, onVotingComplete, c
                   hasUserVoted={hasUserVoted(proposal)}
                   onVote={() => handleVote(proposal.MealProposalID)}
                   disabled={loading}
+                  groupRestrictions={groupRestrictions}
                 />
               ))}
             </div>
@@ -759,4 +904,9 @@ export function VotingSessionCard({ session: initialSession, onVotingComplete, c
       )}
     </>
   );
+}
+
+interface DietaryRestriction {
+  DietaryRestrictionID: number;
+  name: string;
 }

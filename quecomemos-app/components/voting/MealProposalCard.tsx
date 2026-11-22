@@ -8,6 +8,12 @@ import { ChefHat, ThumbsUp, Clock, User } from 'lucide-react';
 import { MealComposition } from '../meal/MealComposition';
 import { VoteConfirmationModal } from './VoteConfirmationModal';
 import type { MealProposal } from './types';
+import { DietaryCompatibilityBadge } from './DietaryCompatibilityBadge';
+
+interface DietaryRestriction {
+  DietaryRestrictionID: number;
+  name: string;
+}
 
 interface MealProposalCardProps {
   proposal: MealProposal;
@@ -16,6 +22,7 @@ interface MealProposalCardProps {
   onVote: () => void;
   disabled?: boolean;
   showComposition?: boolean;
+  groupRestrictions?: DietaryRestriction[];
 }
 
 export function MealProposalCard({ 
@@ -24,7 +31,8 @@ export function MealProposalCard({
   hasUserVoted, 
   onVote, 
   disabled = false,
-  showComposition = false 
+  showComposition = false,
+  groupRestrictions = [],
 }: MealProposalCardProps) {
   
   const [showVoteConfirmation, setShowVoteConfirmation] = useState(false);
@@ -33,6 +41,21 @@ export function MealProposalCard({
   const totalCalories = proposal.meal.mealFoods?.reduce((total, mealFood) => 
     total + (mealFood.food.kCal * mealFood.quantity), 0
   ) || 0;
+
+  const mealRestrictions = proposal.meal.mealFoods?.flatMap((mealFood) =>
+    (mealFood.food.dietaryRestrictions || []).flatMap((restriction) =>
+      typeof restriction === 'number'
+        ? [{ DietaryRestrictionID: restriction, name: `Restricción ${restriction}` }]
+        : [{
+            DietaryRestrictionID: restriction.DietaryRestrictionID || 0,
+            name: restriction.name || `Restricción ${restriction.DietaryRestrictionID || ''}`,
+          }]
+    )
+  ) || [];
+
+  const uniqueMealRestrictions = mealRestrictions.filter((restriction, index, restrictions) =>
+    restrictions.findIndex((candidate) => candidate.DietaryRestrictionID === restriction.DietaryRestrictionID) === index
+  );
 
   const handleVoteClick = () => {
     setShowVoteConfirmation(true);
@@ -62,6 +85,10 @@ export function MealProposalCard({
                   Voted
                 </Badge>
               )}
+              <DietaryCompatibilityBadge
+                mealRestrictions={uniqueMealRestrictions}
+                groupRestrictions={groupRestrictions}
+              />
             </div>
 
             {proposal.meal.description && (

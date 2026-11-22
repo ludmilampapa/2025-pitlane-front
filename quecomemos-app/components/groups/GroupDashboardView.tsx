@@ -86,55 +86,55 @@ export function GroupDashboardView({ groupId, profileId, isAdmin }: GroupDashboa
   return (
     <div className="space-y-5">
       <div className="grid gap-3 sm:grid-cols-3">
-        <Card className="border-neutral-800/80 bg-gradient-to-br from-orange-950/30 to-neutral-950">
+        <Card className="border-amber-100 bg-gradient-to-br from-orange-50 to-white shadow-sm">
           <CardContent className="p-5">
             <div className="flex items-center justify-between"><span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Racha personal</span><Flame className="h-5 w-5 text-orange-400" /></div>
-            <p className="mt-3 text-4xl font-bold tracking-tight text-white">{streakHook.progress?.streak ?? 0}</p>
+            <p className="mt-3 text-4xl font-bold tracking-tight text-neutral-900">{streakHook.progress?.streak ?? 0}</p>
             <p className="mt-1 text-sm text-neutral-400">días consecutivos</p>
           </CardContent>
         </Card>
-        <Card className="border-neutral-800/80 bg-gradient-to-br from-emerald-950/30 to-neutral-950">
+        <Card className="border-emerald-100 bg-gradient-to-br from-emerald-50 to-white shadow-sm">
           <CardContent className="p-5">
             <div className="flex items-center justify-between"><span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Adherencia grupal</span><Target className="h-5 w-5 text-emerald-400" /></div>
-            <p className="mt-3 text-4xl font-bold tracking-tight text-white">{groupAdherence}%</p>
+            <p className="mt-3 text-4xl font-bold tracking-tight text-neutral-900">{groupAdherence}%</p>
             <p className="mt-1 text-sm text-neutral-400">promedio del reto activo</p>
           </CardContent>
         </Card>
-        <Card className="border-neutral-800/80 bg-gradient-to-br from-blue-950/30 to-neutral-950">
+        <Card className="border-blue-100 bg-gradient-to-br from-blue-50 to-white shadow-sm">
           <CardContent className="p-5">
             <div className="flex items-center justify-between"><span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Por moderar</span><MessageSquare className="h-5 w-5 text-blue-400" /></div>
-            <p className="mt-3 text-4xl font-bold tracking-tight text-white">{pendingProposals}</p>
+            <p className="mt-3 text-4xl font-bold tracking-tight text-neutral-900">{pendingProposals}</p>
             <p className="mt-1 text-sm text-neutral-400">propuestas pendientes</p>
           </CardContent>
         </Card>
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(280px,0.35fr)]">
-        <Card className="border-neutral-800/80 bg-neutral-950/50">
+        <Card className="border-amber-100 bg-white shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base"><CalendarDays className="h-5 w-5 text-amber-500" /> Menú de la semana</CardTitle>
           </CardHeader>
           <CardContent>
             {menu.loading ? (
-              <div className="grid grid-cols-7 gap-2">{dayLabels.map((day) => <div key={day} className="h-28 animate-pulse rounded-xl bg-neutral-800/60" />)}</div>
+              <div className="grid grid-cols-7 gap-2">{dayLabels.map((day) => <div key={day} className="h-28 animate-pulse rounded-xl bg-amber-50" />)}</div>
             ) : menu.entries.length === 0 ? (
-              <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-800 bg-neutral-900/30 px-6 text-center">
-                <Utensils className="h-10 w-10 text-neutral-600" />
-                <h3 className="mt-3 font-semibold text-neutral-200">El menú aún está vacío</h3>
-                <p className="mt-1 max-w-sm text-sm text-neutral-500">Configurá almuerzos y cenas para que el grupo pueda organizar la semana.</p>
+              <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-amber-200 bg-amber-50/40 px-6 text-center">
+                <Utensils className="h-10 w-10 text-amber-300" />
+                <h3 className="mt-3 font-semibold text-neutral-900">El menú aún está vacío</h3>
+                <p className="mt-1 max-w-sm text-sm text-neutral-600">Configurá almuerzos y cenas para que el grupo pueda organizar la semana.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-7">
                 {weekRows.map((day) => (
-                  <div key={day.dateKey} className="space-y-2 rounded-xl border border-neutral-800/80 bg-neutral-900/40 p-2">
+                  <div key={day.dateKey} className="space-y-2 rounded-xl border border-amber-100 bg-amber-50/30 p-2">
                     <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500">{day.label}</p>
                     {(['lunch', 'dinner'] as const).map((moment) => {
                       const entry = moment === 'lunch' ? day.lunch : day.dinner;
                       const calories = entry?.meal?.mealFoods?.reduce((sum, mealFood) => sum + mealFood.quantity * mealFood.food.kCal, 0);
                       return (
-                        <div key={moment} className="rounded-lg border border-neutral-800 bg-neutral-950 p-2.5">
+                        <div key={moment} className="rounded-lg border border-amber-100 bg-white p-2.5 shadow-[0_2px_10px_-8px_rgba(120,53,15,0.35)]">
                           <div className="mb-2 flex items-center gap-1 text-[10px] font-semibold uppercase text-neutral-500"><Clock3 className="h-3 w-3" />{moment}</div>
-                          <p className="min-h-10 text-sm font-medium leading-5 text-neutral-200">{mealName(entry)}</p>
+                          <p className="min-h-10 text-sm font-medium leading-5 text-neutral-900">{mealName(entry)}</p>
                           {typeof calories === 'number' && <span className="mt-2 inline-flex rounded-full bg-emerald-500/10 px-2 py-1 text-[10px] font-medium text-emerald-400">{calories} kcal</span>}
                           {entry && <div className="mt-3 flex gap-1"><Button size="sm" variant="outline" className="h-7 flex-1 px-2 text-[10px]">Proponer cambio</Button><Button size="sm" className="h-7 flex-1 px-2 text-[10px]">Consumir</Button></div>}
                         </div>
@@ -155,7 +155,7 @@ export function GroupDashboardView({ groupId, profileId, isAdmin }: GroupDashboa
               onMarkToday={streakHook.markToday}
             />
           ) : (
-            <Card className="border-neutral-800/80 bg-neutral-950/60"><CardContent className="p-6 text-center"><Target className="mx-auto h-8 w-8 text-neutral-600" /><p className="mt-3 text-sm text-neutral-400">No hay un reto activo ahora.</p></CardContent></Card>
+            <Card className="border-amber-100 bg-white shadow-sm"><CardContent className="p-6 text-center"><Target className="mx-auto h-8 w-8 text-amber-300" /><p className="mt-3 text-sm text-neutral-600">No hay un reto activo ahora.</p></CardContent></Card>
           )}
           <ChallengeRanking ranking={ranking} />
         </div>

@@ -180,7 +180,7 @@ export default function GroupDetailPage() {
       )}
 
         {/* Recent Activity */}
-      <Card className="bg-gradient-to-br from-amber-800/30 to-amber-900/30 border-amber-700/50">
+      <Card className="border-[#E8E2D9] bg-white shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center text-amber-200">
             <Activity className="w-5 h-5 mr-2" /> Recent Activity

@@ -11,6 +11,7 @@ export { VotingResultsModal } from './VotingResultsModal';
 export { VotingHistorySection } from './VotingHistorySection';
 export { VotingDetailsModal } from './VotingDetailsModal';
 export { PortionSelectionModal } from './PortionSelectionModal';
+export { GroupSwipeMatch } from './GroupSwipeMatch';
 
 // Voting Service
 export { VotingService } from './VotingService';

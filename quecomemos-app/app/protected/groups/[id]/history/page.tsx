@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Activity, ChefHat, Calendar, Search, Filter } from 'lucide-react';
 import { useUser } from '@/lib/contexts/UserContext';
 import { API_BASE_URL } from '@/lib/config/api';
+import { VotingHistoryTimeline, type TimelineSession, type TimelineParticipant } from '@/components/groups/VotingHistoryTimeline';
 
 interface Consumption {
   ConsumptionID: number;
@@ -34,6 +35,7 @@ export default function GroupHistoryPage() {
 
   const [group, setGroup] = useState<Group | null>(null);
   const [consumptions, setConsumptions] = useState<Consumption[]>([]);
+  const [timelineSessions, setTimelineSessions] = useState<TimelineSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -45,15 +47,25 @@ export default function GroupHistoryPage() {
   const fetchGroupHistory = useCallback(async () => {
     try {
       setLoading(true);
-      console.debug('Fetching group history', `${API_BASE_URL}/groups/${groupId}`);
-      const res = await fetch(`${API_BASE_URL}/groups/${groupId}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      console.debug('Group history payload', data);
-      setGroup(data);
-      setConsumptions(data.consumptions || []);
+
+      const [groupRes, historyRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/groups/${groupId}`),
+        fetch(`${API_BASE_URL}/voting/history/groups/${groupId}?limit=50`),
+      ]);
+
+      if (!groupRes.ok) throw new Error(`HTTP ${groupRes.status}`);
+      const groupData = await groupRes.json() as Group;
+      setGroup(groupData);
+
+      if (historyRes.ok) {
+        const history = await historyRes.json() as { sessions: TimelineSession[] };
+        setTimelineSessions(history.sessions || []);
+      } else {
+        setTimelineSessions([]);
+      }
+
+      setConsumptions(groupData.consumptions || []);
     } catch (err) {
-      console.debug('Error fetching group history', err);
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);

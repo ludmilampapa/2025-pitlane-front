@@ -5,8 +5,9 @@ import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Vote, History } from 'lucide-react';
-import { VotingProvider } from '@/lib/contexts/VotingContext';
-import { GroupVotingSystem, VotingHistorySection } from '@/components/voting';
+import { VotingProvider, useVoting } from '@/lib/contexts/VotingContext';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { GroupVotingSystem, GroupSwipeMatch, VotingHistorySection } from '@/components/voting';
 import { API_BASE_URL } from '@/lib/config/api';
 import type { Group } from '@/components/groups';
 
@@ -134,10 +135,9 @@ export default function GroupVotingPage() {
           <VotingProvider groupId={group.GroupID}>
             {/* Voting System - Takes up 2 columns on large screens */}
             <div className="lg:col-span-2 space-y-6">
-              <GroupVotingSystem 
+              <VotingModes 
                 group={group} 
                 onVotingComplete={handleVotingComplete}
-                className="w-full"
               />
             </div>
 
@@ -189,5 +189,36 @@ export default function GroupVotingPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+interface VotingModesProps {
+  group: Group;
+  onVotingComplete: () => void;
+}
+
+function VotingModes({ group, onVotingComplete }: VotingModesProps) {
+  const { activeSession } = useVoting();
+
+  return (
+    <Tabs defaultValue="classic" className="w-full">
+      <TabsList className="mb-4 grid w-full grid-cols-2 bg-[#F3EEE6]">
+        <TabsTrigger value="classic">Votación clásica</TabsTrigger>
+        <TabsTrigger value="match">Modo Match Rápido</TabsTrigger>
+      </TabsList>
+      <TabsContent value="classic">
+        <GroupVotingSystem
+          group={group}
+          onVotingComplete={onVotingComplete}
+          className="w-full"
+        />
+      </TabsContent>
+      <TabsContent value="match">
+        <GroupSwipeMatch
+          groupId={group.GroupID}
+          session={activeSession}
+        />
+      </TabsContent>
+    </Tabs>
   );
 }

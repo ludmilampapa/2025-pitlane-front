@@ -36,6 +36,8 @@ import { ConfirmationModal } from '@/components/modals';
 import { API_BASE_URL } from '@/lib/config/api';
 import { GroupMostConsumedResponse } from '@/components/types/group-consumption';
 import { UserBadgeDisplay } from '@/components/common/UserBadgeDisplay';
+import { GroupCompatibilityRadar, type CompatibilityMember } from '@/components/groups/GroupCompatibilityRadar';
+import { MostConsumedPodium } from '@/components/groups/MostConsumedPodium';
 
 interface GroupMember {
   GroupMemberID: number;
@@ -45,6 +47,8 @@ interface GroupMember {
     id: string;
     username: string;
     role: string;
+    Preference?: Array<{ PreferenceID: number; name: string }>;
+    DietaryRestriction?: Array<{ DietaryRestrictionID: number; name: string }>;
   };
 }
 
@@ -102,6 +106,7 @@ export default function GroupInfoPage() {
   const [pendingInvitations, setPendingInvitations] = useState<PendingInvitation[]>([]);
   const [invitationsLoading, setInvitationsLoading] = useState(false);
   const [invitationsError, setInvitationsError] = useState<string | null>(null);
+  const [tasteMakerProfileId, setTasteMakerProfileId] = useState<string | null>(null);
   const currentUserId = userData?.profile?.id;
 
   // Memoize existing member ids to avoid passing a new array reference on every render
@@ -177,6 +182,32 @@ export default function GroupInfoPage() {
     }
   }, [groupId, currentUserId]);
 
+  const fetchTasteMaker = useCallback(async () => {
+    try {
+      const historyResponse = await fetch(`${API_BASE_URL}/voting/history/groups/${groupId}?limit=50`);
+      if (!historyResponse.ok) return;
+      const history = await historyResponse.json() as { sessions: Array<{ sessionId: number }> };
+
+      const winnerCounts = new Map<string, number>();
+      await Promise.all(history.sessions.map(async (session) => {
+        const detailResponse = await fetch(`${API_BASE_URL}/voting/history/sessions/${session.sessionId}`);
+        if (!detailResponse.ok) return;
+        const detail = await detailResponse.json() as { proposals?: Array<{ mealId: number; proposedBy: string | null }>; winnerMeal?: { mealId: number } };
+        const winnerProposal = detail.proposals?.find((proposal) => proposal.mealId === detail.winnerMeal?.mealId);
+        if (!winnerProposal?.proposedBy) return;
+        const matchingMember = group?.members.find((member) => member.profile.username === winnerProposal.proposedBy);
+        if (!matchingMember) return;
+        const profileId = matchingMember.profile.id;
+        winnerCounts.set(profileId, (winnerCounts.get(profileId) || 0) + 1);
+      }));
+
+      const sorted = Array.from(winnerCounts.entries()).sort((a, b) => b[1] - a[1]);
+      setTasteMakerProfileId(sorted[0]?.[0] || null);
+    } catch (err) {
+      console.error('Error calculating Taste Maker:', err);
+    }
+  }, [groupId, group]);
+
   const handleCancelInvitation = async (invitationId: number, username: string) => {
     if (!currentUserId) return;
 
@@ -225,6 +256,10 @@ export default function GroupInfoPage() {
       }
     }
   }, [group, currentUserId, fetchPendingInvitations]);
+
+  useEffect(() => {
+    if (group) void fetchTasteMaker();
+  }, [group, fetchTasteMaker]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('es-ES', {
@@ -419,14 +454,13 @@ export default function GroupInfoPage() {
     }
   };
 
-
-
-
-
-
-
-
-
+  // Deriva los miembros compatibles tipados y crea el estado de Taste Maker antes del render del grupo.
+  const compatibilityMembers: CompatibilityMember[] = group?.members.map((member) => ({
+    id: member.profile.id,
+    username: member.profile.username,
+    preferences: member.profile.Preference || [],
+    dietaryRestrictions: member.profile.DietaryRestriction || [],
+  })) || [];
 
   function GroupInfoSkeleton() {
     return (
@@ -479,7 +513,7 @@ export default function GroupInfoPage() {
                   <div className="w-16 h-6 bg-muted rounded animate-pulse"></div>
                 </div>
               ))}
-            </CardContent>
+            </div>
           </Card>
 
           {/* Charts skeleton */}
@@ -691,6 +725,12 @@ export default function GroupInfoPage() {
           </CardContent>
         </Card>
 
+        {/* Compatibility and Podium Section */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          <GroupCompatibilityRadar members={compatibilityMembers} />
+          <MostConsumedPodium meals={mostConsumedMeals?.mostConsumedMeals || []} loading={mealsLoading} />
+        </div>
+
         {/* Members Management */}
         <Card>
           <CardHeader>
@@ -724,11 +764,12 @@ export default function GroupInfoPage() {
                 >
                   <div className="flex items-center space-x-3">
                     <div className="flex items-center justify-center w-8 h-8 bg-amber-700 text-white rounded-full text-sm font-medium">
-                      {(member.profile.username || 'Anonymous').charAt(0).toUpperCase()}
+                      {(member.profile.username || 'Anonymous').charAt(0).toUpperCase()
+                      }
                     </div>
 
                     <div className="flex-1">
-                      <UserBadgeDisplay 
+                      <UserBadgeDisplay
                         username={member.profile.username || 'Anonymous'}
                         profileId={member.profile.id}
                         maxBadges={2}
@@ -767,6 +808,13 @@ export default function GroupInfoPage() {
                     >
                       <UserMinus className="w-4 h-4" />
                     </Button>
+                  )}
+
+                  {/* Taste Maker badge - only for the member with most wins */}
+                  {tasteMakerProfileId === member.profile.id && (
+                    <Badge className="ml-2 border border-amber-200 bg-amber-50 text-amber-700">
+                      <Trophy className="mr-1 h-3 w-3" />Taste Maker
+                    </Badge>
                   )}
                 </div>
               ))}

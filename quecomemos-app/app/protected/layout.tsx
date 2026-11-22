@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AuthButton } from "@/components/auth";
 import { Logo } from "@/components/common";
 
@@ -6,24 +7,47 @@ export default function ProtectedLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const links = [
+    { href: "/protected", label: "Inicio" },
+    { href: "/protected/foods", label: "Comidas" },
+    { href: "/protected/groups", label: "Grupos" },
+    { href: "/protected/history", label: "Historial" },
+  ];
+
   return (
-      <main className="min-h-screen flex flex-col items-center bg-gradient-to-br from-background to-muted/10">
-        <div className="flex-1 w-full flex flex-col gap-1 items-center">
-          <nav className="w-full flex justify-center border-b border-b-foreground/10 h-28 bg-background sticky top-0 z-50">
-            <div className="w-full max-w-7xl flex justify-between items-center p-6 px-8 md:px-10 text-sm">
-              <div className="flex gap-6 items-center font-semibold">
-                <Logo size="xl" />
-                <div className="hidden md:block">
-                </div>
-              </div>
-              <div className="w-24"></div>
-              <AuthButton />
+    <main className="min-h-screen flex flex-col items-center bg-[#FAF7F2] text-neutral-900">
+      <nav className="sticky top-0 z-50 w-full border-b border-[#E8E2D9] bg-white/95 backdrop-blur">
+        <div className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between px-4 md:px-8">
+          <div className="flex items-center gap-8">
+            <Logo size="lg" />
+            <div className="hidden items-center gap-1 md:flex">
+              {links.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="rounded-full px-4 py-2 text-sm font-medium text-neutral-600 transition-colors hover:bg-[#F3EEE6] hover:text-[#4A7C59]"
+                >
+                  {link.label}
+                </Link>
+              ))}
             </div>
-          </nav>
-          <div className="flex-1 flex flex-col gap-16 w-full max-w-6xl p-4 md:p-6">
-            {children}
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Link
+              href="/protected/history"
+              className="hidden rounded-full bg-[#4A7C59] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#3F6D4D] sm:inline-flex"
+            >
+              Registrar una comida
+            </Link>
+            <AuthButton />
           </div>
         </div>
-      </main>
+      </nav>
+
+      <div className="w-full max-w-7xl flex-1 px-4 py-8 md:px-8">
+        {children}
+      </div>
+    </main>
   );
 }

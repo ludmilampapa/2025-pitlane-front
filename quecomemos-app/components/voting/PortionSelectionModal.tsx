@@ -108,6 +108,8 @@ export function PortionSelectionModal({
             onConfirm={handlePortionConfirm}
             onCancel={onClose}
             loading={loading}
+            profileId={userId}
+            date={new Date()}
           />
         </CardContent>
       </div>

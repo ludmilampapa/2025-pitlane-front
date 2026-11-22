@@ -376,6 +376,10 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
                           setSelectedPortions(null);
                         }}
                         loading={false}
+                        profileId={profile?.id}
+                        date={!useCurrentTime && mealDate && mealTime
+                          ? new Date(`${mealDate}T${mealTime}`)
+                          : new Date()}
                       />
                     </div>
                   </div>
