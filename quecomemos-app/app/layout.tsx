@@ -7,6 +7,7 @@ import { MealsProvider } from "@/lib/contexts/MealsContext";
 import { UserProvider } from "@/lib/contexts/UserContext";
 import { NotificationProvider } from "@/lib/contexts/NotificationContext";
 import { CalorieProgressProvider } from "@/lib/contexts/CalorieProgressContext";
+import { Toaster } from "sonner";
 
 
 const defaultUrl = process.env.VERCEL_URL
@@ -45,6 +46,7 @@ export default function RootLayout({
                     disableTransitionOnChange
                   >
                     {children}
+                    <Toaster richColors position="top-right" />
                   </ThemeProvider>
                 </CalorieProgressProvider>
               </NotificationProvider>

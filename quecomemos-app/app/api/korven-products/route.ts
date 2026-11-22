@@ -6,29 +6,28 @@ export async function GET() {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
-      }
+      },
+      next: { revalidate: 3600 },
     });
 
     if (!response.ok) {
-      console.error(`Korven API returned status ${response.status}`);
-      return NextResponse.json(
-        { error: `Failed to fetch Korven products: ${response.status}` },
-        { status: response.status }
-      );
+      console.warn(`Korven API unavailable: ${response.status}`);
+      return NextResponse.json([], {
+        headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' },
+      });
     }
 
     const products = await response.json();
-    
+
     return NextResponse.json(products, {
       headers: {
         'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
       },
     });
   } catch (error) {
-    console.error('Error fetching Korven products:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch Korven products', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    console.warn('Korven API unavailable:', error instanceof Error ? error.message : 'Unknown error');
+    return NextResponse.json([], {
+      headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' },
+    });
   }
 }

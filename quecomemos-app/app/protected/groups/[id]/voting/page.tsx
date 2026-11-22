@@ -72,7 +72,7 @@ export default function GroupVotingPage() {
       <div className="container mx-auto p-6">
         <div className="text-center py-12">
           <h1 className="text-3xl font-bold mb-4">Group Not Found</h1>
-          <p className="text-muted-foreground mb-6">The group you're looking for doesn't exist or has been deleted.</p>
+          <p className="text-muted-foreground mb-6">The group you&apos;re looking for doesn&apos;t exist or has been deleted.</p>
           <div className="flex justify-center gap-4">
             <Button onClick={() => router.back()} variant="outline">
               Go Back
@@ -171,11 +171,11 @@ export default function GroupVotingPage() {
           <div className="space-y-3 text-sm">
             <div className="flex items-start gap-3">
               <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold">1</div>
-              <p>Any group member can start a voting session by clicking "Start Voting Session"</p>
+              <p>Any group member can start a voting session by clicking &quot;Start Voting Session&quot;</p>
             </div>
             <div className="flex items-start gap-3">
               <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold">2</div>
-              <p>During the proposal phase, members can suggest meals they'd like to eat</p>
+              <p>During the proposal phase, members can suggest meals they&apos;d like to eat</p>
             </div>
             <div className="flex items-start gap-3">
               <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold">3</div>

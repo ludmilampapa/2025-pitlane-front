@@ -1,5 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 interface LogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
@@ -15,9 +16,13 @@ const sizeMap = {
 
 export function Logo({ size = 'md', className = '' }: LogoProps) {
   const { width, height, className: sizeClassName } = sizeMap[size];
-  
+
   return (
-    <div className={`flex items-center p-2 ${className}`}>
+    <Link
+      href="/protected"
+      aria-label="Ir al inicio de QueComemos"
+      className={`flex items-center p-2 ${className}`}
+    >
       <Image
         src="/logo.svg"
         alt="QueComemos Logo"
@@ -26,6 +31,6 @@ export function Logo({ size = 'md', className = '' }: LogoProps) {
         className={`${sizeClassName} transition-all duration-200 hover:scale-105 !filter-none`}
         priority
       />
-    </div>
+    </Link>
   );
 }

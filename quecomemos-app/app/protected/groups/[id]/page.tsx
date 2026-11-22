@@ -4,10 +4,12 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Activity, Info, ChefHat } from 'lucide-react';
+import { ArrowLeft, Activity, Info, ChefHat, Trophy, CalendarDays } from 'lucide-react';
 import Image from 'next/image';
 import { API_BASE_URL } from '@/lib/config/api';
 import type { Group } from '@/components/groups';
+import { GroupDashboardView } from '@/components/groups/GroupDashboardView';
+import { useUser } from '@/lib/contexts/UserContext';
 
 interface Consumption {
   ConsumptionID: number;
@@ -31,6 +33,14 @@ export default function GroupDetailPage() {
   const [notFound, setNotFound] = useState(false);
 
   // Context hooks  
+  const { userData } = useUser();
+  const currentProfileId = userData?.profile?.id;
+  const isAdmin = Boolean(
+    group && currentProfileId && (
+      group.createdBy === currentProfileId ||
+      group.members?.some((member) => member.profile.id === currentProfileId && member.role === 'admin')
+    )
+  );
 
   const fetchGroup = useCallback(async () => {
     try {
@@ -144,6 +154,12 @@ export default function GroupDetailPage() {
           <Button variant="outline" onClick={goInfo} className="w-full sm:w-auto">
             <Info className="w-4 h-4 mr-2" /> Group information
           </Button>
+          <Button variant="outline" onClick={() => router.push(`/protected/groups/${groupId}/challenges`)} className="w-full sm:w-auto">
+            <Trophy className="w-4 h-4 mr-2" /> Challenges
+          </Button>
+          <Button variant="outline" onClick={() => router.push(`/protected/groups/${groupId}/menu`)} className="w-full sm:w-auto">
+            <CalendarDays className="w-4 h-4 mr-2" /> Weekly menu
+          </Button>
           <Button 
             variant="outline" 
             onClick={() => router.push(`/protected/groups/${groupId}/voting`)} 
@@ -153,6 +169,15 @@ export default function GroupDetailPage() {
           </Button>
         </div>
       </div>
+
+      {/* Group Dashboard View */}
+      {currentProfileId && (
+        <GroupDashboardView
+          groupId={Number(groupId)}
+          profileId={currentProfileId}
+          isAdmin={isAdmin}
+        />
+      )}
 
         {/* Recent Activity */}
       <Card className="bg-gradient-to-br from-amber-800/30 to-amber-900/30 border-amber-700/50">
