@@ -67,7 +67,10 @@ export function EditFoodForm({ food, onSuccess }: EditFoodFormProps) {
         if (response.ok) {
           const products = await response.json() as KorvenProduct[];
           // Filter products WITHOUT connectors (for individual foods)
-          const filtered = products.filter(product => !hasConnectors(product.name));
+          const filtered = products.filter(product => {
+            const type = (product as { type?: 'meal' | 'food' }).type;
+            return type ? type === 'food' : !hasConnectors(product.name);
+          });
           setKorvenProducts(filtered);
         }
       } catch (error) {

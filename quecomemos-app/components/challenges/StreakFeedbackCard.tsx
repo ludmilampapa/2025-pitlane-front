@@ -17,17 +17,23 @@ export function StreakFeedbackCard({ progress, challengeName, onMarkToday }: Str
 
   if (completedToday) {
     return (
-      <Card className="overflow-hidden border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-amber-50 shadow-sm">
+      <Card className="overflow-hidden border border-primary/40 bg-card shadow-sm">
         <CardContent className="p-5">
           <div className="flex items-start gap-4">
-            <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 ring-1 ring-emerald-200">
-              <Flame className="h-7 w-7 fill-orange-500 text-orange-500" />
-              <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white"><Check className="h-3 w-3" /></span>
+            <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/15 ring-1 ring-primary/30">
+              <Flame className="h-7 w-7 fill-secondary text-secondary" />
+              <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                <Check className="h-3 w-3" />
+              </span>
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Racha activa</p>
-              <h3 className="mt-1 text-xl font-bold text-neutral-900">{streak} día{streak === 1 ? '' : 's'} consecutivo{streak === 1 ? '' : 's'}</h3>
-              <p className="mt-1 text-sm text-neutral-600">Completaste hoy: <span className="font-medium text-neutral-900">{challengeName}</span></p>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Active streak</p>
+              <h3 className="mt-1 text-xl font-bold text-foreground">
+                {streak} consecutive {streak === 1 ? 'day' : 'days'}
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Completed today: <span className="font-medium text-foreground">{challengeName}</span>
+              </p>
             </div>
           </div>
         </CardContent>
@@ -36,18 +42,23 @@ export function StreakFeedbackCard({ progress, challengeName, onMarkToday }: Str
   }
 
   return (
-    <Card className="overflow-hidden border border-amber-300/70 bg-gradient-to-br from-amber-50 via-white to-orange-50 shadow-sm">
+    <Card className="overflow-hidden border border-secondary/40 bg-card shadow-sm">
       <CardContent className="p-5">
         <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 ring-1 ring-amber-200">
-            <Snowflake className="h-6 w-6 text-amber-600" />
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-secondary/15 ring-1 ring-secondary/30">
+            <Snowflake className="h-6 w-6 text-secondary" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">Racha en peligro</p>
-            <h3 className="mt-1 text-lg font-bold text-neutral-900">¡Racha en riesgo!</h3>
-            <p className="mt-1 text-sm text-neutral-600">Marcá antes de la medianoche para conservar tu racha.</p>
-            <Button onClick={() => void onMarkToday()} className="mt-4 w-full bg-amber-600 text-white hover:bg-amber-700">
-              Completar hoy
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-secondary">Streak at risk</p>
+            <h3 className="mt-1 text-lg font-bold text-foreground">Don&apos;t lose your streak!</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Check in before midnight to keep your streak alive.
+            </p>
+            <Button
+              onClick={() => void onMarkToday()}
+              className="mt-4 w-full bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              Complete today
             </Button>
           </div>
         </div>

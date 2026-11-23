@@ -393,13 +393,13 @@ export function EditMealForm({ meal, onSuccess, onMealUpdated }: EditMealFormPro
       <form onSubmit={handleEditMeal} className="space-y-4">
         {/* Meal Name */}
         <div className="space-y-2">
-          <Label htmlFor="name" className="text-amber-200">Meal Name</Label>
+          <Label htmlFor="name" className="text-foreground">Meal Name</Label>
           <Input
             id="name"
             type="text"
             value={mealName}
             onChange={(e) => setMealName(e.target.value)}
-            className="bg-amber-900/20 border-amber-700/50 text-amber-100 placeholder:text-amber-300/50"
+            className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
             placeholder="Enter meal name"
             required
           />
@@ -407,12 +407,12 @@ export function EditMealForm({ meal, onSuccess, onMealUpdated }: EditMealFormPro
 
         {/* Description */}
         <div className="space-y-2">
-          <Label htmlFor="description" className="text-amber-200">Description</Label>
+          <Label htmlFor="description" className="text-foreground">Description</Label>
           <textarea
             id="description"
             value={description}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
-            className="flex min-h-[80px] w-full rounded-md border border-amber-700/50 bg-amber-900/20 px-3 py-2 text-sm text-amber-100 placeholder:text-amber-300/50 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex min-h-[80px] w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
             placeholder="Describe your meal (optional)"
             rows={3}
           />
@@ -421,7 +421,7 @@ export function EditMealForm({ meal, onSuccess, onMealUpdated }: EditMealFormPro
         {/* Foods */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <h3 className="text-amber-100 font-semibold">Foods ({mealFoods.length})</h3>
+            <h3 className="text-foreground font-semibold">Foods ({mealFoods.length})</h3>
             <Button
               type="button"
               variant="outline"
@@ -432,7 +432,7 @@ export function EditMealForm({ meal, onSuccess, onMealUpdated }: EditMealFormPro
                 setInitialFoodName("");
                 setShowFoodModal(true);
               }}
-              className="border-amber-700/50 text-amber-200 hover:bg-amber-800/20"
+              className="border-border text-foreground hover:bg-accent"
             >
               <Plus className="w-4 h-4 mr-2" />
               Add Food
@@ -444,9 +444,9 @@ export function EditMealForm({ meal, onSuccess, onMealUpdated }: EditMealFormPro
               {mealFoods.map((food) => (
                 <div
                   key={food.foodId}
-                  className="bg-amber-900/30 border border-amber-700/50 rounded-lg p-4 flex items-center gap-4"
+                  className="bg-muted border border-border rounded-lg p-4 flex items-center gap-4"
                 >
-                  <div className="w-10 h-10 flex items-center justify-center bg-amber-800/30 rounded-full border border-amber-700/50 flex-shrink-0">
+                  <div className="w-10 h-10 flex items-center justify-center bg-muted rounded-full border border-border flex-shrink-0">
                     {food.svgLink ? (
                       <Image
                         src={food.svgLink}
@@ -456,18 +456,18 @@ export function EditMealForm({ meal, onSuccess, onMealUpdated }: EditMealFormPro
                         className="w-6 h-6 object-contain"
                       />
                     ) : (
-                      <Utensils className="w-5 h-5 text-amber-400" />
+                      <Utensils className="w-5 h-5 text-primary" />
                     )}
                   </div>
                   
                   <div className="flex-grow">
                     <div className="flex items-center justify-between mb-1">
-                      <h5 className="font-semibold text-amber-200">{food.name}</h5>
-                      <div className="text-sm text-amber-300">
+                      <h5 className="font-semibold text-foreground">{food.name}</h5>
+                      <div className="text-sm text-primary">
                         {(food.kcal * food.quantity)} kCal
                       </div>
                     </div>
-                    <div className="text-sm text-gray-400">
+                    <div className="text-sm text-muted-foreground">
                       Quantity: {food.quantity} units • {food.kcal} kCal per unit
                     </div>
                   </div>
@@ -477,7 +477,7 @@ export function EditMealForm({ meal, onSuccess, onMealUpdated }: EditMealFormPro
                       <button
                         type="button"
                         onClick={() => updateFoodQuantity(food.foodId, Math.max(1, food.quantity - 1))}
-                        className="w-7 h-7 rounded bg-amber-700 hover:bg-amber-600 text-white flex items-center justify-center text-sm font-medium"
+                        className="w-7 h-7 rounded bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center text-sm font-medium"
                       >
                         -
                       </button>
@@ -486,12 +486,12 @@ export function EditMealForm({ meal, onSuccess, onMealUpdated }: EditMealFormPro
                         min="1"
                         value={food.quantity}
                         onChange={(e) => updateFoodQuantity(food.foodId, parseInt(e.target.value) || 1)}
-                        className="w-16 h-8 text-center bg-amber-900/20 border-amber-700/50 text-amber-100"
+                        className="w-16 h-8 text-center bg-muted border-border text-foreground"
                       />
                       <button
                         type="button"
                         onClick={() => updateFoodQuantity(food.foodId, food.quantity + 1)}
-                        className="w-7 h-7 rounded bg-amber-700 hover:bg-amber-600 text-white flex items-center justify-center text-sm font-medium"
+                        className="w-7 h-7 rounded bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center text-sm font-medium"
                       >
                         +
                       </button>
@@ -509,7 +509,7 @@ export function EditMealForm({ meal, onSuccess, onMealUpdated }: EditMealFormPro
               ))}
             </div>
           ) : (
-            <p className="text-amber-300/70 text-sm italic">No foods selected. Please add some foods.</p>
+            <p className="text-muted-foreground text-sm italic">No foods selected. Please add some foods.</p>
           )}
         </div>
 
@@ -520,7 +520,7 @@ export function EditMealForm({ meal, onSuccess, onMealUpdated }: EditMealFormPro
           <Button
             type="submit"
             disabled={isLoading || mealFoods.length === 0}
-            className="flex-1 bg-amber-600 hover:bg-amber-700 text-white"
+            className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             {isLoading ? "Updating..." : "Update Meal"}
           </Button>

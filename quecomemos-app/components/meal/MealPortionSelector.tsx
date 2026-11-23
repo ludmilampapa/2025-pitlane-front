@@ -90,19 +90,19 @@ export function MealPortionSelector({ meal, onConfirm, onCancel, loading = false
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-[#E8E2D9] bg-white p-4">
+      <div className="rounded-2xl border border-border bg-card p-4">
         <div className="mb-2 flex items-center justify-between">
-          <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-[#4A7C59]" /><span className="font-semibold text-neutral-900">Porción total</span></div>
-          <span className="text-2xl font-bold text-[#4A7C59]">{percentage}%</span>
+          <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-primary" /><span className="font-semibold text-foreground">Porción total</span></div>
+          <span className="text-2xl font-bold text-primary">{percentage}%</span>
         </div>
-        <div className="mt-2 flex items-center justify-between border-t border-[#E8E2D9] pt-2 text-sm text-neutral-600">
+        <div className="mt-2 flex items-center justify-between border-t border-border pt-2 text-sm text-muted-foreground">
           <span>Calorías seleccionadas</span>
-          <span><span className="font-bold text-[#C85A32]">{selectedCalories.toFixed(0)}</span><span className="text-neutral-500"> / {meal.totalCalories} kcal</span></span>
+          <span><span className="font-bold text-secondary">{selectedCalories.toFixed(0)}</span><span className="text-muted-foreground"> / {meal.totalCalories} kcal</span></span>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-[#E8E2D9] bg-[#FAF7F2] p-3">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#4A7C59]">Porción rápida</p>
+      <div className="rounded-2xl border border-border bg-background p-3">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-primary">Porción rápida</p>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {[
             { label: '1/4', fraction: 0.25 },
@@ -110,7 +110,7 @@ export function MealPortionSelector({ meal, onConfirm, onCancel, loading = false
             { label: '3/4', fraction: 0.75 },
             { label: 'Porción entera', fraction: 1 },
           ].map((option) => (
-            <Button key={option.label} type="button" variant="outline" onClick={() => applyFraction(option.fraction)} disabled={loading} className="h-10 border-[#E8E2D9] bg-white px-2 text-xs text-neutral-700 hover:border-[#4A7C59] hover:bg-[#EDF4EE]">
+            <Button key={option.label} type="button" variant="outline" onClick={() => applyFraction(option.fraction)} disabled={loading} className="h-10 border-border bg-card px-2 text-xs text-foreground hover:border-primary hover:bg-primary/10">
               {option.label}
             </Button>
           ))}
@@ -118,34 +118,34 @@ export function MealPortionSelector({ meal, onConfirm, onCancel, loading = false
       </div>
 
       <div className="space-y-3">
-        <div className="flex items-center gap-2"><h4 className="font-medium text-neutral-900">Personalizar ingredientes</h4><div className="h-px flex-grow bg-[#E8E2D9]" /></div>
+        <div className="flex items-center gap-2"><h4 className="font-medium text-foreground">Personalizar ingredientes</h4><div className="h-px flex-grow bg-border" /></div>
         {meal.mealFoods.map((food) => {
           const quantity = portions[food.foodId] ?? food.quantity;
           const portionPercentage = ((quantity / food.quantity) * 100).toFixed(0);
           return (
-            <div key={food.foodId} className="flex items-center gap-3 rounded-xl border border-[#E8E2D9] bg-white p-3">
+            <div key={food.foodId} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
               {food.svgLink && (
-                <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-md border border-[#E8E2D9] bg-[#FAF7F2]">
+                <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-md border border-border bg-background">
                   <Image src={food.svgLink} alt={food.foodName} width={48} height={48} className="h-full w-full object-contain p-1" />
                 </div>
               )}
-              <div className="min-w-0 flex-grow"><div className="truncate font-medium text-neutral-900">{food.foodName}</div><div className="mt-0.5 text-xs text-neutral-500">{food.kCal} kcal por unidad • Máximo: {food.quantity} unidades</div></div>
+              <div className="min-w-0 flex-grow"><div className="truncate font-medium text-foreground">{food.foodName}</div><div className="mt-0.5 text-xs text-muted-foreground">{food.kCal} kcal por unidad • Máximo: {food.quantity} unidades</div></div>
               <div className="flex items-center gap-2">
-                <Button type="button" variant="outline" size="sm" onClick={() => decrement(food)} disabled={loading || quantity === 0} className="h-8 w-8 bg-white p-0"><Minus className="h-3 w-3" /></Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => decrement(food)} disabled={loading || quantity === 0} className="h-8 w-8 bg-card p-0"><Minus className="h-3 w-3" /></Button>
                 <div className="flex min-w-[90px] flex-col items-center">
-                  <input type="number" value={inputs[food.foodId] ?? quantity.toString()} onChange={(event) => updateFood(food, event.target.value)} className="w-20 rounded-lg border border-[#E8E2D9] bg-white px-2 py-1 text-center text-sm text-neutral-900" step="0.001" min="0" max={food.quantity} disabled={loading} />
-                  <span className="mt-1 text-xs font-semibold text-[#C85A32]">{portionPercentage}%</span>
+                  <input type="number" value={inputs[food.foodId] ?? quantity.toString()} onChange={(event) => updateFood(food, event.target.value)} className="w-20 rounded-lg border border-border bg-card px-2 py-1 text-center text-sm text-foreground" step="0.001" min="0" max={food.quantity} disabled={loading} />
+                  <span className="mt-1 text-xs font-semibold text-secondary">{portionPercentage}%</span>
                 </div>
-                <Button type="button" variant="outline" size="sm" onClick={() => increment(food)} disabled={loading || quantity >= food.quantity} className="h-8 w-8 bg-white p-0"><Plus className="h-3 w-3" /></Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => increment(food)} disabled={loading || quantity >= food.quantity} className="h-8 w-8 bg-card p-0"><Plus className="h-3 w-3" /></Button>
               </div>
             </div>
           );
         })}
       </div>
 
-      <div className="flex gap-3 border-t border-[#E8E2D9] pt-4">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={loading} className="flex-1 border-[#E8E2D9] bg-white text-neutral-700 hover:bg-[#FAF7F2]">Cancelar</Button>
-        <Button type="button" onClick={confirm} disabled={loading} className="flex-1 bg-[#4A7C59] text-white hover:bg-[#3F6D4D]">{loading ? 'Confirmando...' : 'Confirmar porción'}</Button>
+      <div className="flex gap-3 border-t border-border pt-4">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={loading} className="flex-1 border-border bg-card text-foreground hover:bg-muted">Cancelar</Button>
+        <Button type="button" onClick={confirm} disabled={loading} className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90">{loading ? 'Confirmando...' : 'Confirmar porción'}</Button>
       </div>
 
       {profileId && <CalorieProjectionBar profileId={profileId} selectedCalories={selectedCalories} date={date} />}

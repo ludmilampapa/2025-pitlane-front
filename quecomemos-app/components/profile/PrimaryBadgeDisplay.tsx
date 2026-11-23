@@ -47,30 +47,24 @@ export function PrimaryBadgeDisplay({
     <div className={`flex items-center ${config.spacing} ${className}`}>
       <div className={`relative ${config.container}`}>
         {hasCustomIcon ? (
-          <Image
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
             src={primaryBadge.iconUrl!}
             alt={primaryBadge.name}
-            width={size === 'sm' ? 24 : size === 'md' ? 32 : 40}
-            height={size === 'sm' ? 24 : size === 'md' ? 32 : 40}
-            className="rounded-full border border-gray-200 bg-white p-0.5"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              const parent = target.parentElement;
-              if (parent) {
-                const iconSize = size === 'sm' ? 'text-sm' : size === 'md' ? 'text-base' : 'text-lg';
-                parent.innerHTML = `<div class="flex items-center justify-center ${config.container} ${iconSize} bg-gray-100 rounded-full border border-gray-200">${getDefaultBadgeIcon(primaryBadge.badgeType)}</div>`;
-              }
-            }}
+            className={`${config.container} rounded-full border border-border bg-card object-contain p-0.5`}
           />
         ) : (
-          <div className={`flex items-center justify-center ${config.container} ${config.text} bg-gray-100 rounded-full border border-gray-200`}>
+          <div
+            title={primaryBadge.name}
+            className={`flex items-center justify-center ${config.container} ${config.text} bg-muted rounded-full border border-border`}
+          >
             {getDefaultBadgeIcon(primaryBadge.badgeType)}
           </div>
         )}
       </div>
       
       {showName && (
-        <Badge variant="secondary" className={`${config.text} bg-amber-100 text-amber-800 border-amber-300`}>
+        <Badge variant="secondary" className="text-xs border-transparent bg-amber-100 text-[#2B211A] hover:bg-amber-100 dark:bg-amber-200 dark:hover:bg-amber-200">
           {primaryBadge.name}
         </Badge>
       )}

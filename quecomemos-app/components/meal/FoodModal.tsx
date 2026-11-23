@@ -106,12 +106,11 @@ export default function FoodModal(props: Props) {
           const products = await response.json() as KorvenProduct[];
           // Filter based on forMeal flag
           const filtered = products.filter(product => {
+            const type = (product as { type?: 'meal' | 'food' }).type;
             if (forMeal) {
-              // For meals: only products WITH connectors
-              return hasConnectors(product.name);
+              return type ? type === 'meal' : hasConnectors(product.name);
             } else {
-              // For foods: only products WITHOUT connectors
-              return !hasConnectors(product.name);
+              return type ? type === 'food' : !hasConnectors(product.name);
             }
           });
           setKorvenProducts(filtered);
@@ -197,7 +196,7 @@ export default function FoodModal(props: Props) {
     }
   }, [mode, name, open, setQuery]);
 
-  const inputClass = "w-full p-3 rounded-lg border border-amber-700 bg-amber-800 text-amber-100 placeholder-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-500";
+  const inputClass = "w-full p-3 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring";
 
   // Check if food name already exists (for create mode)
   const checkFoodNameExists = (foodName: string): boolean => {
@@ -450,16 +449,16 @@ export default function FoodModal(props: Props) {
     <div className="fixed inset-0 z-[95] flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
       <div
-        className="relative w-full max-w-4xl bg-neutral-900 border border-amber-800/30 rounded-2xl shadow-2xl overflow-hidden"
+        className="relative w-full max-w-4xl bg-card border border-border rounded-2xl shadow-2xl overflow-hidden"
         style={{ zIndex: 96 }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-amber-800/40">
-          <h4 className="text-amber-100 font-semibold text-sm md:text-base">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+          <h4 className="text-foreground font-semibold text-sm md:text-base">
             {getModalTitle()}
           </h4>
-          <button onClick={onClose} className="p-2 text-amber-200 hover:text-amber-50">
+          <button onClick={onClose} className="p-2 text-foreground hover:text-foreground">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -470,11 +469,11 @@ export default function FoodModal(props: Props) {
             <div className="space-y-4">
               {/* Search Section */}
               <div>
-                <Label className="text-amber-200 text-sm mb-2 block flex items-center gap-2">
+                <Label className="text-foreground text-sm mb-2 block flex items-center gap-2">
                   <Search className="w-4 h-4" />
                   Search for existing food
                 </Label>
-                <div className="border border-amber-700 rounded-lg bg-neutral-800 overflow-hidden">
+                <div className="border border-border rounded-lg bg-card overflow-hidden">
                   <input
                     ref={searchRef}
                     type="text"
@@ -483,14 +482,14 @@ export default function FoodModal(props: Props) {
                     onChange={(e) => setName(e.target.value)}
                     onKeyDown={onKeyDownSearch}
                     disabled={isLoadingFoods || isSubmitting}
-                    className={`w-full px-4 py-3 bg-neutral-800 text-amber-100 border-b border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-600 ${isLoadingFoods || isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    className={`w-full px-4 py-3 bg-card text-foreground border-b border-border focus:outline-none focus:ring-2 focus:ring-ring ${isLoadingFoods || isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                   />
                   
                   {/* Search Results */}
                   <div className="max-h-[400px] overflow-y-auto">
                     {isLoadingFoods ? (
                       <div className="px-4 py-6 text-center">
-                        <div className="flex items-center justify-center gap-2 text-amber-200">
+                        <div className="flex items-center justify-center gap-2 text-foreground">
                           <Loader2 className="w-5 h-5 animate-spin" />
                           <span className="text-sm">Loading foods...</span>
                         </div>
@@ -514,7 +513,7 @@ export default function FoodModal(props: Props) {
                                 }
                                 await hydrateSelectedWithDetails(food);
                               }}
-                              className={`w-full text-left px-4 py-3 border-b border-amber-800/50 transition-colors ${active ? "bg-amber-700 text-white" : "hover:bg-amber-700/60 text-amber-100"}`}
+                              className={`w-full text-left px-4 py-3 border-b border-border transition-colors ${active ? "bg-primary text-primary-foreground" : "hover:bg-accent text-foreground"}`}
                             >
                               <div className="flex items-center justify-between gap-3">
                                 <span className="truncate">{food.name}</span>
@@ -532,7 +531,7 @@ export default function FoodModal(props: Props) {
                               const trimmed = name.trim();
                               onSwitchToCreate(trimmed);
                             }}
-                            className="w-full text-left px-4 py-3 border-t-2 border-amber-600 bg-amber-700/80 hover:bg-amber-600 text-amber-100 flex items-center gap-2 font-medium"
+                            className="w-full text-left px-4 py-3 border-t-2 border-border bg-muted hover:bg-primary/90 text-foreground flex items-center gap-2 font-medium"
                           >
                             <Plus className="w-5 h-5" />
                             <span>Create &ldquo;{name.trim()}&rdquo; as new food</span>
@@ -541,7 +540,7 @@ export default function FoodModal(props: Props) {
                       </>
                     ) : name.trim().length > 0 ? (
                       <div className="px-4 py-6 text-center">
-                        <div className="text-sm text-amber-200 mb-3">No existing foods found for &ldquo;{name.trim()}&rdquo;.</div>
+                        <div className="text-sm text-foreground mb-3">No existing foods found for &ldquo;{name.trim()}&rdquo;.</div>
                         {onSwitchToCreate && (
                           checkFoodNameExists(name.trim()) ? (
                             <div className="text-xs text-red-400 bg-red-900/30 border border-red-700 rounded p-2">
@@ -554,7 +553,7 @@ export default function FoodModal(props: Props) {
                                 const trimmed = name.trim();
                                 onSwitchToCreate(trimmed);
                               }}
-                              className="w-full bg-amber-700 hover:bg-amber-600 text-amber-100 border border-amber-600 text-sm py-2 flex items-center justify-center gap-2"
+                              className="w-full bg-primary hover:bg-primary/90 text-foreground border border-border text-sm py-2 flex items-center justify-center gap-2"
                             >
                               <Plus className="w-4 h-4" />
                               Create &ldquo;{name.trim()}&rdquo; as new food
@@ -563,7 +562,7 @@ export default function FoodModal(props: Props) {
                         )}
                       </div>
                     ) : (
-                      <div className="px-4 py-6 text-center text-sm text-gray-400">
+                      <div className="px-4 py-6 text-center text-sm text-muted-foreground">
                         Start typing to search for existing foods...
                       </div>
                     )}
@@ -590,11 +589,11 @@ export default function FoodModal(props: Props) {
 
               {/* Food Details - Show when food is selected */}
               {selected && (
-                <div className="border-t border-amber-800/30 pt-4">
-                  <Label className="text-amber-200 text-sm mb-3 block">Food Details</Label>
-                  <div className="bg-amber-900/20 border border-amber-700/50 rounded-lg p-4 space-y-3">
+                <div className="border-t border-border pt-4">
+                  <Label className="text-foreground text-sm mb-3 block">Food Details</Label>
+                  <div className="bg-muted border border-border rounded-lg p-4 space-y-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 flex items-center justify-center bg-amber-800/30 rounded-full border border-amber-700/50 flex-shrink-0">
+                      <div className="w-10 h-10 flex items-center justify-center bg-muted rounded-full border border-border flex-shrink-0">
                         {selected.svgLink ? (
                           <Image 
                             src={selected.svgLink} 
@@ -604,19 +603,19 @@ export default function FoodModal(props: Props) {
                             className="w-6 h-6 object-contain" 
                           />
                         ) : (
-                          <Utensils className="w-5 h-5 text-amber-400" />
+                          <Utensils className="w-5 h-5 text-primary" />
                         )}
                       </div>
                       <div>
-                        <h4 className="font-semibold text-amber-100">{selected.name}</h4>
-                        <p className="text-sm text-amber-300">{kcalSelected} kcal per unit</p>
+                        <h4 className="font-semibold text-foreground">{selected.name}</h4>
+                        <p className="text-sm text-primary">{kcalSelected} kcal per unit</p>
                       </div>
                     </div>
                     
                     {/* Show preferences and restrictions if available */}
                     {selected.preferences && selected.preferences.length > 0 && (
                       <div>
-                        <p className="text-xs text-amber-200 mb-1">Preferences:</p>
+                        <p className="text-xs text-foreground mb-1">Preferences:</p>
                         <div className="flex flex-wrap gap-1">
                           {(showAllSelectedPreferences ? selected.preferences : selected.preferences.slice(0, 2)).map((pref, index) => {
                             let displayName = '';
@@ -631,7 +630,7 @@ export default function FoodModal(props: Props) {
                               displayName = 'Unknown';
                             }
                             return (
-                              <span key={index} className="bg-amber-800/40 text-amber-200 text-xs px-2 py-1 rounded">
+                              <span key={index} className="bg-muted text-foreground text-xs px-2 py-1 rounded">
                                 {displayName}
                               </span>
                             );
@@ -639,7 +638,7 @@ export default function FoodModal(props: Props) {
                           {selected.preferences.length > 2 && (
                             <button
                               onClick={() => setShowAllSelectedPreferences(prev => !prev)}
-                              className="bg-amber-800/40 text-amber-200 text-xs px-2 py-1 rounded hover:underline"
+                              className="bg-muted text-foreground text-xs px-2 py-1 rounded hover:underline"
                             >
                               {showAllSelectedPreferences ? 'Show less' : `+${selected.preferences.length - 2} more`}
                             </button>
@@ -650,7 +649,7 @@ export default function FoodModal(props: Props) {
                     
                     {selected.dietaryRestrictions && selected.dietaryRestrictions.length > 0 && (
                       <div>
-                        <p className="text-xs text-amber-200 mb-1">Dietary Restrictions:</p>
+                        <p className="text-xs text-foreground mb-1">Dietary Restrictions:</p>
                         <div className="flex flex-wrap gap-1">
                           {(showAllSelectedRestrictions ? selected.dietaryRestrictions : selected.dietaryRestrictions.slice(0, 2)).map((restriction, index) => {
                             let displayName = '';
@@ -688,7 +687,7 @@ export default function FoodModal(props: Props) {
               {/* Quantity Section - Only show if food is selected */}
               {selected && (
                 <div>
-                  <Label className="text-amber-200 text-sm mb-2 block">Quantity</Label>
+                  <Label className="text-foreground text-sm mb-2 block">Quantity</Label>
                   <input
                     type="number"
                     min={1}
@@ -709,7 +708,7 @@ export default function FoodModal(props: Props) {
                     className={`${inputClass} ${isLoadingDetails || isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                   />
                   {liveKcal !== undefined && (
-                    <p className="mt-1 text-xs text-amber-300">Total: <b>{liveKcal}</b> kcal</p>
+                    <p className="mt-1 text-xs text-primary">Total: <b>{liveKcal}</b> kcal</p>
                   )}
                 </div>
               )}
@@ -721,10 +720,10 @@ export default function FoodModal(props: Props) {
                 // When editing in meal context - only allow quantity changes
                 <>
                   {/* Food Information - Read Only */}
-                  <div className="bg-amber-900/20 border border-amber-700/50 rounded-lg p-4">
-                    <Label className="text-amber-200 text-sm mb-3 block">Food Information (Read-only)</Label>
+                  <div className="bg-muted border border-border rounded-lg p-4">
+                    <Label className="text-foreground text-sm mb-3 block">Food Information (Read-only)</Label>
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 flex items-center justify-center bg-amber-800/30 rounded-full border border-amber-700/50 flex-shrink-0">
+                      <div className="w-10 h-10 flex items-center justify-center bg-muted rounded-full border border-border flex-shrink-0">
                         {editingItem?.svgLink ? (
                           <Image 
                             src={editingItem.svgLink} 
@@ -734,19 +733,19 @@ export default function FoodModal(props: Props) {
                             className="w-6 h-6 object-contain" 
                           />
                         ) : (
-                          <Utensils className="w-5 h-5 text-amber-400" />
+                          <Utensils className="w-5 h-5 text-primary" />
                         )}
                       </div>
                       <div>
-                        <h4 className="font-semibold text-amber-100">{editingItem?.name}</h4>
-                        <p className="text-sm text-amber-300">{editingItem?.kcalPerUnit || (editingItem ? editingItem.kCal / editingItem.quantity : 0)} kcal per unit</p>
+                        <h4 className="font-semibold text-foreground">{editingItem?.name}</h4>
+                        <p className="text-sm text-primary">{editingItem?.kcalPerUnit || (editingItem ? editingItem.kCal / editingItem.quantity : 0)} kcal per unit</p>
                       </div>
                     </div>
                     
                     {/* Show preferences and restrictions if available */}
                     {editingItem?.preferences && editingItem.preferences.length > 0 && (
                       <div className="mb-3">
-                        <p className="text-xs text-amber-200 mb-1">Preferences:</p>
+                        <p className="text-xs text-foreground mb-1">Preferences:</p>
                         <div className="flex flex-wrap gap-1">
                           {(showAllEditPreferences ? editingItem.preferences : editingItem.preferences.slice(0, 2)).map((pref, index) => {
                             let displayName = '';
@@ -761,7 +760,7 @@ export default function FoodModal(props: Props) {
                               displayName = String(pref);
                             }
                             return (
-                              <span key={index} className="bg-amber-800/40 text-amber-200 text-xs px-2 py-1 rounded">
+                              <span key={index} className="bg-muted text-foreground text-xs px-2 py-1 rounded">
                                 {displayName}
                               </span>
                             );
@@ -769,7 +768,7 @@ export default function FoodModal(props: Props) {
                           {editingItem.preferences.length > 2 && (
                             <button
                               onClick={() => setShowAllEditPreferences(prev => !prev)}
-                              className="bg-amber-800/40 text-amber-200 text-xs px-2 py-1 rounded hover:underline"
+                              className="bg-muted text-foreground text-xs px-2 py-1 rounded hover:underline"
                             >
                               {showAllEditPreferences ? 'Show less' : `+${editingItem.preferences.length - 2} more`}
                             </button>
@@ -780,7 +779,7 @@ export default function FoodModal(props: Props) {
 
                     {editingItem?.dietaryRestrictions && editingItem.dietaryRestrictions.length > 0 && (
                       <div>
-                        <p className="text-xs text-amber-200 mb-1">Dietary Restrictions:</p>
+                        <p className="text-xs text-foreground mb-1">Dietary Restrictions:</p>
                         <div className="flex flex-wrap gap-1">
                           {(showAllEditRestrictions ? editingItem.dietaryRestrictions : editingItem.dietaryRestrictions.slice(0, 2)).map((restriction, index) => {
                             let displayName = '';
@@ -815,7 +814,7 @@ export default function FoodModal(props: Props) {
 
                   {/* Quantity Section - Editable */}
                   <div>
-                    <Label className="text-amber-200 text-sm mb-2 block">Quantity (Editable)</Label>
+                    <Label className="text-foreground text-sm mb-2 block">Quantity (Editable)</Label>
                     <input
                       type="number"
                       min={1}
@@ -836,7 +835,7 @@ export default function FoodModal(props: Props) {
                       className={`${inputClass} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                     />
                     {liveKcal !== undefined && (
-                      <p className="mt-1 text-xs text-amber-300">Total: <b>{liveKcal}</b> kcal</p>
+                      <p className="mt-1 text-xs text-primary">Total: <b>{liveKcal}</b> kcal</p>
                     )}
                   </div>
                 </>
@@ -846,10 +845,10 @@ export default function FoodModal(props: Props) {
                   {/* Basic Info */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-amber-200 text-sm mb-2 block flex items-center gap-2">
+                      <Label className="text-foreground text-sm mb-2 block flex items-center gap-2">
                         Food Name
                         {isKorvenInspired && (
-                          <span className="text-xs bg-amber-600/50 text-amber-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <span className="text-xs bg-muted text-foreground px-2 py-0.5 rounded-full flex items-center gap-1">
                             <Hexagon className="w-3 h-3 fill-amber-400/30" />
                             Korven
                           </span>
@@ -887,7 +886,7 @@ export default function FoodModal(props: Props) {
                       ) : null}
                     </div>
                     <div>
-                      <Label className="text-amber-200 text-sm mb-2 block">Quantity</Label>
+                      <Label className="text-foreground text-sm mb-2 block">Quantity</Label>
                       <input
                         type="number"
                         min={1}
@@ -912,7 +911,7 @@ export default function FoodModal(props: Props) {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-amber-200 text-sm mb-2 block">Calories per unit</Label>
+                      <Label className="text-foreground text-sm mb-2 block">Calories per unit</Label>
                       <input
                         type="number"
                         min={0}
@@ -933,18 +932,18 @@ export default function FoodModal(props: Props) {
                         className={`${inputClass} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                       />
                       {liveKcal !== undefined && (
-                        <p className="mt-1 text-xs text-amber-300">Total: <b>{liveKcal}</b> kcal</p>
+                        <p className="mt-1 text-xs text-primary">Total: <b>{liveKcal}</b> kcal</p>
                       )}
                     </div>
                     <div>
-                      <Label className="text-amber-200 text-sm mb-2 block">Icon</Label>
+                      <Label className="text-foreground text-sm mb-2 block">Icon</Label>
                       <IconSelect onSelectionChange={setCreateIcon} />
                     </div>
                   </div>
 
                   {/* Advanced Options */}
-                  <div className="border-t border-amber-800/30 pt-4">
-                    <Label className="text-amber-200 text-sm mb-3 block">Dietary Information</Label>
+                  <div className="border-t border-border pt-4">
+                    <Label className="text-foreground text-sm mb-3 block">Dietary Information</Label>
                     <div className="space-y-3">
                       <DropdownWrapper label="Preferences">
                         <CustomCheckbox
@@ -955,15 +954,15 @@ export default function FoodModal(props: Props) {
                       </DropdownWrapper>
                       
                       <div>
-                        <Label className="text-amber-200 mb-3 block">Does this food have dietary restrictions?</Label>
+                        <Label className="text-foreground mb-3 block">Does this food have dietary restrictions?</Label>
                         <div className="flex gap-4 mb-4">
                           <button
                             type="button"
                             onClick={() => setCreateHasRestrictions(true)}
                             className={`flex-1 py-2 px-4 rounded-lg border transition-colors ${
                               createHasRestrictions === true
-                                ? 'bg-amber-700 border-amber-600 text-white'
-                                : 'bg-neutral-700 border-amber-800/30 text-amber-200 hover:border-amber-700/50'
+                                ? 'bg-primary border-border text-primary-foreground'
+                                : 'bg-muted border-border text-foreground hover:border-border'
                             }`}
                           >
                             No restrictions (For Everyone)
@@ -973,8 +972,8 @@ export default function FoodModal(props: Props) {
                             onClick={() => setCreateHasRestrictions(false)}
                             className={`flex-1 py-2 px-4 rounded-lg border transition-colors ${
                               createHasRestrictions === false
-                                ? 'bg-amber-700 border-amber-600 text-white'
-                                : 'bg-neutral-700 border-amber-800/30 text-amber-200 hover:border-amber-700/50'
+                                ? 'bg-primary border-border text-primary-foreground'
+                                : 'bg-muted border-border text-foreground hover:border-border'
                             }`}
                           >
                             Has restrictions
@@ -1001,18 +1000,18 @@ export default function FoodModal(props: Props) {
             <div className="space-y-4">
               {/* Korven Inspiration Section */}
               {!editingItem && (
-                <div className="bg-gradient-to-r from-amber-900/30 to-yellow-900/30 border border-amber-600/50 rounded-lg p-4">
+                <div className="bg-gradient-to-r from-card to-yellow-900/30 border border-border rounded-lg p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <Hexagon className="w-5 h-5 text-amber-400 fill-amber-400/20" />
-                      <Label className="text-amber-100 text-sm font-semibold">
+                      <Hexagon className="w-5 h-5 text-primary fill-amber-400/20" />
+                      <Label className="text-foreground text-sm font-semibold">
                         Get Korven Inspired
                       </Label>
                     </div>
                     <button
                       type="button"
                       onClick={() => setShowKorvenOptions(!showKorvenOptions)}
-                      className="text-xs text-amber-300 hover:text-amber-100 underline"
+                      className="text-xs text-primary hover:text-foreground underline"
                     >
                       {showKorvenOptions ? 'Hide' : 'Show'} options
                     </button>
@@ -1021,7 +1020,7 @@ export default function FoodModal(props: Props) {
                   {showKorvenOptions && (
                     <div className="space-y-2">
                       {isLoadingKorven ? (
-                        <div className="flex items-center justify-center gap-2 text-amber-300 py-4">
+                        <div className="flex items-center justify-center gap-2 text-primary py-4">
                           <Loader2 className="w-4 h-4 animate-spin" />
                           <span className="text-sm">Loading Korven products...</span>
                         </div>
@@ -1038,8 +1037,8 @@ export default function FoodModal(props: Props) {
                               }}
                               className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
                                 selectedKorvenProduct === product.name
-                                  ? 'bg-amber-600 text-white border border-amber-500'
-                                  : 'bg-amber-900/20 text-amber-200 hover:bg-amber-800/40 border border-amber-700/30'
+                                  ? 'bg-primary text-primary-foreground border border-border'
+                                  : 'bg-muted text-foreground hover:bg-accent border border-border'
                               }`}
                             >
                               {product.name}
@@ -1047,14 +1046,14 @@ export default function FoodModal(props: Props) {
                           ))}
                         </div>
                       ) : (
-                        <p className="text-xs text-amber-300 text-center py-3">
+                        <p className="text-xs text-primary text-center py-3">
                           {forMeal 
                             ? 'No Korven products with connectors available for meals.'
                             : 'No Korven products without connectors available for foods.'}
                         </p>
                       )}
                       {selectedKorvenProduct && (
-                        <div className="text-xs text-amber-300 bg-amber-900/30 border border-amber-700 rounded p-2 flex items-center gap-2">
+                        <div className="text-xs text-primary bg-muted border border-border rounded p-2 flex items-center gap-2">
                           <Hexagon className="w-3 h-3 fill-amber-400/20" />
                           <span>Using Korven inspired name: <strong>{selectedKorvenProduct}</strong></span>
                         </div>
@@ -1067,10 +1066,10 @@ export default function FoodModal(props: Props) {
               {/* Basic Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-amber-200 text-sm mb-2 block flex items-center gap-2">
+                  <Label className="text-foreground text-sm mb-2 block flex items-center gap-2">
                     Food Name
                     {isKorvenInspired && (
-                      <span className="text-xs bg-amber-600/50 text-amber-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <span className="text-xs bg-muted text-foreground px-2 py-0.5 rounded-full flex items-center gap-1">
                         <Hexagon className="w-3 h-3 fill-amber-400/30" />
                         Korven
                       </span>
@@ -1123,7 +1122,7 @@ export default function FoodModal(props: Props) {
                   )}
                 </div>
                 <div>
-                  <Label className="text-amber-200 text-sm mb-2 block">Quantity</Label>
+                  <Label className="text-foreground text-sm mb-2 block">Quantity</Label>
                   <input
                     type="number"
                     min={1}
@@ -1148,7 +1147,7 @@ export default function FoodModal(props: Props) {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-amber-200 text-sm mb-2 block">Calories per unit</Label>
+                  <Label className="text-foreground text-sm mb-2 block">Calories per unit</Label>
                   <input
                     type="number"
                     min={0}
@@ -1169,18 +1168,18 @@ export default function FoodModal(props: Props) {
                     className={`${inputClass} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                   />
                   {liveKcal !== undefined && (
-                    <p className="mt-1 text-xs text-amber-300">Total: <b>{liveKcal}</b> kcal</p>
+                    <p className="mt-1 text-xs text-primary">Total: <b>{liveKcal}</b> kcal</p>
                   )}
                 </div>
                 <div>
-                  <Label className="text-amber-200 text-sm mb-2 block">Icon</Label>
+                  <Label className="text-foreground text-sm mb-2 block">Icon</Label>
                   <IconSelect onSelectionChange={setCreateIcon} />
                 </div>
               </div>
 
               {/* Advanced Options */}
-              <div className="border-t border-amber-800/30 pt-4">
-                <Label className="text-amber-200 text-sm mb-3 block">Dietary Information (Optional)</Label>
+              <div className="border-t border-border pt-4">
+                <Label className="text-foreground text-sm mb-3 block">Dietary Information (Optional)</Label>
                 <div className="space-y-3">
                   <DropdownWrapper label="Preferences">
                     <CustomCheckbox
@@ -1191,15 +1190,15 @@ export default function FoodModal(props: Props) {
                   </DropdownWrapper>
                   
                   <div>
-                    <Label className="text-amber-200 mb-3 block">Does this food have dietary restrictions?</Label>
+                    <Label className="text-foreground mb-3 block">Does this food have dietary restrictions?</Label>
                     <div className="flex gap-4 mb-4">
                       <button
                         type="button"
                         onClick={() => setCreateHasRestrictions(true)}
                         className={`flex-1 py-2 px-4 rounded-lg border transition-colors ${
                           createHasRestrictions === true
-                            ? 'bg-amber-700 border-amber-600 text-white'
-                            : 'bg-neutral-700 border-amber-800/30 text-amber-200 hover:border-amber-700/50'
+                            ? 'bg-primary border-border text-primary-foreground'
+                            : 'bg-muted border-border text-foreground hover:border-border'
                         }`}
                       >
                         No restrictions (For Everyone)
@@ -1209,8 +1208,8 @@ export default function FoodModal(props: Props) {
                         onClick={() => setCreateHasRestrictions(false)}
                         className={`flex-1 py-2 px-4 rounded-lg border transition-colors ${
                           createHasRestrictions === false
-                            ? 'bg-amber-700 border-amber-600 text-white'
-                            : 'bg-neutral-700 border-amber-800/30 text-amber-200 hover:border-amber-700/50'
+                            ? 'bg-primary border-border text-primary-foreground'
+                            : 'bg-muted border-border text-foreground hover:border-border'
                         }`}
                       >
                         Has restrictions
@@ -1233,7 +1232,7 @@ export default function FoodModal(props: Props) {
           )}
 
           {/* Submit and Delete Buttons */}
-          <div className="pt-4 border-t border-amber-800/30">
+          <div className="pt-4 border-t border-border">
             <div className="flex gap-3">
               {/* Delete Button - Only show in edit mode when outside meal context */}
               {mode === 'edit' && !forMeal && allowDelete && onDelete && (
@@ -1261,7 +1260,7 @@ export default function FoodModal(props: Props) {
               <Button 
                 type="button" 
                 onClick={handleConfirm} 
-                className={`${mode === 'edit' && !forMeal && allowDelete ? 'flex-1' : 'w-full'} bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50 disabled:cursor-not-allowed`}
+                className={`${mode === 'edit' && !forMeal && allowDelete ? 'flex-1' : 'w-full'} bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed`}
                 disabled={Boolean((mode === 'search' && !selected) || isSubmitting || isLoadingDetails || 
                           (mode === 'create' && (!name.trim() || !quantity || !kcalPerUnit || 
                             (!editingItem && checkFoodNameExists(name)) || 

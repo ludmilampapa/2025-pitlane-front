@@ -32,10 +32,10 @@ const getIconAndColors = (type: ConfirmationType) => {
     case 'warning':
       return {
         icon: <AlertCircle className="w-6 h-6" />,
-        iconBg: 'bg-amber-100 dark:bg-amber-900/30',
-        iconColor: 'text-amber-600 dark:text-amber-400',
-        confirmButton: 'bg-amber-600 hover:bg-amber-700 dark:bg-amber-700 dark:hover:bg-amber-600',
-        border: 'border-amber-200 dark:border-amber-800/30'
+        iconBg: 'bg-muted dark:bg-muted',
+        iconColor: 'text-primary dark:text-primary',
+        confirmButton: 'bg-primary hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/90',
+        border: 'border-border dark:border-border'
       };
     case 'info':
       return {

@@ -119,7 +119,7 @@ export default function UserHistoryPage() {
   const { userData } = useUser();
   const profile = userData.profile;
   const { progress, loading: loadingProgress, updateCalorieGoal: updateCalorieGoalFromHook } = useCalorieProgress();
-  const { allMeals, fetchAllMeals } = useMeals();
+  const { allMeals, loadingMeals, fetchAllMeals } = useMeals();
   const { showNotification, showSuccess } = useGlobalNotification();
   const { triggerRefresh } = useCalorieProgressContext();
   const { badges, stats, loading: loadingBadges } = useUserBadges(profile?.id);
@@ -328,7 +328,7 @@ export default function UserHistoryPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => setIsBadgeModalOpen(true)}
-                  className="border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-600 dark:text-amber-200 dark:hover:bg-amber-950/30"
+                  className="border-border text-primary hover:bg-accent dark:border-border dark:text-foreground dark:hover:bg-accent"
                   title="Customize your primary badge"
                 >
                   <Trophy className="w-4 h-4" />
@@ -347,20 +347,20 @@ export default function UserHistoryPage() {
           {/* Register Meal Button */}
           <Button 
             onClick={openRegisterMealModal}
-            disabled={allMeals.length === 0}
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white disabled:bg-gray-500 disabled:cursor-not-allowed"
-            title={allMeals.length === 0 ? "Loading meals..." : "Register a meal"}
+            disabled={loadingMeals}
+            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+            title={loadingMeals ? "Loading meals..." : "Register a meal"}
           >
             <Plus className="w-4 h-4" />
             Register Meal
-            {allMeals.length === 0 && <span className="text-xs ml-1">(Loading...)</span>}
+            {loadingMeals && <span className="text-xs ml-1">(Loading...)</span>}
           </Button>
 
           {/* User Info
           {profile && (
             <div className="flex items-center gap-3 bg-muted/50 p-3 rounded-lg border">
-              <div className="w-10 h-10 bg-amber-800/30 border border-amber-700/50 rounded-full flex items-center justify-center">
-                <User className="w-5 h-5 text-amber-200" />
+              <div className="w-10 h-10 bg-muted border border-border rounded-full flex items-center justify-center">
+                <User className="w-5 h-5 text-foreground" />
               </div>
               <div>
                 <div className="font-medium text-sm">
@@ -476,7 +476,7 @@ export default function UserHistoryPage() {
                               <ChefHat className="w-4 h-4 text-primary" />
                               <p className="font-medium">{consumption.name}</p>
                               {mealPortion && (
-                                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-300">
+                                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-muted text-primary border border-border">
                                   {(mealPortion.portionFraction * 100).toFixed(0)}% of meal
                                 </span>
                               )}
@@ -487,7 +487,7 @@ export default function UserHistoryPage() {
                               </p>
                             )}
                             {consumptionMeal && consumptionMeal.meal.name !== consumption.name && (
-                              <p className="text-sm text-amber-600 mt-1 ml-6">
+                              <p className="text-sm text-primary mt-1 ml-6">
                                 From meal: {consumptionMeal.meal.name}
                               </p>
                             )}
@@ -497,7 +497,7 @@ export default function UserHistoryPage() {
                                 <div className="grid grid-cols-2 gap-1">
                                   {mealPortion.foodPortions.map((fp) => (
                                     <div key={fp.FoodPortionID} className="text-xs flex items-center gap-1">
-                                      <span className="text-amber-600 font-medium">
+                                      <span className="text-primary font-medium">
                                         {fp.quantityConsumed.toFixed(2)}u
                                       </span>
                                       <span className="text-muted-foreground">{fp.food.name}</span>
@@ -659,7 +659,7 @@ export default function UserHistoryPage() {
                     <span className="text-muted-foreground">Progress</span>
                     <span className="font-medium">{stats.earnedBadges} of {stats.totalBadges} badges</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-muted rounded-full h-2">
                     <div 
                       className="bg-gradient-to-r from-yellow-400 to-yellow-600 h-2 rounded-full transition-all duration-500 ease-out"
                       style={{ width: `${stats.completionPercentage}%` }}

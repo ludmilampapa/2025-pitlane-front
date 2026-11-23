@@ -18,6 +18,10 @@ import { Hexagon, Loader2 } from "lucide-react";
 
 interface KorvenProduct {
   name: string;
+  type?: 'meal' | 'food';
+  category?: string;
+  area?: string;
+  thumb?: string;
 }
 
 type Props = AddMealFormProps & { onClose?: () => void };
@@ -68,33 +72,35 @@ export default function AddMealForm({ onFoodAdded, onClose, initialMealName }: P
     return words.some(word => connectors.includes(word));
   };
 
-  // Fetch Korven products for meal names (with connectors)
-  useEffect(() => {
-    const fetchKorvenMealProducts = async () => {
-      setIsLoadingKorvenMeals(true);
-      try {
-        const response = await fetch('/api/korven-products', {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-          },
-        });
-        if (response.ok) {
-          const products = await response.json() as KorvenProduct[];
-          // For meals: only products WITH connectors
-          const filtered = products.filter(product => hasConnectors(product.name));
-          setKorvenMealProducts(filtered);
-        } else {
-          console.error('Korven API returned status:', response.status);
-        }
-      } catch (error) {
-        console.error('Error fetching Korven products for meals:', error);
-      } finally {
-        setIsLoadingKorvenMeals(false);
+  const fetchKorvenMealProducts = async () => {
+    setIsLoadingKorvenMeals(true);
+    try {
+      const response = await fetch('/api/korven-products', {
+        method: 'GET',
+        cache: 'no-store',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+      if (response.ok) {
+        const products = await response.json() as KorvenProduct[];
+        const filtered = products.filter(product =>
+          product.type ? product.type === 'meal' : hasConnectors(product.name)
+        );
+        setKorvenMealProducts(filtered);
+      } else {
+        console.error('TheMealDB API proxy returned status:', response.status);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching suggested meals:', error);
+    } finally {
+      setIsLoadingKorvenMeals(false);
+    }
+  };
 
+  useEffect(() => {
     fetchKorvenMealProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const openAddFoodModal = (index: number | null = null) => {
@@ -275,7 +281,7 @@ export default function AddMealForm({ onFoodAdded, onClose, initialMealName }: P
           <button
             type="button"
             onClick={onClose}
-            className={`${COMMON_STYLES.TEXT_AMBER_MUTED} hover:text-amber-100 text-sm underline transition-colors`}
+            className={`${COMMON_STYLES.TEXT_AMBER_MUTED} hover:text-foreground text-sm underline transition-colors`}
           >
             Cancel
           </button>
@@ -283,19 +289,25 @@ export default function AddMealForm({ onFoodAdded, onClose, initialMealName }: P
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Korven Meal Name Inspiration */}
-        <div className="bg-gradient-to-r from-amber-900/30 to-yellow-900/30 border border-amber-600/50 rounded-lg p-4">
+        {/* TheMealDB Meal Name Inspiration */}
+        <div className="bg-muted/50 border border-border rounded-lg p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Hexagon className="w-5 h-5 text-amber-400 fill-amber-400/20" />
-              <span className="text-amber-100 text-sm font-semibold">
-                Get Korven Inspired Meal Name
+              <Hexagon className="w-5 h-5 text-primary fill-primary/15" />
+              <span className="text-foreground text-sm font-semibold">
+                TheMealDB Suggestions
               </span>
             </div>
             <button
               type="button"
-              onClick={() => setShowKorvenMealOptions(!showKorvenMealOptions)}
-              className="text-xs text-amber-300 hover:text-amber-100 underline"
+              onClick={() => {
+                const next = !showKorvenMealOptions;
+                setShowKorvenMealOptions(next);
+                if (next && korvenMealProducts.length === 0 && !isLoadingKorvenMeals) {
+                  fetchKorvenMealProducts();
+                }
+              }}
+              className="text-xs text-primary hover:text-foreground underline"
             >
               {showKorvenMealOptions ? 'Hide' : 'Show'} options
             </button>
@@ -304,12 +316,12 @@ export default function AddMealForm({ onFoodAdded, onClose, initialMealName }: P
           {showKorvenMealOptions && (
             <div className="space-y-2">
               {isLoadingKorvenMeals ? (
-                <div className="flex items-center justify-center gap-2 text-amber-300 py-4">
+                <div className="flex items-center justify-center gap-2 text-primary py-4">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-sm">Loading Korven meal names...</span>
+                  <span className="text-sm">Loading suggestions...</span>
                 </div>
               ) : korvenMealProducts.length > 0 ? (
-                <div className="max-h-40 overflow-y-auto space-y-1">
+                <div className="max-h-56 overflow-y-auto space-y-1.5">
                   {korvenMealProducts.map((product, index) => (
                     <button
                       key={index}
@@ -319,25 +331,45 @@ export default function AddMealForm({ onFoodAdded, onClose, initialMealName }: P
                         setSelectedKorvenMealProduct(product.name);
                         setIsMealKorvenInspired(true);
                       }}
-                      className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
+                      className={`w-full text-left px-2.5 py-2 rounded-lg text-sm transition-colors flex items-center gap-3 ${
                         selectedKorvenMealProduct === product.name
-                          ? 'bg-amber-600 text-white border border-amber-500'
-                          : 'bg-amber-900/20 text-amber-200 hover:bg-amber-800/40 border border-amber-700/30'
+                          ? 'bg-primary text-primary-foreground border border-border'
+                          : 'bg-card text-foreground hover:bg-accent border border-border'
                       }`}
                     >
-                      {product.name}
+                      {product.thumb && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={product.thumb}
+                          alt={product.name}
+                          loading="lazy"
+                          className="w-10 h-10 rounded-md object-cover shrink-0 bg-muted"
+                        />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium truncate">{product.name}</div>
+                        {(product.category || product.area) && (
+                          <div className={`text-xs truncate ${
+                            selectedKorvenMealProduct === product.name
+                              ? 'text-primary-foreground/80'
+                              : 'text-muted-foreground'
+                          }`}>
+                            {[product.category, product.area].filter(Boolean).join(' · ')}
+                          </div>
+                        )}
+                      </div>
                     </button>
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-amber-300 text-center py-3">
-                  No Korven meal names with connectors available.
+                <p className="text-xs text-muted-foreground text-center py-3">
+                  No suggested meals available.
                 </p>
               )}
               {selectedKorvenMealProduct && (
-                <div className="text-xs text-amber-300 bg-amber-900/30 border border-amber-700 rounded p-2 flex items-center gap-2">
-                  <Hexagon className="w-3 h-3 fill-amber-400/20" />
-                  <span>Using Korven inspired name: <strong>{selectedKorvenMealProduct}</strong></span>
+                <div className="text-xs text-primary bg-card border border-border rounded p-2 flex items-center gap-2">
+                  <Hexagon className="w-3 h-3 fill-primary/15" />
+                  <span>Selected suggestion: <strong>{selectedKorvenMealProduct}</strong></span>
                 </div>
               )}
             </div>
@@ -347,9 +379,9 @@ export default function AddMealForm({ onFoodAdded, onClose, initialMealName }: P
         {/* nombre + sugerencia */}
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <label className="text-amber-200 text-sm">Meal Name</label>
+            <label className="text-foreground text-sm">Meal Name</label>
             {isMealKorvenInspired && (
-              <span className="text-xs bg-amber-600/50 text-amber-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+              <span className="text-xs bg-muted text-foreground px-2 py-0.5 rounded-full flex items-center gap-1">
                 <Hexagon className="w-3 h-3 fill-amber-400/30" />
                 Korven
               </span>
@@ -372,7 +404,7 @@ export default function AddMealForm({ onFoodAdded, onClose, initialMealName }: P
           {!mealName && suggestedMealName && (
             <div className={`mt-1 text-sm ${COMMON_STYLES.TEXT_AMBER_MUTED} flex items-center gap-2`}>
               <span className="opacity-80">Suggestion:</span>
-              <span className="px-2 py-0.5 rounded bg-neutral-800 border border-amber-800/40 text-amber-100">
+              <span className="px-2 py-0.5 rounded bg-card border border-border text-foreground">
                 {suggestedMealName}
               </span>
               <button
@@ -424,13 +456,13 @@ export default function AddMealForm({ onFoodAdded, onClose, initialMealName }: P
         </div>
 
         {/* total + guardar */}
-        <div className="flex items-center justify-between bg-amber-700 p-3 rounded-lg text-amber-50 font-semibold">
+        <div className="flex items-center justify-between bg-primary p-3 rounded-lg text-foreground font-semibold">
           <span>Total kcal</span><span>{totalKcal}</span>
         </div>
         <button
           type="submit"
           disabled={isSubmitting || foods.length === 0 || !mealName}
-          className={`w-full ${COMMON_STYLES.CARD_BASE} border border-amber-700/30 disabled:cursor-not-allowed text-white py-3 rounded-lg font-semibold transition-opacity`}
+          className={`w-full ${COMMON_STYLES.CARD_BASE} border border-border disabled:cursor-not-allowed text-white py-3 rounded-lg font-semibold transition-opacity`}
         >
           {isSubmitting ? "Saving..." : "Save Meal"}
         </button>

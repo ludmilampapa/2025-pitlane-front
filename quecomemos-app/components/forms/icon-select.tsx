@@ -41,7 +41,7 @@ return (
             return (
                 <div key={file.id || index} className="flex flex-col items-center space-y-2">
                     <div className="relative">
-                        <div className="w-16 h-16 bg-neutral-100 rounded-lg p-2 border-2 border-transparent hover:border-blue-300 transition-colors cursor-pointer"
+                        <div className="w-16 h-16 bg-muted rounded-lg p-2 border-2 border-transparent hover:border-primary transition-colors cursor-pointer"
                             style={{
                                 borderColor: selectedOption === file.name ? '#3b82f6' : 'transparent'
                             }}
@@ -60,7 +60,7 @@ return (
                             />
                         </div>
                         <Checkbox
-                            className="absolute -top-1 -right-1 bg-white rounded-full border border-gray-400 shadow-sm w-4 h-4"
+                            className="absolute -top-1 -right-1 bg-card rounded-full border border-border shadow-sm w-4 h-4"
                             checked={selectedOption === file.name}
                             onCheckedChange={(checked) => {
                                 const newSelection = checked ? file.name : null;
@@ -69,7 +69,7 @@ return (
                             }}
                         />
                     </div>
-                    <span className="text-xs text-center text-gray-600">{file.name}</span>
+                    <span className="text-xs text-center text-muted-foreground">{file.name}</span>
                 </div>
             );
         })}

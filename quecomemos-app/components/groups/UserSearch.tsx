@@ -157,7 +157,7 @@ export function UserSearch({ currentUserId, existingMemberIds, onInvite }: UserS
                     size="sm"
                     onClick={() => handleInvite(user)}
                     disabled={inviting === user.id}
-                    className="bg-amber-700 hover:bg-amber-600 text-white"
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
                     {inviting === user.id ? (
                       <>

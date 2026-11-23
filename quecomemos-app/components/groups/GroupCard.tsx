@@ -36,12 +36,12 @@ interface GroupCardProps {
 export function GroupCard({ group, showActivity = true, onRegisterMeal }: GroupCardProps) {
   const router = useRouter();
 
-const handleClick = () => {
+  const handleClick = () => {
     router.push(`/protected/groups/${group.GroupID}`);
-};
+  };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-ES', {
+    return new Date(dateString).toLocaleDateString('en-US', {
       day: 'numeric',
       month: 'short'
     });
@@ -57,82 +57,77 @@ const handleClick = () => {
       .slice(0, 2);
   };
 
+  const memberCount = group.members.length;
+
   return (
-    <Card className="hover:shadow-md transition-shadow duration-200 bg-gradient-to-br from-amber-800/30 to-amber-900/30 border-amber-700/50 hover:from-amber-700/40 hover:to-amber-800/40">
-      <div 
-        className="cursor-pointer"
-        onClick={handleClick}
-      >
+    <Card className="flex h-full flex-col border-border bg-card shadow-sm transition-shadow duration-200 hover:shadow-md">
+      <div className="flex-1 cursor-pointer" onClick={handleClick}>
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-semibold truncate text-amber-200">
+          <div className="flex items-start justify-between gap-2">
+            <CardTitle className="truncate text-lg font-semibold text-foreground">
               {group.name}
             </CardTitle>
             {showActivity && (
-              <Badge variant="secondary" className="ml-2 bg-amber-700/30 text-amber-200 border-amber-700/50">
-                <Activity className="w-3 h-3 mr-1" />
+              <Badge
+                variant="secondary"
+                title="Registered meals"
+                className="shrink-0 border-transparent bg-amber-100 text-[#2B211A] hover:bg-amber-100 dark:bg-amber-200 dark:hover:bg-amber-200 dark:text-[#2B211A]"
+              >
+                <Activity className="mr-1 h-3 w-3" />
                 {group._count.consumptions}
               </Badge>
             )}
           </div>
           {group.description && (
-            <p className="text-sm text-gray-300 line-clamp-2">
-              {group.description}
-            </p>
+            <p className="line-clamp-2 text-sm text-muted-foreground">{group.description}</p>
           )}
         </CardHeader>
-        
+
         <CardContent className="pt-0">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Users className="w-4 h-4 text-gray-400" />
-              <span className="text-sm text-gray-300">
-                {group.members.length} member{group.members.length !== 1 ? 's' : ''}
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-primary" />
+              <span>
+                {memberCount} {memberCount === 1 ? 'member' : 'members'}
               </span>
             </div>
-            
-            <div className="flex items-center space-x-2">
-              <Calendar className="w-4 h-4 text-gray-400" />
-              <span className="text-sm text-gray-300">
-                {formatDate(group.updatedAt)}
-              </span>
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-secondary" />
+              <span>{formatDate(group.updatedAt)}</span>
             </div>
           </div>
-          
-          {/* Mostrar iniciales de algunos miembros */}
-          <div className="flex items-center mt-3 space-x-1">
+
+          <div className="mt-3 flex items-center -space-x-1">
             {group.members.slice(0, 3).map((member) => (
-              <div 
-                key={member.profile.id} 
-                className="flex items-center justify-center w-6 h-6 text-xs font-medium text-white bg-amber-700 rounded-full border-2 border-background"
+              <div
+                key={member.profile.id}
+                className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-card bg-primary text-xs font-semibold text-white"
               >
                 {getInitials(member.profile.username || 'Anonymous')}
               </div>
             ))}
-            {group.members.length > 3 && (
-              <div className="flex items-center justify-center w-6 h-6 text-xs text-muted-foreground bg-muted rounded-full">
-                +{group.members.length - 3}
+            {memberCount > 3 && (
+              <div className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-card bg-muted text-xs font-semibold text-foreground">
+                +{memberCount - 3}
               </div>
             )}
           </div>
         </CardContent>
       </div>
-      
-      {/* Register Meal Button */}
+
       {onRegisterMeal && (
         <CardContent className="pt-0 pb-4">
           <Button
             variant="outline"
             size="sm"
-            className="w-full bg-[#18120b] border border-amber-700 text-amber-600 hover:bg-[#1e1406] hover:text-amber-400 hover:border-amber-600 font-normal"
-            style={{ boxShadow: 'none' }}
+            className="w-full border-primary text-primary hover:bg-primary/15 hover:text-foreground"
             onClick={(e) => {
               e.stopPropagation();
               onRegisterMeal(group);
             }}
           >
-            <ChefHat className="w-4 h-4 mr-2 text-amber-600" />
-            Register Group Meal
+            <ChefHat className="mr-2 h-4 w-4" />
+            Register group meal
           </Button>
         </CardContent>
       )}

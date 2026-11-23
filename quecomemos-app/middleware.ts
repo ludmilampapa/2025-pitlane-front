@@ -16,6 +16,7 @@ export async function middleware(request: NextRequest) {
   if (
     pathname === "/" ||
     pathname.startsWith("/auth") ||
+    pathname.startsWith("/api/korven-products") ||
     pathname.startsWith("/_next") ||
     pathname.includes("favicon") ||
     pathname.match(/\.(svg|png|jpg|jpeg|gif|webp)$/)

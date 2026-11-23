@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -71,109 +71,99 @@ export function DashboardGroupsSection({ userId }: DashboardGroupsSectionProps) 
     router.push(`/protected/groups/create`);
   };
 
+
+  const header = (
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <h2 className="flex items-center text-2xl font-bold text-foreground">
+        <Users className="mr-2 h-6 w-6 text-primary" />
+        My Groups
+      </h2>
+      <div className="flex gap-2">
+        <Button
+          size="sm"
+          onClick={handleCreateGroup}
+          className="bg-primary text-primary-foreground hover:bg-primary/90"
+        >
+          <Plus className="mr-1 h-4 w-4" />
+          Create group
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleViewAllGroups}
+          className="border-border bg-card text-foreground hover:bg-muted"
+        >
+          View all
+        </Button>
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Users className="w-5 h-5 mr-2" />
-            My Groups
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-20 bg-muted animate-pulse rounded-lg" />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <section className="space-y-4">
+        {header}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-36 animate-pulse rounded-xl border border-border bg-card" />
+          ))}
+        </div>
+      </section>
     );
   }
 
   if (error) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Users className="w-5 h-5 mr-2" />
-            My Groups
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-destructive text-sm">{error}</p>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={fetchDashboardGroups}
-            className="mt-2"
-          >
-            Retry
-          </Button>
-        </CardContent>
-      </Card>
+      <section className="space-y-4">
+        {header}
+        <Card className="border-border bg-card shadow-sm">
+          <CardContent className="pt-6">
+            <p className="text-sm text-destructive">Could not load groups.</p>
+            <Button variant="outline" size="sm" onClick={fetchDashboardGroups} className="mt-3">
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      </section>
     );
   }
 
   return (
-    <Card className="border-amber-700/50 bg-gradient-to-br from-amber-800/10 to-amber-900/10">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center">
-            <Users className="w-5 h-5 mr-2" />
-            My Groups
-          </CardTitle>
-          <div className="flex space-x-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleCreateGroup}
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              Create
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={handleViewAllGroups}
-            >
-              View all
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      
-      <CardContent>
-        {groups.length === 0 ? (
-          <div className="text-center py-8">
-            <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">You don&apos;t have any groups yet</h3>
-            <p className="text-muted-foreground mb-4">
-              Create your first group to start managing meals as a team
+    <section className="space-y-4">
+      {header}
+      {groups.length === 0 ? (
+        <Card className="border-border bg-card shadow-sm">
+          <CardContent className="py-10 text-center">
+            <Users className="mx-auto mb-4 h-12 w-12 text-primary" />
+            <h3 className="mb-2 text-lg font-semibold text-foreground">You don&apos;t have any groups yet</h3>
+            <p className="mb-4 text-muted-foreground">
+              Create your first group to start organizing meals together.
             </p>
-            <Button onClick={handleCreateGroup}>
-              <Plus className="w-4 h-4 mr-2" />
+            <Button onClick={handleCreateGroup} className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <Plus className="mr-2 h-4 w-4" />
               Create my first group
             </Button>
-          </div>
-        ) : (
-          <div className="space-y-3">
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {groups.map((group) => (
               <GroupCard key={group.GroupID} group={group} showActivity={true} />
             ))}
-            {groups.length >= 5 && (
-              <Button 
-                variant="outline" 
-                className="w-full mt-4"
-                onClick={handleViewAllGroups}
-              >
-                View all groups ({groups.length})
-              </Button>
-            )}
           </div>
-        )}
-      </CardContent>
-    </Card>
+          {groups.length >= 5 && (
+            <Button
+              variant="outline"
+              className="w-full border-border bg-card text-foreground hover:bg-muted"
+              onClick={handleViewAllGroups}
+            >
+              View all groups ({groups.length})
+            </Button>
+          )}
+        </>
+      )}
+    </section>
   );
 }
 

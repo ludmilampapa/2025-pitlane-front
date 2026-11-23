@@ -90,12 +90,12 @@ const Slider = React.forwardRef<HTMLDivElement, SliderProps>(
         {/* Track */}
         <div
           ref={sliderRef}
-          className="relative h-2 w-full grow overflow-hidden rounded-full bg-amber-800/30 cursor-pointer"
+          className="relative h-2 w-full grow overflow-hidden rounded-full bg-muted cursor-pointer"
           onClick={handleTrackClick}
         >
           {/* Range */}
           <div
-            className="absolute h-full bg-amber-600 rounded-full"
+            className="absolute h-full bg-primary rounded-full"
             style={{
               left: `${minPercentage}%`,
               width: `${maxPercentage - minPercentage}%`
@@ -105,7 +105,7 @@ const Slider = React.forwardRef<HTMLDivElement, SliderProps>(
         
         {/* Min Thumb */}
         <div
-          className="absolute block h-5 w-5 rounded-full border-2 border-amber-600 bg-amber-100 cursor-pointer transition-colors hover:bg-amber-50 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:ring-offset-2"
+          className="absolute block h-5 w-5 rounded-full border-2 border-primary bg-background cursor-pointer transition-colors hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
           style={{ left: `calc(${minPercentage}% - 10px)` }}
           onMouseDown={(e) => handleMouseDown(e, 0)}
           tabIndex={0}
@@ -117,7 +117,7 @@ const Slider = React.forwardRef<HTMLDivElement, SliderProps>(
         
         {/* Max Thumb */}
         <div
-          className="absolute block h-5 w-5 rounded-full border-2 border-amber-600 bg-amber-100 cursor-pointer transition-colors hover:bg-amber-50 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:ring-offset-2"
+          className="absolute block h-5 w-5 rounded-full border-2 border-primary bg-background cursor-pointer transition-colors hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
           style={{ left: `calc(${maxPercentage}% - 10px)` }}
           onMouseDown={(e) => handleMouseDown(e, 1)}
           tabIndex={0}

@@ -43,7 +43,7 @@ export function MultiSelect({
   return (
     <div className={`relative ${className}`}>
       {label && (
-        <label className="block text-sm font-medium text-amber-200 mb-2">
+        <label className="block text-sm font-medium text-foreground mb-2">
           {label}
         </label>
       )}
@@ -54,13 +54,13 @@ export function MultiSelect({
           {selectedOptions.map(option => (
             <span
               key={option.id}
-              className="inline-flex items-center gap-1 px-2 py-1 bg-amber-800/40 border border-amber-700/50 rounded text-xs text-amber-200"
+              className="inline-flex items-center gap-1 px-2 py-1 bg-muted border border-border rounded text-xs text-foreground"
             >
               {option.name}
               <button
                 type="button"
                 onClick={() => removeOption(option.id)}
-                className="hover:text-amber-100"
+                className="hover:text-foreground"
               >
                 <X className="w-3 h-3" />
               </button>
@@ -69,7 +69,7 @@ export function MultiSelect({
           <button
             type="button"
             onClick={clearAll}
-            className="text-xs text-amber-400 hover:text-amber-300 px-2 py-1"
+            className="text-xs text-primary hover:text-primary px-2 py-1"
           >
             Clear all
           </button>
@@ -80,9 +80,9 @@ export function MultiSelect({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-3 py-2 bg-amber-800/30 border border-amber-700/50 rounded-lg text-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent"
+        className="w-full flex items-center justify-between px-3 py-2 bg-muted border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
       >
-        <span className={selectedOptions.length === 0 ? "text-amber-300/70" : ""}>
+        <span className={selectedOptions.length === 0 ? "text-muted-foreground" : ""}>
           {selectedOptions.length === 0 
             ? placeholder 
             : `${selectedOptions.length} selected`
@@ -93,9 +93,9 @@ export function MultiSelect({
 
       {/* Dropdown Options */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-neutral-800 border border-amber-700/50 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+        <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-xl max-h-48 overflow-y-auto">
           {options.length === 0 ? (
-            <div className="px-3 py-2 text-center text-gray-400 text-sm">
+            <div className="px-3 py-2 text-center text-muted-foreground text-sm">
               No options available
             </div>
           ) : (
@@ -107,11 +107,11 @@ export function MultiSelect({
                     key={option.id}
                     type="button"
                     onClick={() => toggleOption(option.id)}
-                    className="w-full text-left px-3 py-2 hover:bg-amber-800/30 transition-colors flex items-center justify-between"
+                    className="w-full text-left px-3 py-2 hover:bg-accent transition-colors flex items-center justify-between"
                   >
-                    <span className="text-amber-100">{option.name}</span>
+                    <span className="text-foreground">{option.name}</span>
                     {isSelected && (
-                      <Check className="w-4 h-4 text-amber-400" />
+                      <Check className="w-4 h-4 text-primary" />
                     )}
                   </button>
                 );

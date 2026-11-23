@@ -130,10 +130,10 @@ export default function GroupMenuPage() {
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="sm" onClick={() => router.back()}><ArrowLeft className="w-4 h-4" /></Button>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold flex items-center gap-2"><CalendarDays className="w-7 h-7 text-[#C85A32]" /> Weekly Menu</h1>
+          <h1 className="text-3xl font-bold flex items-center gap-2"><CalendarDays className="w-7 h-7 text-secondary" /> Weekly Menu</h1>
           <p className="text-muted-foreground">Coordinate meals for {group?.name}</p>
         </div>
-        {isAdmin && <Button onClick={() => setShowForm((value) => !value)} className="bg-[#4A7C59] text-white hover:bg-[#3F6D4D]"><Plus className="w-4 h-4 mr-2" />Add menu item</Button>}
+        {isAdmin && <Button onClick={() => setShowForm((value) => !value)} className="bg-primary text-primary-foreground hover:bg-primary/90"><Plus className="w-4 h-4 mr-2" />Add menu item</Button>}
       </div>
 
       {error && <Card><CardContent className="p-4 text-destructive">{error}</CardContent></Card>}
@@ -152,7 +152,7 @@ export default function GroupMenuPage() {
                 {meals.map((meal) => <option key={meal.MealID} value={meal.MealID}>{meal.name}</option>)}
               </select>
               <Input placeholder="Or enter a custom meal name" value={form.customMeal} onChange={(e) => setForm({ ...form, customMeal: e.target.value, mealId: '' })} />
-              <div className="md:col-span-2 flex justify-end"><Button type="submit" className="bg-[#4A7C59] text-white hover:bg-[#3F6D4D]">Save entry</Button></div>
+              <div className="md:col-span-2 flex justify-end"><Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90">Save entry</Button></div>
             </form>
           </CardContent>
         </Card>
@@ -166,7 +166,7 @@ export default function GroupMenuPage() {
             <Card key={entry.MenuEntryID}>
               <CardHeader><CardTitle className="text-lg">{new Date(entry.date).toLocaleDateString()} · {entry.moment}</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                <p className="font-medium text-[#C85A32]">{entry.meal?.name || entry.customMeal}</p>
+                <p className="font-medium text-secondary">{entry.meal?.name || entry.customMeal}</p>
                 <Button variant="outline" onClick={() => setProposalEntry(proposalEntry === entry.MenuEntryID ? null : entry.MenuEntryID)}>
                   <MessageSquare className="w-4 h-4 mr-2" />Propose alternative
                 </Button>
@@ -193,7 +193,7 @@ export default function GroupMenuPage() {
                         <p className="text-xs">Status: {item.status}</p>
                         {isAdmin && item.status === 'pending' && (
                           <div className="flex gap-2">
-                            <Button size="sm" onClick={() => respondProposal(item.ProposalID, 'accepted')} className="bg-[#4A7C59] text-white hover:bg-[#3F6D4D]">Accept</Button>
+                            <Button size="sm" onClick={() => respondProposal(item.ProposalID, 'accepted')} className="bg-primary text-primary-foreground hover:bg-primary/90">Accept</Button>
                             <Button size="sm" variant="outline" onClick={() => respondProposal(item.ProposalID, 'rejected')}>Reject</Button>
                           </div>
                         )}

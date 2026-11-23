@@ -1,20 +1,27 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { User, Settings, LogOut, X, Home, Utensils, ChefHat, Users, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/lib/contexts/UserContext';
+import { PrimaryBadgeDisplay } from './PrimaryBadgeDisplay';
 
 export function UserSidebar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const { userData, loading } = useUser();
   const router = useRouter();
   const profile = userData.profile;
 
-  // Cerrar sidebar al hacer click fuera
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Close sidebar on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
@@ -24,7 +31,6 @@ export function UserSidebar() {
 
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
-      // Prevenir scroll del body cuando el sidebar está abierto
       document.body.style.overflow = 'hidden';
     }
 
@@ -34,7 +40,7 @@ export function UserSidebar() {
     };
   }, [isOpen]);
 
-  // Cerrar sidebar con tecla ESC
+  // Close sidebar on ESC key
   useEffect(() => {
     const handleEscKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -52,51 +58,43 @@ export function UserSidebar() {
   }, [isOpen]);
 
   if (loading) {
-    return (
-      <div className="w-8 h-8 bg-neutral-200 rounded-full animate-pulse"></div>
-    );
+    return <div className="w-8 h-8 bg-muted rounded-full animate-pulse" />;
   }
 
   if (!profile) {
     return null;
   }
 
-  return (
+  const drawer = (
     <>
-      {/* Trigger Button */}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => setIsOpen(true)}
-        className="relative w-8 h-8 rounded-full bg-amber-800/30 hover:bg-amber-700/40 border border-amber-800/30 p-0 transition-all"
-        aria-label="Open user menu"
-      >
-        <User className="w-4 h-4 text-amber-200" />
-      </Button>
-
-      {/* Overlay */}
-      {isOpen && (
-        <div className="fixed inset-0 bg-black/25 dark:bg-black/50 z-40 transition-opacity" />
-      )}
-
-      {/* Sidebar */}
+      {/* Backdrop overlay */}
       <div
+        onClick={() => setIsOpen(false)}
+        className={`fixed inset-0 z-[90] bg-black/50 transition-opacity duration-200 ${
+          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+        aria-hidden={!isOpen}
+      />
+
+      {/* Solid Sidebar Drawer */}
+      <aside
         ref={sidebarRef}
-        className={`fixed top-0 right-0 h-full w-80 bg-card shadow-xl z-50 transform transition-transform duration-300 ease-in-out border-l border-border ${
+        aria-label="User Menu"
+        className={`fixed top-0 right-0 z-[100] flex h-screen w-80 max-w-[85vw] flex-col border-l border-border bg-card text-card-foreground shadow-2xl transform transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <h2 className="text-lg font-semibold text-card-foreground">User Menu</h2>
+        <div className="flex items-center justify-between border-b border-border px-4 py-4">
+          <h2 className="text-lg font-semibold text-foreground">User Menu</h2>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setIsOpen(false)}
-            className="w-8 h-8 p-0 text-muted-foreground hover:text-foreground hover:bg-accent"
+            className="h-8 w-8 p-0 text-muted-foreground hover:bg-muted hover:text-foreground"
             aria-label="Close menu"
           >
-            <X className="w-4 h-4" />
+            <X className="h-4 w-4" />
           </Button>
         </div>
 
@@ -104,21 +102,24 @@ export function UserSidebar() {
         <Link
           href="/protected/history"
           onClick={() => setIsOpen(false)}
-          className="block p-4 border-b border-border bg-muted/50 hover:bg-amber-800/20 transition-colors cursor-pointer"
+          className="block border-b border-border bg-muted/50 p-4 transition-colors hover:bg-muted"
         >
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-amber-800/30 border border-amber-700/50 rounded-full flex items-center justify-center">
-              <User className="w-6 h-6 text-amber-200" />
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border bg-primary/15 text-primary">
+              <User className="h-6 w-6" />
             </div>
-            <div className="flex-1">
-              <div className="font-medium text-sm text-card-foreground">
-                {profile.username || 'User'}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <span className="truncate text-sm font-semibold text-foreground">
+                  {profile.username || 'User'}
+                </span>
+                <PrimaryBadgeDisplay profileId={profile.id} size="sm" />
               </div>
-              <div className="text-xs text-muted-foreground">{profile.email}</div>
-              <div className="text-xs text-amber-400 capitalize font-medium">
+              <div className="truncate text-xs text-muted-foreground">{profile.email}</div>
+              <div className="mt-0.5 text-xs font-medium capitalize text-primary">
                 {profile.role}
               </div>
-              <div className="text-xs text-amber-300 mt-1 opacity-75">
+              <div className="mt-1 text-xs font-medium text-muted-foreground">
                 View personal consumption history →
               </div>
             </div>
@@ -126,71 +127,63 @@ export function UserSidebar() {
         </Link>
 
         {/* Menu Items */}
-        <div className="p-2">
+        <div className="flex-1 overflow-y-auto p-2">
           <Link
             href="/protected"
             onClick={() => setIsOpen(false)}
-            className="flex items-center gap-3 w-full p-3 text-left hover:bg-amber-800/20 rounded-lg transition-colors"
+            className="flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors hover:bg-muted"
           >
-            <Home className="w-5 h-5 text-amber-300" />
+            <Home className="h-5 w-5 text-primary" />
             <div>
-              <div className="font-medium text-sm text-card-foreground">Home</div>
-              <div className="text-xs text-muted-foreground">
-                Go to main dashboard
-              </div>
+              <div className="text-sm font-medium text-foreground">Home</div>
+              <div className="text-xs text-muted-foreground">Go to main dashboard</div>
             </div>
           </Link>
 
           <Link
             href="/protected/foods"
             onClick={() => setIsOpen(false)}
-            className="flex items-center gap-3 w-full p-3 text-left hover:bg-amber-800/20 rounded-lg transition-colors"
+            className="flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors hover:bg-muted"
           >
-            <Utensils className="w-5 h-5 text-amber-300" />
+            <Utensils className="h-5 w-5 text-primary" />
             <div>
-              <div className="font-medium text-sm text-card-foreground">Foods</div>
-              <div className="text-xs text-muted-foreground">
-                Browse and manage foods
-              </div>
+              <div className="text-sm font-medium text-foreground">Foods</div>
+              <div className="text-xs text-muted-foreground">Browse and manage foods</div>
             </div>
           </Link>
 
           <Link
             href="/protected/meals"
             onClick={() => setIsOpen(false)}
-            className="flex items-center gap-3 w-full p-3 text-left hover:bg-amber-800/20 rounded-lg transition-colors"
+            className="flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors hover:bg-muted"
           >
-            <ChefHat className="w-5 h-5 text-amber-300" />
+            <ChefHat className="h-5 w-5 text-primary" />
             <div>
-              <div className="font-medium text-sm text-card-foreground">My Meals</div>
-              <div className="text-xs text-muted-foreground">
-                View and manage your created meals
-              </div>
+              <div className="text-sm font-medium text-foreground">My Meals</div>
+              <div className="text-xs text-muted-foreground">View and manage your created meals</div>
             </div>
           </Link>
 
           <Link
             href="/protected/groups"
             onClick={() => setIsOpen(false)}
-            className="flex items-center gap-3 w-full p-3 text-left hover:bg-amber-800/20 rounded-lg transition-colors"
+            className="flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors hover:bg-muted"
           >
-            <Users className="w-5 h-5 text-amber-300" />
+            <Users className="h-5 w-5 text-primary" />
             <div>
-              <div className="font-medium text-sm text-card-foreground">Groups</div>
-              <div className="text-xs text-muted-foreground">
-                Manage your meal groups
-              </div>
+              <div className="text-sm font-medium text-foreground">Groups</div>
+              <div className="text-xs text-muted-foreground">Manage your meal groups</div>
             </div>
           </Link>
 
           <Link
             href="/protected/history"
             onClick={() => setIsOpen(false)}
-            className="flex items-center gap-3 w-full p-3 text-left hover:bg-amber-800/20 rounded-lg transition-colors"
+            className="flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors hover:bg-muted"
           >
-            <Activity className="w-5 h-5 text-amber-300" />
+            <Activity className="h-5 w-5 text-primary" />
             <div>
-              <div className="font-medium text-sm text-card-foreground">My Profile</div>
+              <div className="text-sm font-medium text-foreground">My Profile</div>
               <div className="text-xs text-muted-foreground">
                 View your consumption history and calorie goals
               </div>
@@ -200,26 +193,26 @@ export function UserSidebar() {
           <Link
             href="/protected/settings"
             onClick={() => setIsOpen(false)}
-            className="flex items-center gap-3 w-full p-3 text-left hover:bg-amber-800/20 rounded-lg transition-colors"
+            className="flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors hover:bg-muted"
           >
-            <Settings className="w-5 h-5 text-amber-300" />
+            <Settings className="h-5 w-5 text-primary" />
             <div>
-              <div className="font-medium text-sm text-card-foreground">Settings</div>
+              <div className="text-sm font-medium text-foreground">Settings</div>
               <div className="text-xs text-muted-foreground">
                 Update your profile and preferences
               </div>
             </div>
           </Link>
 
-          <div className="mt-2 pt-2 border-t border-border">
-            <button 
-              className="flex items-center gap-3 w-full p-3 text-left hover:bg-red-900/40 rounded-lg transition-colors text-red-400"
+          <div className="mt-2 border-t border-border pt-2">
+            <button
+              type="button"
+              className="flex w-full items-center gap-3 rounded-lg p-3 text-left text-destructive transition-colors hover:bg-destructive/10"
               onClick={() => {
                 setIsOpen(false);
                 import('@/lib/supabase/client').then(({ createClient }) => {
                   const supabase = createClient();
                   supabase.auth.signOut().then(() => {
-                    // Clear browser history and replace with login page
                     if (typeof window !== 'undefined' && window.history) {
                       window.history.replaceState(null, '', '/auth/login');
                     }
@@ -228,17 +221,32 @@ export function UserSidebar() {
                 });
               }}
             >
-              <LogOut className="w-5 h-5" />
+              <LogOut className="h-5 w-5" />
               <div>
-                <div className="font-medium text-sm">Sign Out</div>
-                <div className="text-xs text-red-300">
-                  Sign out of your account
-                </div>
+                <div className="text-sm font-medium">Sign Out</div>
+                <div className="text-xs text-destructive/80">Sign out of your account</div>
               </div>
             </button>
           </div>
         </div>
-      </div>
+      </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Trigger Button */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setIsOpen(true)}
+        className="relative h-9 w-9 rounded-full border border-border bg-primary/15 p-0 text-primary transition-colors hover:bg-primary/25"
+        aria-label="Open user menu"
+      >
+        <User className="h-4 w-4" />
+      </Button>
+
+      {mounted && createPortal(drawer, document.body)}
     </>
   );
 }

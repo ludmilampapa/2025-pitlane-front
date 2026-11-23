@@ -449,10 +449,10 @@ export function SettingsForm({ initialProfile }: SettingsFormProps) {
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Current Primary Badge Display */}
-          <div className="flex items-center justify-between p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800/30">
+          <div className="flex items-center justify-between p-4 bg-muted dark:bg-muted rounded-lg border border-border dark:border-border">
             <div>
-              <h4 className="font-medium text-amber-900 dark:text-amber-100">Primary Badge</h4>
-              <p className="text-sm text-amber-700 dark:text-amber-300">
+              <h4 className="font-medium text-foreground">Primary Badge</h4>
+              <p className="text-sm text-primary dark:text-primary">
                 This badge appears alongside your name in your profile
               </p>
             </div>
@@ -465,7 +465,7 @@ export function SettingsForm({ initialProfile }: SettingsFormProps) {
                 variant="outline"
                 size="sm"
                 onClick={() => setBadgeModalOpen(true)}
-                className="border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-600 dark:text-amber-200 dark:hover:bg-amber-950/30"
+                className="border-border text-primary hover:bg-accent dark:border-border dark:text-foreground dark:hover:bg-accent"
               >
                 Customize
               </Button>

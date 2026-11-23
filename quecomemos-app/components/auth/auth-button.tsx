@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { UserSidebar } from "@/components/profile";
+import { PrimaryBadgeDisplay } from "@/components/profile/PrimaryBadgeDisplay";
 import { ThemeSwitcher } from "@/components/common";
 import { useUserProfile } from "@/lib/hooks/useUserProfile";
 import { useEffect, useState } from "react";
@@ -46,9 +47,14 @@ export function AuthButton() {
   return isAuthenticated ? (
     <div className="flex items-center gap-2">
       {loading ? (
-        <div className="text-gray-500">Loading...</div>
+        <div className="text-muted-foreground">Loading...</div>
       ) : (
-        <span className="text-sm inline-block">Hey, {profile?.username || profile?.email || 'User'}!</span>
+        <div className="hidden items-center gap-1.5 lg:flex">
+          {profile?.id && <PrimaryBadgeDisplay profileId={profile.id} size="sm" />}
+          <span className="text-sm font-medium text-foreground">
+            Hey, {profile?.username || profile?.email || 'User'}!
+          </span>
+        </div>
       )}
       <ThemeSwitcher />
       <UserSidebar />

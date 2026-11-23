@@ -61,12 +61,12 @@ export function useChallengeStreak(
         const body = await response.json() as { error?: string };
         throw new Error(body.error || 'Failed to mark challenge');
       }
-      toast.success('¡Racha completada! 🔥', { description: 'Tu progreso se guardó correctamente.' });
+      toast.success('Streak completed! 🔥', { description: 'Your progress has been saved.' });
       await refresh();
     } catch (error) {
       setProgress(previous);
-      toast.error('No pudimos guardar el check-in', {
-        description: error instanceof Error ? error.message : 'Intentá nuevamente.',
+      toast.error('Could not save check-in', {
+        description: error instanceof Error ? error.message : 'Please try again.',
       });
     }
   }, [challenge, profileId, progress, refresh]);

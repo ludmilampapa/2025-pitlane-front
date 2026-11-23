@@ -206,27 +206,27 @@ export default function CommunityMealsSearchClient() {
         <div className="space-y-6">
           {/* Header Skeleton */}
           <div className="flex items-center gap-4">
-            <div className="w-8 h-8 bg-amber-700/30 rounded animate-pulse"></div>
-            <div className="w-64 h-8 bg-amber-700/30 rounded animate-pulse"></div>
+            <div className="w-8 h-8 bg-muted rounded animate-pulse"></div>
+            <div className="w-64 h-8 bg-muted rounded animate-pulse"></div>
           </div>
           
           {/* Search Bar Skeleton */}
-          <div className="bg-amber-900/20 border border-amber-700/50 rounded-lg p-4">
+          <div className="bg-muted border border-border rounded-lg p-4">
             <div className="flex flex-col lg:flex-row gap-4">
               <div className="flex-1">
-                <div className="w-full h-10 bg-amber-800/30 rounded-lg animate-pulse"></div>
+                <div className="w-full h-10 bg-muted rounded-lg animate-pulse"></div>
               </div>
-              <div className="w-32 h-10 bg-amber-700/30 rounded-lg animate-pulse"></div>
+              <div className="w-32 h-10 bg-muted rounded-lg animate-pulse"></div>
             </div>
           </div>
           
           {/* Results Count Skeleton */}
-          <div className="w-48 h-5 bg-amber-700/30 rounded animate-pulse"></div>
+          <div className="w-48 h-5 bg-muted rounded animate-pulse"></div>
           
           {/* Results Grid Skeleton */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {[...Array(12)].map((_, i) => (
-              <div key={i} className="h-48 bg-amber-800/30 border border-amber-700/50 rounded-lg animate-pulse"></div>
+              <div key={i} className="h-48 bg-muted border border-border rounded-lg animate-pulse"></div>
             ))}
           </div>
         </div>
@@ -243,26 +243,26 @@ export default function CommunityMealsSearchClient() {
             size="sm"
             onClick={() => router.back()}
             aria-label="Back"
-            className="w-10 h-10 p-0 flex items-center justify-center text-amber-200 hover:text-amber-100 hover:bg-amber-800/30"
+            className="w-10 h-10 p-0 flex items-center justify-center text-foreground hover:text-foreground hover:bg-accent"
         >
             <ArrowLeft className="w-4 h-4" />
         </Button>
-        <h1 className="text-2xl font-bold text-amber-200">Search Community Meals</h1>
+        <h1 className="text-2xl font-bold text-foreground">Search Community Meals</h1>
       </div>
 
       {/* Search and Filter Bar */}
-      <Card className="mb-6 bg-amber-900/20 border-amber-700/50">
+      <Card className="mb-6 bg-muted border-border">
         <CardContent className="p-4">
           <div className="flex flex-col lg:flex-row gap-4">
             {/* Search Input */}
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-amber-300/70" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 type="text"
                 placeholder="Search meals, foods, or creators..."
                 value={filters.searchTerm}
                 onChange={(e) => setFilters(prev => ({ ...prev, searchTerm: e.target.value }))}
-                className="w-full pl-10 pr-4 py-2 bg-amber-800/30 border border-amber-700/50 rounded-lg text-amber-100 placeholder-amber-300/70 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 bg-muted border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
               />
             </div>
 
@@ -270,12 +270,12 @@ export default function CommunityMealsSearchClient() {
             <Button
               variant="outline"
               onClick={() => setShowFilters(!showFilters)}
-              className="border-amber-700/50 text-amber-200 hover:bg-amber-800/30"
+              className="border-border text-foreground hover:bg-accent"
             >
               <SlidersHorizontal className="w-4 h-4 mr-2" />
               Filters
               {Object.values(filters).some(v => v && v !== 'newest') && (
-                <span className="ml-2 w-2 h-2 bg-amber-500 rounded-full"></span>
+                <span className="ml-2 w-2 h-2 bg-primary rounded-full"></span>
               )}
             </Button>
 
@@ -284,7 +284,7 @@ export default function CommunityMealsSearchClient() {
               <Button
                 variant="ghost"
                 onClick={resetFilters}
-                className="text-amber-300 hover:text-amber-100 hover:bg-amber-800/30"
+                className="text-primary hover:text-foreground hover:bg-accent"
               >
                 <X className="w-4 h-4 mr-2" />
                 Reset
@@ -294,11 +294,11 @@ export default function CommunityMealsSearchClient() {
 
           {/* Expanded Filters */}
           {showFilters && (
-            <div className="mt-4 pt-4 border-t border-amber-700/30">
+            <div className="mt-4 pt-4 border-t border-border">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {/* Creator Filter */}
                 <div>
-                  <label className="block text-sm font-medium text-amber-200 mb-1">
+                  <label className="block text-sm font-medium text-foreground mb-1">
                     Created By
                   </label>
                   <input
@@ -306,7 +306,7 @@ export default function CommunityMealsSearchClient() {
                     placeholder="Username..."
                     value={filters.createdBy}
                     onChange={(e) => setFilters(prev => ({ ...prev, createdBy: e.target.value }))}
-                    className="w-full px-3 py-2 bg-amber-800/30 border border-amber-700/50 rounded text-amber-100 placeholder-amber-300/70 focus:outline-none focus:ring-1 focus:ring-amber-600"
+                    className="w-full px-3 py-2 bg-muted border border-border rounded text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                   />
                 </div>
 
@@ -324,13 +324,13 @@ export default function CommunityMealsSearchClient() {
 
                 {/* Sort By */}
                 <div>
-                  <label className="block text-sm font-medium text-amber-200 mb-1">
+                  <label className="block text-sm font-medium text-foreground mb-1">
                     Sort By
                   </label>
                   <select
                     value={filters.sortBy}
                     onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value as SearchFilters['sortBy'] }))}
-                    className="w-full px-3 py-2 bg-amber-800/30 border border-amber-700/50 rounded text-amber-100 focus:outline-none focus:ring-1 focus:ring-amber-600"
+                    className="w-full px-3 py-2 bg-muted border border-border rounded text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                   >
                     <option value="newest">Newest First</option>
                     <option value="oldest">Oldest First</option>
@@ -373,7 +373,7 @@ export default function CommunityMealsSearchClient() {
 
       {/* Results Count */}
       <div className="flex items-center justify-between mb-6">
-        <p className="text-amber-300/70">
+        <p className="text-muted-foreground">
           Found {filteredMeals.length} meal{filteredMeals.length !== 1 ? 's' : ''}
           {filteredMeals.length > mealsPerPage && (
             <span> • Page {currentPage} of {totalPages}</span>
@@ -396,16 +396,16 @@ export default function CommunityMealsSearchClient() {
           </Button>
         </div>
       ) : filteredMeals.length === 0 ? (
-        <div className="text-center py-12 bg-amber-900/20 rounded-lg border-2 border-dashed border-amber-700/50">
-          <ChefHat className="mx-auto h-12 w-12 text-amber-600 mb-4" />
-          <h3 className="text-lg font-medium text-amber-200 mb-2">No meals found</h3>
-          <p className="text-gray-400 mb-4">
+        <div className="text-center py-12 bg-muted rounded-lg border-2 border-dashed border-border">
+          <ChefHat className="mx-auto h-12 w-12 text-primary mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-2">No meals found</h3>
+          <p className="text-muted-foreground mb-4">
             Try adjusting your search terms or filters
           </p>
           <Button
             variant="outline"
             onClick={resetFilters}
-            className="border-amber-700/50 text-amber-200 hover:bg-amber-800/30"
+            className="border-border text-foreground hover:bg-accent"
           >
             Clear all filters
           </Button>
@@ -431,7 +431,7 @@ export default function CommunityMealsSearchClient() {
                 variant="outline"
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
-                className="border-amber-700/50 text-amber-200 hover:bg-amber-800/30 disabled:opacity-50"
+                className="border-border text-foreground hover:bg-accent disabled:opacity-50"
               >
                 Previous
               </Button>
@@ -447,8 +447,8 @@ export default function CommunityMealsSearchClient() {
                     variant={currentPage === pageNum ? "default" : "outline"}
                     onClick={() => setCurrentPage(pageNum)}
                     className={currentPage === pageNum 
-                      ? "bg-amber-700 hover:bg-amber-600" 
-                      : "border-amber-700/50 text-amber-200 hover:bg-amber-800/30"
+                      ? "bg-primary hover:bg-primary/90" 
+                      : "border-border text-foreground hover:bg-accent"
                     }
                   >
                     {pageNum}
@@ -460,7 +460,7 @@ export default function CommunityMealsSearchClient() {
                 variant="outline"
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages}
-                className="border-amber-700/50 text-amber-200 hover:bg-amber-800/30 disabled:opacity-50"
+                className="border-border text-foreground hover:bg-accent disabled:opacity-50"
               >
                 Next
               </Button>

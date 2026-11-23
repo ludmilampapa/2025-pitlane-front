@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react';
 
 interface KorvenProduct {
   name: string;
+  type?: 'meal' | 'food';
+  category?: string;
+  area?: string;
+  thumb?: string;
 }
 
 // Function to check if a name contains connectors (for meal names)
@@ -27,6 +31,7 @@ const fetchKorvenProducts = async (): Promise<KorvenProduct[]> => {
   isLoading = true;
   loadPromise = fetch('/api/korven-products', {
     method: 'GET',
+    cache: 'no-store',
     headers: {
       'Accept': 'application/json',
     },
@@ -38,9 +43,12 @@ const fetchKorvenProducts = async (): Promise<KorvenProduct[]> => {
       return response.json();
     })
     .then((products: KorvenProduct[]) => {
-      cachedProducts = products;
+      if (Array.isArray(products) && products.length > 0) {
+        cachedProducts = products;
+      }
       isLoading = false;
-      return products;
+      loadPromise = null;
+      return Array.isArray(products) ? products : [];
     })
     .catch(error => {
       console.error('Error fetching Korven products:', error);
@@ -67,14 +75,18 @@ export const useKorvenCheck = () => {
   const isKorvenInspiredFood = (name: string): boolean => {
     if (!name || products.length === 0) return false;
     return products.some(
-      product => product.name.toLowerCase() === name.toLowerCase() && !hasConnectors(product.name)
+      product =>
+        product.name.toLowerCase() === name.toLowerCase() &&
+        (product.type ? product.type === 'food' : !hasConnectors(product.name))
     );
   };
 
   const isKorvenInspiredMeal = (name: string): boolean => {
     if (!name || products.length === 0) return false;
     return products.some(
-      product => product.name.toLowerCase() === name.toLowerCase() && hasConnectors(product.name)
+      product =>
+        product.name.toLowerCase() === name.toLowerCase() &&
+        (product.type ? product.type === 'meal' : hasConnectors(product.name))
     );
   };
 

@@ -145,7 +145,7 @@ export function AddUserDataForm({
                         <CardDescription>Please log in to update your preferences</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-gray-600">You need to be logged in to access this feature.</p>
+                        <p className="text-muted-foreground">You need to be logged in to access this feature.</p>
                     </CardContent>
                 </Card>
             </div>

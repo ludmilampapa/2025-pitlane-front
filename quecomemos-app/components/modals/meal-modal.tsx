@@ -90,17 +90,17 @@ export function MealModal({ meal, isOpen, onClose, onEdit }: MealModalProps) {
       />
       
       {/* Modal */}
-      <div className="relative bg-neutral-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-amber-800/30">
+      <div className="relative bg-card rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-border">
         {/* Header */}
-        <div className="sticky top-0 bg-neutral-900 rounded-t-2xl border-b border-amber-800/30 p-6 pb-4">
+        <div className="sticky top-0 bg-card rounded-t-2xl border-b border-border p-6 pb-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-amber-100">Meal Details</h2>
+            <h2 className="text-xl font-bold text-foreground">Meal Details</h2>
             <div className="flex items-center gap-2">
               {/* Edit button for owner */}
               {isOwner && onEdit && (
                 <button
                   onClick={() => onEdit(meal)}
-                  className="p-2 hover:bg-amber-800/20 rounded-full transition-colors text-amber-300 hover:text-amber-200"
+                  className="p-2 hover:bg-accent rounded-full transition-colors text-primary hover:text-foreground"
                   aria-label="Edit meal"
                 >
                   <Edit className="w-5 h-5" />
@@ -108,10 +108,10 @@ export function MealModal({ meal, isOpen, onClose, onEdit }: MealModalProps) {
               )}
               <button
                 onClick={onClose}
-                className="p-2 hover:bg-amber-800/20 rounded-full transition-colors"
+                className="p-2 hover:bg-accent rounded-full transition-colors"
                 aria-label="Close modal"
               >
-                <X className="w-5 h-5 text-amber-200" />
+                <X className="w-5 h-5 text-foreground" />
               </button>
             </div>
           </div>
@@ -123,25 +123,25 @@ export function MealModal({ meal, isOpen, onClose, onEdit }: MealModalProps) {
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2 flex-1">
-                <h3 className="text-2xl font-bold text-amber-100">{meal.name}</h3>
+                <h3 className="text-2xl font-bold text-foreground">{meal.name}</h3>
                 {isKorvenInspiredMeal(meal.name) && (
-                  <span className="text-xs bg-amber-600/50 text-amber-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <span className="text-xs bg-muted text-foreground px-2 py-0.5 rounded-full flex items-center gap-1">
                     <Hexagon className="w-3 h-3 fill-amber-400/30" />
                     Korven
                   </span>
                 )}
               </div>
-              <div className="text-sm text-amber-300 bg-amber-800/30 px-3 py-1 rounded-full">
+              <div className="text-sm text-primary bg-muted px-3 py-1 rounded-full">
                 {totalCalories} kCal total
               </div>
             </div>
             
             {meal.description && (
-              <p className="text-gray-300 mb-4">{meal.description}</p>
+              <p className="text-muted-foreground mb-4">{meal.description}</p>
             )}
 
             {/* Meal Info */}
-            <div className="flex items-center gap-6 text-sm text-gray-400 mb-4">
+            <div className="flex items-center gap-6 text-sm text-muted-foreground mb-4">
               {meal.preparationTime && (
                 <div className="flex items-center gap-1">
                   <Clock className="w-4 h-4" />
@@ -163,10 +163,10 @@ export function MealModal({ meal, isOpen, onClose, onEdit }: MealModalProps) {
             </div>
 
             {/* Creator Info */}
-            <div className="flex items-center gap-2 text-sm text-gray-400">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <User className="w-4 h-4" />
               <span>Created by: {meal.profile.username || 'Anonymous'}</span>
-              <span className="capitalize bg-amber-800/20 px-2 py-1 rounded text-xs">
+              <span className="capitalize bg-muted px-2 py-1 rounded text-xs">
                 {meal.profile.role}
               </span>
             </div>
@@ -174,8 +174,8 @@ export function MealModal({ meal, isOpen, onClose, onEdit }: MealModalProps) {
 
           {/* Foods Section */}
           <div className="mb-6">
-            <h4 className="text-lg font-semibold text-amber-100 mb-4 flex items-center">
-              <span className="w-2 h-2 bg-amber-500 rounded-full mr-2"></span>
+            <h4 className="text-lg font-semibold text-foreground mb-4 flex items-center">
+              <span className="w-2 h-2 bg-primary rounded-full mr-2"></span>
               Foods ({meal.mealFoods.length})
             </h4>
             
@@ -184,9 +184,9 @@ export function MealModal({ meal, isOpen, onClose, onEdit }: MealModalProps) {
                 {meal.mealFoods.map((mealFood, index) => (
                   <div 
                     key={index} 
-                    className="bg-amber-900/30 border border-amber-700/50 rounded-lg p-4 flex items-center gap-4"
+                    className="bg-muted border border-border rounded-lg p-4 flex items-center gap-4"
                   >
-                    <div className="w-12 h-12 flex items-center justify-center bg-amber-800/30 rounded-full border border-amber-700/50 flex-shrink-0">
+                    <div className="w-12 h-12 flex items-center justify-center bg-muted rounded-full border border-border flex-shrink-0">
                       {mealFood.food.svgLink ? (
                         <Image 
                           src={mealFood.food.svgLink} 
@@ -196,26 +196,26 @@ export function MealModal({ meal, isOpen, onClose, onEdit }: MealModalProps) {
                           className="w-6 h-6 object-contain" 
                         />
                       ) : (
-                        <Utensils className="w-6 h-6 text-amber-400" />
+                        <Utensils className="w-6 h-6 text-primary" />
                       )}
                     </div>
                     
                     <div className="flex-grow">
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-2">
-                          <h5 className="font-semibold text-amber-200">{mealFood.food.name}</h5>
+                          <h5 className="font-semibold text-foreground">{mealFood.food.name}</h5>
                           {isKorvenInspiredFood(mealFood.food.name) && (
-                            <span className="text-xs bg-amber-600/50 text-amber-100 px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                            <span className="text-xs bg-muted text-foreground px-1.5 py-0.5 rounded-full flex items-center gap-1">
                               <Hexagon className="w-2.5 h-2.5 fill-amber-400/30" />
                               Korven
                             </span>
                           )}
                         </div>
-                        <div className="text-sm text-amber-300">
+                        <div className="text-sm text-primary">
                           {mealFood.food.kCal * mealFood.quantity} kCal
                         </div>
                       </div>
-                      <div className="text-sm text-gray-400">
+                      <div className="text-sm text-muted-foreground">
                         Quantity: {mealFood.quantity} • {mealFood.food.kCal} kCal per unit
                       </div>
                       
@@ -226,7 +226,7 @@ export function MealModal({ meal, isOpen, onClose, onEdit }: MealModalProps) {
                             {(expandedPrefs[index] ? mealFood.food.preferences : mealFood.food.preferences.slice(0, 2)).map((pref, prefIndex) => (
                               <span
                                 key={prefIndex}
-                                className="bg-amber-800/40 text-amber-200 text-xs px-2 py-1 rounded"
+                                className="bg-muted text-foreground text-xs px-2 py-1 rounded"
                               >
                                 {typeof pref === 'string' ? pref : 
                                  typeof pref === 'number' ? `ID: ${pref}` : 
@@ -236,7 +236,7 @@ export function MealModal({ meal, isOpen, onClose, onEdit }: MealModalProps) {
                             {mealFood.food.preferences.length > 2 && (
                               <button
                                 onClick={() => setExpandedPrefs(prev => ({ ...prev, [index]: !prev[index] }))}
-                                className="bg-amber-800/40 text-amber-200 text-xs px-2 py-1 rounded hover:underline"
+                                className="bg-muted text-foreground text-xs px-2 py-1 rounded hover:underline"
                               >
                                 {expandedPrefs[index] ? 'Show less' : `+${mealFood.food.preferences.length - 2} more`}
                               </button>
@@ -271,17 +271,17 @@ export function MealModal({ meal, isOpen, onClose, onEdit }: MealModalProps) {
                 ))}
               </div>
             ) : (
-              <p className="text-gray-400 text-sm italic">
+              <p className="text-muted-foreground text-sm italic">
                 No foods found for this meal
               </p>
             )}
           </div>
 
           {/* Close Button */}
-          <div className="pt-4 border-t border-amber-800/30">
+          <div className="pt-4 border-t border-border">
             <button
               onClick={onClose}
-              className="w-full bg-amber-700 hover:bg-amber-600 text-white font-medium py-3 rounded-lg transition-colors shadow-lg"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-3 rounded-lg transition-colors shadow-lg"
             >
               Close
             </button>

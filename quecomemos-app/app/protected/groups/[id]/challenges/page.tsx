@@ -113,10 +113,10 @@ export default function GroupChallengesPage() {
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="sm" onClick={() => router.back()}><ArrowLeft className="w-4 h-4" /></Button>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold flex items-center gap-2"><Trophy className="w-7 h-7 text-[#C85A32]" /> Group Challenges</h1>
+          <h1 className="text-3xl font-bold flex items-center gap-2"><Trophy className="w-7 h-7 text-secondary" /> Group Challenges</h1>
           <p className="text-muted-foreground">Shared goals and daily progress for {group?.name}</p>
         </div>
-        {isAdmin && <Button onClick={() => setShowForm((value) => !value)} className="bg-[#4A7C59] text-white hover:bg-[#3F6D4D]">Create challenge</Button>}
+        {isAdmin && <Button onClick={() => setShowForm((value) => !value)} className="bg-primary text-primary-foreground hover:bg-primary/90">Create challenge</Button>}
       </div>
 
       {error && <Card><CardContent className="p-4 text-destructive">{error}</CardContent></Card>}
@@ -131,7 +131,7 @@ export default function GroupChallengesPage() {
               <Textarea className="md:col-span-2" placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
               <Input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} required />
               <Input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} required />
-              <div className="md:col-span-2 flex justify-end"><Button type="submit" className="bg-[#4A7C59] text-white hover:bg-[#3F6D4D]">Create</Button></div>
+              <div className="md:col-span-2 flex justify-end"><Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90">Create</Button></div>
             </form>
           </CardContent>
         </Card>
@@ -145,12 +145,12 @@ export default function GroupChallengesPage() {
         return (
           <Card key={challenge.ChallengeID}>
             <CardHeader>
-              <CardTitle className="flex items-center justify-between"><span>{challenge.name}</span><span className="text-sm text-amber-600">{userProgress?.percentage || 0}%</span></CardTitle>
+              <CardTitle className="flex items-center justify-between"><span>{challenge.name}</span><span className="text-sm text-primary">{userProgress?.percentage || 0}%</span></CardTitle>
             </CardHeader>
             <CardContent className="space-y-5">
               <p className="text-sm text-muted-foreground">{challenge.description || challenge.ruleText}</p>
               <div className="flex items-center gap-2 text-sm"><CalendarDays className="w-4 h-4" /> {new Date(challenge.startDate).toLocaleDateString()} - {new Date(challenge.endDate).toLocaleDateString()}</div>
-              <div className="h-3 bg-[#EFE7DB] rounded overflow-hidden"><div className="h-full bg-[#4A7C59]" style={{ width: `${userProgress?.percentage || 0}%` }} /></div>
+              <div className="h-3 bg-[#EFE7DB] rounded overflow-hidden"><div className="h-full bg-primary" style={{ width: `${userProgress?.percentage || 0}%` }} /></div>
               <p className="text-sm">You completed <strong>{userProgress?.completedDays || 0}</strong> of <strong>{userProgress?.totalDays || 0}</strong> days.</p>
               <Button onClick={() => toggleToday(challenge)} className="bg-[#C85A32] text-white hover:bg-[#B84F2B]"><Check className="w-4 h-4 mr-2" />Mark today</Button>
 
@@ -160,7 +160,7 @@ export default function GroupChallengesPage() {
                   {rows.map((row, index) => (
                     <div key={row.profileId} className="flex items-center justify-between border-b pb-2">
                       <span>{index + 1}. {row.username || 'User'}</span>
-                      <span className="text-sm text-amber-600">{row.completedDays}/{row.totalDays} ({row.percentage}%)</span>
+                      <span className="text-sm text-primary">{row.completedDays}/{row.totalDays} ({row.percentage}%)</span>
                     </div>
                   ))}
                 </div>

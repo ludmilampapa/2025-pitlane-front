@@ -41,9 +41,8 @@ export default function RootLayout({
                 <CalorieProgressProvider>
                   <ThemeProvider
                     attribute="class"
-                    defaultTheme="light"
-                    forcedTheme="light"
-                    enableSystem={false}
+                    defaultTheme="system"
+                    enableSystem
                     disableTransitionOnChange
                   >
                     {children}

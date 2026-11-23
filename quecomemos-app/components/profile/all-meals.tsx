@@ -80,13 +80,13 @@ export function AllMeals() {
     if (loadingMeals) {
         return (
             <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-amber-200 mb-3">Community Meals</h2>
+                <h2 className="text-2xl font-bold text-foreground mb-3">Community Meals</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {[...Array(6)].map((_, i) => (
-                        <div key={i} className="bg-amber-800/30 border border-amber-700/50 rounded-lg p-4">
-                            <div className="w-3/4 h-4 bg-gray-300 rounded animate-pulse mb-2"></div>
-                            <div className="w-full h-3 bg-gray-200 rounded animate-pulse mb-2"></div>
-                            <div className="w-1/2 h-3 bg-gray-200 rounded animate-pulse"></div>
+                        <div key={i} className="bg-card border border-border rounded-xl p-4 shadow-sm">
+                            <div className="w-3/4 h-4 bg-muted rounded animate-pulse mb-2"></div>
+                            <div className="w-full h-3 bg-muted rounded animate-pulse mb-2"></div>
+                            <div className="w-1/2 h-3 bg-muted rounded animate-pulse"></div>
                         </div>
                     ))}
                 </div>
@@ -97,8 +97,8 @@ export function AllMeals() {
     if (error) {
         return (
             <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-amber-200">Community Meals</h2>
-                <div className="text-red-400 bg-red-900/20 p-4 rounded-lg">
+                <h2 className="text-2xl font-bold text-foreground">Community Meals</h2>
+                <div className="text-destructive bg-card border border-destructive/40 p-4 rounded-xl">
                     {error}
                 </div>
             </div>
@@ -110,36 +110,41 @@ export function AllMeals() {
             {/* Recommended Meals Section */}
             {userPreferences && userPreferences.hasPreferences && (
                 <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <h2 className="text-xl font-semibold text-amber-200 mb-3">Recommended for You</h2>
-                        <span className="text-sm text-gray-400">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                        <h2 className="text-2xl font-bold text-foreground">Recommended for You</h2>
+                        <span className="text-sm text-muted-foreground">
                             Based on your preferences
                         </span>
                     </div>
 
-
-
-
-
                     {loadingRecommended ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {[...Array(3)].map((_, i) => (
-                                <div key={i} className="h-32 bg-amber-700/30 rounded-lg animate-pulse"></div>
+                                <div key={i} className="h-32 rounded-xl border border-border bg-card animate-pulse"></div>
                             ))}
                         </div>
                     ) : recommendedError ? (
-                        <div className="text-center py-8 bg-red-900/20 rounded-lg border border-red-700/50">
-                            <div className="text-red-400">
-                                <p className="text-sm">{recommendedError}</p>
-                            </div>
+                        <div className="rounded-xl border border-destructive/40 bg-card py-8 text-center shadow-sm">
+                            <p className="text-sm text-destructive">{recommendedError}</p>
                         </div>
                     ) : recommendedMeals.length === 0 ? (
-                        <div className="text-center py-8 bg-amber-900/20 rounded-lg border border-amber-700/50">
-                            <ChefHat className="mx-auto h-8 w-8 text-amber-600 mb-2" />
-                            <p className="text-amber-200 text-sm">No recommended meals found</p>
-                            <p className="text-gray-400 text-xs mt-1">
-                                Try creating meals with your preferred foods!
+                        <div className="rounded-xl border border-border bg-card px-6 py-10 text-center shadow-sm">
+                            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-primary/15">
+                                <ChefHat className="h-7 w-7 text-primary" />
+                            </div>
+                            <p className="text-base font-semibold text-foreground">No recommended meals yet</p>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                Explore meals or update your preferences to get suggestions.
                             </p>
+                            <div className="mt-5 flex flex-wrap justify-center gap-2">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => router.push('/protected/meals')}
+                                    className="border-primary bg-card text-primary hover:bg-primary/15 hover:text-foreground"
+                                >
+                                    Explore meals
+                                </Button>
+                            </div>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -160,13 +165,13 @@ export function AllMeals() {
             {/* Community Meals Section */}
             <div className="space-y-4 mt-6">
                 <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-amber-200 mb-3">Community Meals</h2>
-                    <span className="text-sm text-gray-400">
-                        {meals.length} meal{meals.length !== 1 ? 's' : ''}
+                    <h2 className="text-2xl font-bold text-foreground mb-3">Community Meals</h2>
+                    <span className="text-sm text-muted-foreground">
+                        {meals.length} {meals.length === 1 ? 'meal' : 'meals'}
                     </span>
                 </div>
                                         {/* Search Interface */}
-                        <div className="mt-6 p-4 bg-amber-900/20 rounded-lg border border-amber-700/50">
+                        <div className="mt-6 p-4 bg-card rounded-xl border border-border shadow-sm">
                             <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
                                 <div className="flex-1 w-full sm:max-w-md">
                                     <div className="relative">
@@ -185,10 +190,10 @@ export function AllMeals() {
                                                     }
                                                 }
                                             }}
-                                            className="w-full px-4 py-2 pr-10 bg-amber-800/30 border border-amber-700/50 rounded-lg text-amber-100 placeholder-amber-300/70 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent"
+                                            className="w-full px-4 py-2 pr-10 bg-background border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                                         />
                                         <svg
-                                            className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-amber-300/70"
+                                            className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground"
                                             fill="none"
                                             stroke="currentColor"
                                             viewBox="0 0 24 24"
@@ -206,30 +211,30 @@ export function AllMeals() {
                                             router.push('/protected/community-meals/search');
                                         }
                                     }}
-                                    className="bg-amber-700 hover:bg-amber-600 text-white font-medium py-2 px-6 rounded-lg transition-colors shadow-lg whitespace-nowrap"
+                                    className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-2 px-6 rounded-lg transition-colors shadow-lg whitespace-nowrap"
                                 >
                                     <div className="flex items-center gap-2">
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                         </svg>
-                                        Search All Meals
+                                        Search Meals
                                     </div>
                                 </Button>
                             </div>
                         </div>
                 
                 <div className="flex items-center justify-between">
-                    <h3 className="text-x3 font-semibold text-amber-200 mb-3">Recent Community Meals</h3>
-                    <span className="text-sm text-gray-400">
-                        {meals.length} meal{meals.length !== 1 ? 's' : ''}
+                    <h3 className="text-lg font-semibold text-foreground mb-3">Recent Community Meals</h3>
+                    <span className="text-sm text-muted-foreground">
+                        {meals.length} {meals.length === 1 ? 'meal' : 'meals'}
                     </span>
                 </div>
 
                 {meals.length === 0 ? (
-                    <div className="text-center py-12 bg-amber-900/20 rounded-lg border-2 border-dashed border-amber-700/50">
-                        <ChefHat className="mx-auto h-12 w-12 text-amber-600 mb-4" />
-                        <h3 className="text-lg font-medium text-amber-200 mb-2">No meals shared by other users</h3>
-                        <p className="text-gray-400 mb-4">
+                    <div className="text-center py-12 bg-card rounded-xl border-2 border-dashed border-border">
+                        <ChefHat className="mx-auto h-12 w-12 text-secondary mb-4" />
+                        <h3 className="text-lg font-semibold text-foreground mb-2">No meals shared by other users</h3>
+                        <p className="text-muted-foreground mb-4">
                             Check back later to discover meals from the community!
                         </p>
                     </div>
@@ -274,15 +279,15 @@ export function AllMeals() {
                     />
                     {/* Content */}
                     <div
-                        className="relative z-[86] w-full max-w-2xl bg-neutral-900 border border-amber-800/30 rounded-2xl shadow-2xl overflow-hidden"
+                        className="relative z-[86] w-full max-w-2xl bg-card border border-border rounded-2xl shadow-2xl overflow-hidden"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Header */}
-                        <div className="flex items-center justify-between px-4 py-3 border-b border-amber-800/40">
-                            <h3 className="text-amber-100 font-semibold">Edit Meal</h3>
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                            <h3 className="text-foreground font-semibold">Edit Meal</h3>
                             <button
                                 onClick={closeEditModal}
-                                className="px-2 py-1 text-amber-200 hover:text-amber-50"
+                                className="px-2 py-1 text-muted-foreground hover:text-foreground"
                                 aria-label="Close modal"
                             >
                                 ✖

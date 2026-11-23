@@ -35,7 +35,7 @@ export function PasswordRequirements({ password, className }: PasswordRequiremen
 
   return (
     <div className={cn("space-y-2", className)}>
-      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+      <p className="text-sm font-medium text-gray-700 dark:text-muted-foreground">
         Password requirements:
       </p>
       <ul className="space-y-1">

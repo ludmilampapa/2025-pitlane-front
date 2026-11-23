@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,19 +19,40 @@ interface BadgeSelectionModalProps {
 
 const getDefaultBadgeIcon = (badgeType: string): string => {
   const typeIconMap: Record<string, string> = {
-    'group_creation': '👥',
-    'voting_participation': '🗳️', 
-    'voting_winner': '🏆',
-    'meal_creation': '👨‍🍳'
+    group_creation: '👥',
+    voting_participation: '🗳️',
+    voting_winner: '🏆',
+    meal_creation: '👨‍🍳',
+    consumption_tracking: '📊',
+    social_engagement: '🤝',
   };
   return typeIconMap[badgeType] || '🏅';
 };
 
-export function BadgeSelectionModal({ profileId, isOpen, onClose, onSuccess }: BadgeSelectionModalProps) {
+export function BadgeSelectionModal({
+  profileId,
+  isOpen,
+  onClose,
+  onSuccess,
+}: BadgeSelectionModalProps) {
+  const [mounted, setMounted] = useState(false);
   const { badges, loading: badgesLoading } = useUserBadges(profileId);
   const { primaryBadge, setPrimaryBadge, loading: primaryLoading } = usePrimaryBadge(profileId);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, onClose]);
+
+  if (!isOpen || !mounted) return null;
 
   const handleSelectBadge = async (badgeId: number | null) => {
     try {
@@ -44,148 +66,151 @@ export function BadgeSelectionModal({ profileId, isOpen, onClose, onSuccess }: B
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <Card className="w-full max-w-2xl bg-neutral-900 border-amber-700/50 max-h-[80vh] overflow-y-auto">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-amber-200">
-            <Crown className="w-5 h-5" />
-            Select Primary Badge
-          </CardTitle>
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[110] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Customize Profile Badge"
+    >
+      <Card
+        className="max-h-[85vh] w-full max-w-xl overflow-y-auto border-border bg-card text-card-foreground shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <CardHeader className="flex flex-row items-center justify-between border-b border-border pb-4">
+          <div className="flex items-center gap-2.5">
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15 text-primary">
+              <Crown className="h-5 w-5" />
+            </span>
+            <div>
+              <CardTitle className="text-lg font-bold text-foreground">
+                Customize Profile Badge
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Choose the badge displayed next to your name across QueComemos.
+              </p>
+            </div>
+          </div>
           <Button
             variant="ghost"
             size="sm"
             onClick={onClose}
-            className="text-neutral-400 hover:text-amber-200"
+            className="h-8 w-8 p-0 text-muted-foreground hover:bg-muted hover:text-foreground"
+            aria-label="Close modal"
           >
-            <X className="w-4 h-4" />
+            <X className="h-4 w-4" />
           </Button>
         </CardHeader>
 
-        <CardContent className="space-y-4">
-          <p className="text-sm text-gray-300">
-            Choose which badge will appear next to your name on your profile. You can change it anytime.
-          </p>
-
+        <CardContent className="space-y-4 pt-5">
           {badgesLoading || primaryLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500"></div>
+            <div className="flex items-center justify-center py-10">
+              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Opción "Sin badge" */}
-              <Card className={`cursor-pointer transition-all duration-200 ${
-                !primaryBadge 
-                  ? 'bg-green-900/20 border-green-600/50' 
-                  : 'bg-neutral-800/50 border-neutral-700 hover:border-amber-600/50 hover:bg-neutral-700/50'
-              }`}>
-                <CardContent className="p-4">
-                  <div 
-                    className="flex items-center justify-between"
-                    onClick={() => handleSelectBadge(null)}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-neutral-700 rounded-full flex items-center justify-center">
-                        <span className="text-2xl">🚫</span>
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-white">No Badge</h3>
-                        <p className="text-sm text-gray-400">Don&apos;t display any badge next to your name</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      {!primaryBadge ? (
-                        <Badge className="bg-green-600">
-                          <Check className="w-3 h-3 mr-1" />
-                          Current
-                        </Badge>
-                      ) : (
-                        <span className="text-xs text-gray-500">Click to select</span>
-                      )}
-                    </div>
+              {/* No Badge Option */}
+              <button
+                type="button"
+                onClick={() => handleSelectBadge(null)}
+                className={`flex w-full items-center justify-between rounded-xl border p-4 text-left transition-all ${
+                  !primaryBadge
+                    ? 'border-primary bg-primary/10 shadow-sm'
+                    : 'border-border bg-background hover:border-primary/50 hover:bg-muted/50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-muted text-xl">
+                    🚫
                   </div>
-                </CardContent>
-              </Card>
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground">No Badge</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Don&apos;t display any badge next to your name
+                    </p>
+                  </div>
+                </div>
 
-              {/* Lista de badges del usuario */}
-              <div className="space-y-3">
-                <h4 className="font-medium text-amber-200">Your Available Badges:</h4>
+                {!primaryBadge ? (
+                  <Badge className="bg-primary text-primary-foreground hover:bg-primary">
+                    <Check className="mr-1 h-3 w-3" />
+                    Equipped
+                  </Badge>
+                ) : (
+                  <span className="text-xs font-medium text-muted-foreground">Select</span>
+                )}
+              </button>
+
+              {/* Available User Badges */}
+              <div className="space-y-2.5">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Your Unlocked Badges ({badges.length})
+                </h4>
+
                 {badges.length === 0 ? (
-                  <Card className="bg-neutral-800/50 border-neutral-700">
-                    <CardContent className="p-6 text-center">
-                      <p className="text-gray-400">
-                        You don&apos;t have any badges yet. Create groups, upload meals, and participate in voting to earn badges!
-                      </p>
-                    </CardContent>
-                  </Card>
+                  <div className="rounded-xl border border-dashed border-border bg-background p-6 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      You don&apos;t have any badges yet. Create groups, log meals, and participate in
+                      voting to unlock badges!
+                    </p>
+                  </div>
                 ) : (
                   badges.map((badge) => {
                     const isSelected = primaryBadge?.BadgeID === badge.BadgeID;
                     const hasCustomIcon = badge.iconUrl && badge.iconUrl.trim() !== '';
 
                     return (
-                      <Card 
+                      <button
                         key={badge.BadgeID}
-                        className={`cursor-pointer transition-all duration-200 ${
-                          isSelected 
-                            ? 'bg-green-900/20 border-green-600/50' 
-                            : 'bg-neutral-800/50 border-neutral-700 hover:border-amber-600/50 hover:bg-neutral-700/50'
+                        type="button"
+                        onClick={() => handleSelectBadge(badge.BadgeID)}
+                        className={`flex w-full items-center justify-between gap-3 rounded-xl border p-4 text-left transition-all ${
+                          isSelected
+                            ? 'border-primary bg-primary/10 shadow-sm'
+                            : 'border-border bg-background hover:border-primary/50 hover:bg-muted/50'
                         }`}
                       >
-                        <CardContent className="p-4">
-                          <div 
-                            className="flex items-center justify-between"
-                            onClick={() => handleSelectBadge(badge.BadgeID)}
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="w-12 h-12 relative">
-                                {hasCustomIcon ? (
-                                  <Image
-                                    src={badge.iconUrl!}
-                                    alt={badge.name}
-                                    width={48}
-                                    height={48}
-                                    className="rounded-full border border-gray-200 bg-white p-1"
-                                    onError={(e) => {
-                                      const target = e.target as HTMLImageElement;
-                                      const parent = target.parentElement;
-                                      if (parent) {
-                                        parent.innerHTML = `<div class="flex items-center justify-center w-12 h-12 text-2xl bg-gray-100 rounded-full border border-gray-200">${getDefaultBadgeIcon(badge.badgeType)}</div>`;
-                                      }
-                                    }}
-                                  />
-                                ) : (
-                                  <div className="flex items-center justify-center w-12 h-12 text-2xl bg-gray-100 rounded-full border border-gray-200">
-                                    {getDefaultBadgeIcon(badge.badgeType)}
-                                  </div>
-                                )}
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div className="relative h-11 w-11 shrink-0">
+                            {hasCustomIcon ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={badge.iconUrl!}
+                                alt={badge.name}
+                                className="h-11 w-11 rounded-full border border-border bg-card object-contain p-1"
+                              />
+                            ) : (
+                              <div className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-muted text-xl">
+                                {getDefaultBadgeIcon(badge.badgeType)}
                               </div>
-                              
-                              <div>
-                                <h3 className="font-medium text-white">{badge.name}</h3>
-                                <p className="text-sm text-gray-400">{badge.description}</p>
-                                {badge.earnedAt && (
-                                  <p className="text-xs text-gray-500 mt-1">
-                                    Earned: {new Date(badge.earnedAt).toLocaleDateString()}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                            
-                            <div className="flex items-center gap-2">
-                              {isSelected ? (
-                                <Badge className="bg-green-600">
-                                  <Check className="w-3 h-3 mr-1" />
-                                  Current
-                                </Badge>
-                              ) : (
-                                <span className="text-xs text-gray-500">Click to select</span>
-                              )}
-                            </div>
+                            )}
                           </div>
-                        </CardContent>
-                      </Card>
+
+                          <div className="min-w-0">
+                            <h3 className="truncate text-sm font-semibold text-foreground">
+                              {badge.name}
+                            </h3>
+                            <p className="text-xs text-muted-foreground">{badge.description}</p>
+                            {badge.earnedAt && (
+                              <p className="mt-1 text-[11px] text-muted-foreground/80">
+                                Earned {new Date(badge.earnedAt).toLocaleDateString('en-US')}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="shrink-0">
+                          {isSelected ? (
+                            <Badge className="bg-primary text-primary-foreground hover:bg-primary">
+                              <Check className="mr-1 h-3 w-3" />
+                              Equipped
+                            </Badge>
+                          ) : (
+                            <span className="text-xs font-semibold text-primary">Equip</span>
+                          )}
+                        </div>
+                      </button>
                     );
                   })
                 )}
@@ -194,6 +219,7 @@ export function BadgeSelectionModal({ profileId, isOpen, onClose, onSuccess }: B
           )}
         </CardContent>
       </Card>
-    </div>
+    </div>,
+    document.body
   );
 }

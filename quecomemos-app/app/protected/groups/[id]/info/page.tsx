@@ -464,7 +464,7 @@ export default function GroupInfoPage() {
 
   function GroupInfoSkeleton() {
     return (
-      <div className="container mx-auto p-6 space-y-6 border border-amber-700/50 rounded-lg bg-gradient-to-br from-amber-800/10 to-amber-900/10">
+      <div className="container mx-auto p-6 space-y-6 border border-border rounded-lg bg-gradient-to-br from-card to-card">
         {/* Header skeleton */}
         <div className="flex items-center space-x-4">
           <div className="w-8 h-8 bg-muted rounded animate-pulse"></div>
@@ -513,7 +513,7 @@ export default function GroupInfoPage() {
                   <div className="w-16 h-6 bg-muted rounded animate-pulse"></div>
                 </div>
               ))}
-            </div>
+            </CardContent>
           </Card>
 
           {/* Charts skeleton */}
@@ -561,7 +561,7 @@ export default function GroupInfoPage() {
           </div>
 
           <div className="flex justify-center">
-            <Button onClick={() => router.replace('/protected/groups')} className="bg-amber-700 text-white">
+            <Button onClick={() => router.replace('/protected/groups')} className="bg-primary text-primary-foreground">
               Go to groups
             </Button>
           </div>
@@ -605,7 +605,7 @@ export default function GroupInfoPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6 border border-amber-700/50 rounded-lg bg-gradient-to-br from-amber-800/10 to-amber-900/10">
+    <div className="container mx-auto p-6 space-y-6 border border-border rounded-lg bg-gradient-to-br from-card to-card">
       {/* Header */}
       <div className="flex items-center space-x-4">
         <Button
@@ -716,7 +716,7 @@ export default function GroupInfoPage() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Your status</p>
-                  <Badge variant={isMember() ? 'default' : 'secondary'} className={isMember() ? 'bg-amber-700 hover:bg-amber-600' : ''}>
+                  <Badge variant={isMember() ? 'default' : 'secondary'} className={isMember() ? 'bg-primary hover:bg-primary/90' : ''}>
                     {isMember() ? 'Member' : 'Not a member'}
                   </Badge>
                 </div>
@@ -745,7 +745,7 @@ export default function GroupInfoPage() {
                     variant={showInviteSection ? 'default' : 'ghost'}
                     size="sm"
                     onClick={() => setShowInviteSection(v => !v)}
-                    className={showInviteSection ? 'bg-amber-700 text-white hover:bg-amber-600' : ''}
+                    className={showInviteSection ? 'bg-primary text-primary-foreground hover:bg-primary/90' : ''}
                   >
                     <UserPlus className="w-4 h-4 mr-2" />
                     Invite
@@ -763,7 +763,7 @@ export default function GroupInfoPage() {
                   className="flex items-center justify-between p-3 border rounded-lg"
                 >
                   <div className="flex items-center space-x-3">
-                    <div className="flex items-center justify-center w-8 h-8 bg-amber-700 text-white rounded-full text-sm font-medium">
+                    <div className="flex items-center justify-center w-8 h-8 bg-primary text-primary-foreground rounded-full text-sm font-medium">
                       {(member.profile.username || 'Anonymous').charAt(0).toUpperCase()
                       }
                     </div>
@@ -778,7 +778,7 @@ export default function GroupInfoPage() {
                         className="mb-1"
                       />
                       <div className="flex items-center space-x-2">
-                        <Badge variant={member.role === 'admin' ? 'default' : 'outline'} className={member.role === 'admin' ? 'text-xs bg-amber-700 hover:bg-amber-600' : 'text-xs'}>
+                        <Badge variant={member.role === 'admin' ? 'default' : 'outline'} className={member.role === 'admin' ? 'text-xs bg-primary hover:bg-primary/90' : 'text-xs'}>
                           {member.role === 'admin' ? (
                             <>
                               <Crown className="w-3 h-3 mr-1" />
@@ -812,7 +812,7 @@ export default function GroupInfoPage() {
 
                   {/* Taste Maker badge - only for the member with most wins */}
                   {tasteMakerProfileId === member.profile.id && (
-                    <Badge className="ml-2 border border-amber-200 bg-amber-50 text-amber-700">
+                    <Badge className="ml-2 border border-border bg-muted text-primary">
                       <Trophy className="mr-1 h-3 w-3" />Taste Maker
                     </Badge>
                   )}

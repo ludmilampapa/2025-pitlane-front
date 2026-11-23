@@ -4,26 +4,26 @@
 
 @layer base {
   :root {
-    --background: 38 33% 96%;
-    --foreground: 25 18% 18%;
-    --card: 0 0% 100%;
-    --card-foreground: 25 18% 18%;
+    --background: 36 50% 96%;
+    --foreground: 25 25% 13%;
+    --card: 40 100% 99%;
+    --card-foreground: 25 25% 13%;
     --popover: 0 0% 100%;
-    --popover-foreground: 25 18% 18%;
-    --primary: 136 25% 39%;
+    --popover-foreground: 25 25% 13%;
+    --primary: 147 30% 33%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 14 59% 50%;
+    --secondary: 16 58% 48%;
     --secondary-foreground: 0 0% 100%;
     --muted: 38 24% 94%;
-    --muted-foreground: 25 10% 45%;
+    --muted-foreground: 25 16% 31%;
     --accent: 38 45% 91%;
-    --accent-foreground: 25 18% 18%;
+    --accent-foreground: 25 25% 13%;
     --destructive: 5 65% 48%;
     --destructive-foreground: 0 0% 100%;
-    --border: 35 25% 88%;
-    --input: 35 25% 88%;
-    --ring: 136 25% 39%;
-    --chart-1: 136 25% 39%;
+    --border: 31 26% 86%;
+    --input: 31 26% 86%;
+    --ring: 147 30% 33%;
+    --chart-1: 147 30% 33%;
     --chart-2: 14 59% 50%;
     --chart-3: 38 55% 55%;
     --chart-4: 95 20% 48%;
@@ -32,27 +32,26 @@
   }
 
   .dark {
-    --background: 38 33% 96%;
-    --foreground: 25 18% 18%;
-    --card: 0 0% 100%;
-    --card-foreground: 25 18% 18%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 25 18% 18%;
-    --primary: 136 25% 39%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 14 59% 50%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 38 24% 94%;
-    --muted-foreground: 25 10% 45%;
-    --accent: 38 45% 91%;
-    --accent-foreground: 25 18% 18%;
-    --destructive: 5 65% 48%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 35 25% 88%;
-    --input: 35 25% 88%;
-    --ring: 136 25% 39%;
-  }
-}
+    --background: 25 17% 10%;
+    --foreground: 32 33% 93%;
+    --card: 27 17% 14%;
+    --card-foreground: 32 33% 93%;
+    --popover: 27 17% 14%;
+    --popover-foreground: 32 33% 93%;
+    --primary: 147 32% 52%;
+    --primary-foreground: 150 30% 8%;
+    --secondary: 16 65% 62%;
+    --secondary-foreground: 25 17% 10%;
+    --muted: 27 14% 19%;
+    --muted-foreground: 30 15% 72%;
+    --accent: 27 14% 21%;
+    --accent-foreground: 32 33% 93%;
+    --destructive: 5 75% 62%;
+    --destructive-foreground: 25 17% 10%;
+    --border: 27 12% 25%;
+    --input: 27 12% 25%;
+    --ring: 147 32% 52%;
+  }}
 
 @layer base {
   * {
@@ -60,7 +59,7 @@
   }
 
   html {
-    background: #FAF7F2;
+    background: hsl(var(--background));
   }
 
   body {
@@ -81,5 +80,25 @@
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+}
+
+@layer utilities {
+  .badge-shimmer-btn {
+    background: linear-gradient(120deg, #3B6E52, #C25934, #D99B26, #2E8B7A, #3B6E52);
+    background-size: 300% 300%;
+    animation: badgeGradientShift 5s ease infinite;
+  }
+}
+
+@keyframes badgeGradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
   }
 }

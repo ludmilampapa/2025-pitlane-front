@@ -64,17 +64,17 @@ export function FoodModal({ food, isOpen, onClose }: FoodModalProps) {
       />
       
       {/* Modal */}
-      <div className="relative bg-neutral-900 rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-amber-800/30">
+      <div className="relative bg-card rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-border">
         {/* Header */}
-        <div className="sticky top-0 bg-neutral-900 rounded-t-2xl border-b border-amber-800/30 p-6 pb-4">
+        <div className="sticky top-0 bg-card rounded-t-2xl border-b border-border p-6 pb-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-amber-100">Food Information</h2>
+            <h2 className="text-xl font-bold text-foreground">Food Information</h2>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-amber-800/20 rounded-full transition-colors"
+              className="p-2 hover:bg-accent rounded-full transition-colors"
               aria-label="Close modal"
             >
-              <X className="w-5 h-5 text-amber-200" />
+              <X className="w-5 h-5 text-foreground" />
             </button>
           </div>
         </div>
@@ -83,7 +83,7 @@ export function FoodModal({ food, isOpen, onClose }: FoodModalProps) {
         <div className="p-6 pt-4">
           {/* Food Icon and Name */}
           <div className="flex flex-col items-center text-center mb-8">
-            <div className="w-20 h-20 mb-4 flex items-center justify-center bg-amber-800/30 rounded-full border border-amber-700/50">
+            <div className="w-20 h-20 mb-4 flex items-center justify-center bg-muted rounded-full border border-border">
               {food.svgLink ? (
                 <Image 
                   src={food.svgLink} 
@@ -93,27 +93,27 @@ export function FoodModal({ food, isOpen, onClose }: FoodModalProps) {
                   className="w-12 h-12 object-contain" 
                 />
               ) : (
-                <Utensils className="w-12 h-12 text-amber-400" />
+                <Utensils className="w-12 h-12 text-primary" />
               )}
             </div>
             <div className="flex flex-col items-center gap-2">
-              <h3 className="text-2xl font-bold text-amber-100">{food.name}</h3>
+              <h3 className="text-2xl font-bold text-foreground">{food.name}</h3>
               {isKorvenInspiredFood(food.name) && (
-                <span className="text-xs bg-amber-600/50 text-amber-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                <span className="text-xs bg-muted text-foreground px-2 py-0.5 rounded-full flex items-center gap-1">
                   <Hexagon className="w-3 h-3 fill-amber-400/30" />
                   Korven
                 </span>
               )}
             </div>
-            <div className="inline-flex items-center bg-amber-800/30 border border-amber-700/50 rounded-full px-3 py-1 mb-4 mt-2">
-              <span className="text-amber-200 font-semibold">{food.kCal} kCal</span>
+            <div className="inline-flex items-center bg-muted border border-border rounded-full px-3 py-1 mb-4 mt-2">
+              <span className="text-foreground font-semibold">{food.kCal} kCal</span>
             </div>
           </div>
 
           {/* Preferences Section */}
           <div className="mb-6">
-            <h4 className="text-lg font-semibold text-amber-100 mb-3 flex items-center">
-              <span className="w-2 h-2 bg-amber-500 rounded-full mr-2"></span>
+            <h4 className="text-lg font-semibold text-foreground mb-3 flex items-center">
+              <span className="w-2 h-2 bg-primary rounded-full mr-2"></span>
               Preferences
             </h4>
             {food.preferences && food.preferences.length > 0 ? (
@@ -121,9 +121,9 @@ export function FoodModal({ food, isOpen, onClose }: FoodModalProps) {
                 {(showAllPreferences ? food.preferences : food.preferences.slice(0, 2)).map((preference, index) => (
                   <div 
                     key={index} 
-                    className="bg-amber-900/40 border border-amber-700/50 rounded-lg px-3 py-2"
+                    className="bg-muted border border-border rounded-lg px-3 py-2"
                   >
-                    <span className="text-amber-200 text-sm font-medium">
+                    <span className="text-foreground text-sm font-medium">
                       {getDisplayName(preference)}
                     </span>
                   </div>
@@ -133,14 +133,14 @@ export function FoodModal({ food, isOpen, onClose }: FoodModalProps) {
                     {!showAllPreferences ? (
                       <button
                         onClick={() => setShowAllPreferences(true)}
-                        className="text-amber-200 text-sm font-medium hover:underline"
+                        className="text-foreground text-sm font-medium hover:underline"
                       >
                         +{food.preferences.length - 2} more
                       </button>
                     ) : (
                       <button
                         onClick={() => setShowAllPreferences(false)}
-                        className="text-amber-200 text-sm font-medium hover:underline"
+                        className="text-foreground text-sm font-medium hover:underline"
                       >
                         Show less
                       </button>
@@ -149,7 +149,7 @@ export function FoodModal({ food, isOpen, onClose }: FoodModalProps) {
                 )}
               </div>
             ) : (
-              <p className="text-gray-400 text-sm italic">
+              <p className="text-muted-foreground text-sm italic">
                 No specific preferences associated
               </p>
             )}
@@ -157,7 +157,7 @@ export function FoodModal({ food, isOpen, onClose }: FoodModalProps) {
 
           {/* Dietary Restrictions Section */}
           <div className="mb-6">
-            <h4 className="text-lg font-semibold text-amber-100 mb-3 flex items-center">
+            <h4 className="text-lg font-semibold text-foreground mb-3 flex items-center">
               <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
               Dietary Restrictions
             </h4>
@@ -194,17 +194,17 @@ export function FoodModal({ food, isOpen, onClose }: FoodModalProps) {
                 )}
               </div>
             ) : (
-              <p className="text-gray-400 text-sm italic">
+              <p className="text-muted-foreground text-sm italic">
                 No specific dietary restrictions
               </p>
             )}
           </div>
 
           {/* Close Button */}
-          <div className="pt-4 border-t border-amber-800/30">
+          <div className="pt-4 border-t border-border">
             <button
               onClick={onClose}
-              className="w-full bg-amber-700 hover:bg-amber-600 text-white font-medium py-3 rounded-lg transition-colors shadow-lg"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-3 rounded-lg transition-colors shadow-lg"
             >
               Close
             </button>

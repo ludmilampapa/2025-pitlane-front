@@ -211,21 +211,21 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       {/* Modal Container */}
-      <div className="relative w-full max-w-4xl bg-neutral-900 rounded-2xl shadow-2xl border border-amber-800/30 overflow-hidden max-h-[90vh] overflow-y-auto">
+      <div className="relative w-full max-w-4xl bg-card rounded-2xl shadow-2xl border border-border overflow-hidden max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="p-6 bg-gradient-to-r from-amber-900/20 to-amber-800/20 border-b border-amber-800/30">
+        <div className="p-6 bg-gradient-to-r from-card to-card border-b border-border">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-amber-200">
+              <h2 className="text-2xl font-bold text-foreground">
                 {group ? `Register Meal for ${group.name}` : 'Register Meal'}
               </h2>
-              <p className="text-gray-300 mt-1">
+              <p className="text-muted-foreground mt-1">
                 {group ? 'Add a meal consumption for your group' : 'Track your meal consumption'}
               </p>
             </div>
             <button
               onClick={handleClose}
-              className="text-gray-400 hover:text-white transition-colors p-2"
+              className="text-muted-foreground hover:text-white transition-colors p-2"
             >
               <X className="w-6 h-6" />
             </button>
@@ -245,9 +245,9 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
 
               {/* Group Info */}
               {group && groupDietaryInfo && (
-                <div className="p-4 bg-amber-900/20 border border-amber-700/50 rounded-lg">
-                  <h3 className="text-amber-200 font-medium mb-2">Group Dietary Information</h3>
-                  <div className="text-sm text-gray-300">
+                <div className="p-4 bg-muted border border-border rounded-lg">
+                  <h3 className="text-foreground font-medium mb-2">Group Dietary Information</h3>
+                  <div className="text-sm text-muted-foreground">
                     <p>Members: {group.members?.length || 0}</p>
                     {groupDietaryInfo.dietaryRestrictions.length > 0 && (
                       <p>Group Restrictions: {groupDietaryInfo.dietaryRestrictions.map(r => r.name).join(', ')}</p>
@@ -279,7 +279,7 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
                 {/* Portion Selection Option */}
                 {selectedMeal && !showPortionSelector && (
                   <div className="space-y-3">
-                    <label className="block text-sm font-medium text-amber-200">
+                    <label className="block text-sm font-medium text-foreground">
                       Portion Selection
                     </label>
                     <div className="grid grid-cols-2 gap-3">
@@ -291,8 +291,8 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
                         }}
                         className={`p-3 rounded-lg border-2 transition-all ${
                           portionMode === 'full'
-                            ? 'bg-amber-600 border-amber-500 text-white'
-                            : 'bg-neutral-800 border-neutral-700 text-neutral-300 hover:border-amber-600'
+                            ? 'bg-primary border-border text-primary-foreground'
+                            : 'bg-card border-border text-muted-foreground hover:border-border'
                         }`}
                       >
                         <div className="text-center">
@@ -308,8 +308,8 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
                         }}
                         className={`p-3 rounded-lg border-2 transition-all ${
                           portionMode === 'partial'
-                            ? 'bg-amber-600 border-amber-500 text-white'
-                            : 'bg-neutral-800 border-neutral-700 text-neutral-300 hover:border-amber-600'
+                            ? 'bg-primary border-border text-primary-foreground'
+                            : 'bg-card border-border text-muted-foreground hover:border-border'
                         }`}
                       >
                         <div className="text-center">
@@ -330,7 +330,7 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
                   <button
                     type="button"
                     onClick={() => setShowCreateMeal(true)}
-                    className="text-xs text-amber-400 hover:text-amber-300 flex items-center gap-1 transition-colors"
+                    className="text-xs text-primary hover:text-primary flex items-center gap-1 transition-colors"
                   >
                     <Plus className="w-3 h-3" />
                     Create New Meal
@@ -341,10 +341,10 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
               {/* Portion Selector Modal */}
               {showPortionSelector && selectedMeal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80">
-                  <div className="relative w-full max-w-2xl bg-neutral-900 rounded-2xl shadow-2xl border border-amber-800/30 overflow-hidden max-h-[90vh] overflow-y-auto">
-                    <div className="p-6 bg-gradient-to-r from-amber-900/20 to-amber-800/20 border-b border-amber-800/30">
-                      <h3 className="text-xl font-bold text-amber-200">Select Portion</h3>
-                      <p className="text-neutral-300 mt-1 text-sm">
+                  <div className="relative w-full max-w-2xl bg-card rounded-2xl shadow-2xl border border-border overflow-hidden max-h-[90vh] overflow-y-auto">
+                    <div className="p-6 bg-gradient-to-r from-card to-card border-b border-border">
+                      <h3 className="text-xl font-bold text-foreground">Select Portion</h3>
+                      <p className="text-muted-foreground mt-1 text-sm">
                         Customize how much of {selectedMeal.name} you consumed
                       </p>
                     </div>
@@ -389,7 +389,7 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
               {/* Date/Time Selection Mode */}
               {!showDateTimeSelection ? (
                 <div className="space-y-4">
-                  <label className="block text-sm font-medium text-amber-200">
+                  <label className="block text-sm font-medium text-foreground">
                     When did you eat this meal? <span className="text-red-400">*</span>
                   </label>
                   
@@ -399,7 +399,7 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
                       type="button"
                       onClick={handleRegisterNow}
                       disabled={!selectedMeal || isSubmitting}
-                      className="p-4 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium border-2 border-transparent hover:border-amber-500 disabled:border-gray-500"
+                      className="p-4 bg-primary hover:bg-primary/90 disabled:bg-gray-600 disabled:cursor-not-allowed text-primary-foreground rounded-lg transition-colors font-medium border-2 border-transparent hover:border-border disabled:border-border"
                     >
                       <div className="text-center">
                         <div className="font-semibold">Register Now</div>
@@ -420,7 +420,7 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
                       type="button"
                       onClick={handleChooseDateTime}
                       disabled={!selectedMeal || isSubmitting}
-                      className="p-4 bg-neutral-700 hover:bg-neutral-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium border-2 border-transparent hover:border-neutral-500 disabled:border-gray-500"
+                      className="p-4 bg-muted hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed text-foreground rounded-lg transition-colors font-medium border-2 border-transparent hover:border-border disabled:border-border"
                     >
                       <div className="text-center">
                         <div className="font-semibold">Choose Date & Time</div>
@@ -432,7 +432,7 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
                   </div>
 
                   {!selectedMeal && (
-                    <p className="text-sm text-gray-400 text-center">
+                    <p className="text-sm text-muted-foreground text-center">
                       Please select a meal first
                     </p>
                   )}
@@ -441,22 +441,22 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
                 /* Date/Time Selection Form */
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium text-amber-200">
+                    <label className="text-sm font-medium text-foreground">
                       {useCurrentTime ? 'Register Now' : 'Choose Date & Time'} <span className="text-red-400">*</span>
                     </label>
                     <button
                       type="button"
                       onClick={handleBackToTimeSelection}
-                      className="text-xs text-gray-400 hover:text-gray-200 underline"
+                      className="text-xs text-muted-foreground hover:text-foreground underline"
                     >
                       Back to time options
                     </button>
                   </div>
 
                   {useCurrentTime ? (
-                    <div className="p-4 bg-neutral-800 rounded-lg border border-amber-600/30">
-                      <p className="text-gray-300">
-                        Meal will be registered at: <span className="text-amber-200 font-medium">
+                    <div className="p-4 bg-card rounded-lg border border-border">
+                      <p className="text-muted-foreground">
+                        Meal will be registered at: <span className="text-foreground font-medium">
                           {new Date().toLocaleString('es-ES', {
                             day: '2-digit',
                             month: '2-digit',
@@ -470,7 +470,7 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label htmlFor="mealDate" className="block text-sm font-medium text-gray-300 mb-2">
+                        <label htmlFor="mealDate" className="block text-sm font-medium text-muted-foreground mb-2">
                           Date
                         </label>
                         <input
@@ -479,12 +479,12 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
                           value={mealDate}
                           onChange={(e) => setMealDate(e.target.value)}
                           max={new Date().toISOString().split('T')[0]}
-                          className="w-full px-3 py-2 bg-neutral-800 text-gray-100 border border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                          className="w-full px-3 py-2 bg-background text-foreground border border-border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent"
                           disabled={isSubmitting}
                         />
                       </div>
                       <div>
-                        <label htmlFor="mealTime" className="block text-sm font-medium text-gray-300 mb-2">
+                        <label htmlFor="mealTime" className="block text-sm font-medium text-muted-foreground mb-2">
                           Time
                         </label>
                         <input
@@ -492,7 +492,7 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
                           id="mealTime"
                           value={mealTime}
                           onChange={(e) => setMealTime(e.target.value)}
-                          className="w-full px-3 py-2 bg-neutral-800 text-gray-100 border border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                          className="w-full px-3 py-2 bg-background text-foreground border border-border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent"
                           disabled={isSubmitting}
                         />
                       </div>
@@ -503,7 +503,7 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
                   <button
                     type="submit"
                     disabled={isSubmitting || !selectedMeal || (!useCurrentTime && (!mealDate || !mealTime))}
-                    className="w-full py-3 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium"
+                    className="w-full py-3 bg-primary hover:bg-primary/90 disabled:bg-gray-600 disabled:cursor-not-allowed text-primary-foreground rounded-lg transition-colors font-medium"
                   >
                     {isSubmitting ? 'Registering...' : 'Register Meal'}
                   </button>
@@ -514,10 +514,10 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
             /* Create New Meal Form */
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-amber-200">Create New Meal</h3>
+                <h3 className="text-xl font-semibold text-foreground">Create New Meal</h3>
                 <button
                   onClick={handleCloseAddMealForm}
-                  className="text-gray-400 hover:text-white transition-colors p-2"
+                  className="text-muted-foreground hover:text-white transition-colors p-2"
                 >
                   <X className="w-5 h-5" />
                 </button>
