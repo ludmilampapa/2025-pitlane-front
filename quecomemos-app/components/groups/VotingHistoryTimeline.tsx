@@ -5,7 +5,6 @@ import { Calendar, ChefHat, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { API_BASE_URL } from '@/lib/config/api';
 import { VotingService } from '@/components/voting/VotingService';
 
 export interface TimelineSession {

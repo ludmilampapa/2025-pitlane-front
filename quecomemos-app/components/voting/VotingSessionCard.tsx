@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Clock, Users, Trophy, Vote, Plus, CheckCircle, Shuffle } from 'lucide-react';
+import { Clock, Users, Trophy, Vote, Plus, CheckCircle } from 'lucide-react';
 import { useUser } from '@/lib/contexts/UserContext';
 import { useGlobalNotification } from '@/lib/contexts/NotificationContext';
 import { useVoting } from '@/lib/contexts/VotingContext';
@@ -17,7 +17,6 @@ import { ProposeMealModal } from './ProposeMealModal';
 import { EarlyCompletionModal } from './EarlyCompletionModal';
 import type { VotingSession, MealProposal } from './types';
 import { API_BASE_URL } from '@/lib/config/api';
-import { DietaryCompatibilityBadge } from './DietaryCompatibilityBadge';
 import { toast } from 'sonner';
 
 interface VotingSessionCardProps {
@@ -630,8 +629,10 @@ export function VotingSessionCard({ session: initialSession, onVotingComplete, c
   const tiedProposals = (updatedSession.proposals || []).filter((proposal) =>
     proposal.isActive && proposal.voteCount === Math.max(...(updatedSession.proposals || []).map((item) => item.voteCount), 0)
   );
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const isTie = updatedSession.status === 'voting_phase' && tiedProposals.length > 1;
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleTieBreaker = async () => {
     if (!isGroupOwner && !isGroupAdmin) {
       showError('Access Denied', 'Only group admins can use the tie breaker.');

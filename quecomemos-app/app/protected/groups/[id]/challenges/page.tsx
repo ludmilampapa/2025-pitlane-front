@@ -91,7 +91,6 @@ export default function GroupChallengesPage() {
   const toggleToday = async (challenge: Challenge) => {
     if (!profileId) return;
     const today = new Date().toISOString().slice(0, 10);
-    const current = progress[challenge.ChallengeID]?.completedDays || 0;
     // The server stores a date-specific completion; this simple toggle is a daily action.
     try {
       const response = await fetch(`${API_BASE_URL}/challenges/${challenge.ChallengeID}/completions`, {

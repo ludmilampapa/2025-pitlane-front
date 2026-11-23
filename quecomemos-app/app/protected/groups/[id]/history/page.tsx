@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Activity, ChefHat, Calendar, Search, Filter } from 'lucide-react';
 import { useUser } from '@/lib/contexts/UserContext';
 import { API_BASE_URL } from '@/lib/config/api';
-import { VotingHistoryTimeline, type TimelineSession, type TimelineParticipant } from '@/components/groups/VotingHistoryTimeline';
+import { type TimelineSession } from '@/components/groups/VotingHistoryTimeline';
 
 interface Consumption {
   ConsumptionID: number;
@@ -35,7 +35,7 @@ export default function GroupHistoryPage() {
 
   const [group, setGroup] = useState<Group | null>(null);
   const [consumptions, setConsumptions] = useState<Consumption[]>([]);
-  const [timelineSessions, setTimelineSessions] = useState<TimelineSession[]>([]);
+  const [, setTimelineSessions] = useState<TimelineSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');

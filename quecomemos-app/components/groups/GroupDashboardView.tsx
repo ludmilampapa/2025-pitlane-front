@@ -24,10 +24,10 @@ function mealName(entry: WeeklyMenuEntry | undefined): string {
   return entry?.meal?.name || entry?.customMeal || 'Sin definir';
 }
 
-export function GroupDashboardView({ groupId, profileId, isAdmin }: GroupDashboardViewProps) {
+export function GroupDashboardView({ groupId, profileId }: GroupDashboardViewProps) {
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [ranking, setRanking] = useState<ChallengeRankingRow[]>([]);
-  const [loadingChallenges, setLoadingChallenges] = useState(true);
+  const [, setLoadingChallenges] = useState(true);
 
   const activeChallenge = challenges.find((challenge) => challenge.isActive) ?? null;
   const streakHook = useChallengeStreak(activeChallenge, profileId);

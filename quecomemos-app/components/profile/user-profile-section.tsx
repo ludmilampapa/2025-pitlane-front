@@ -33,14 +33,6 @@ import { API_BASE_URL } from '@/lib/config/api';
 
 type GroupDestination = 'voting' | 'menu' | 'challenges';
 
-interface UserGroupSummary {
-  GroupID: number;
-  name: string;
-  description?: string;
-  members?: Array<{ profile: { id: string; username: string } }>;
-  _count?: { members: number };
-}
-
 const DESTINATION_COPY: Record<
   GroupDestination,
   { title: string; description: string }
