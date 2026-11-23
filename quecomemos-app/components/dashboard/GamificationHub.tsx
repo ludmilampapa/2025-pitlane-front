@@ -41,6 +41,8 @@ interface ActiveChallengeItem {
 interface GamificationHubProps {
   profileId: string;
   onOpenChallengePicker: () => void;
+  sharedGroups?: Array<{ GroupID: number; name: string }>;
+  sharedGroupsLoading?: boolean;
 }
 
 const LEVEL_TITLES = [
@@ -67,7 +69,12 @@ function getWeekDays(): Array<{ iso: string; label: string; isToday: boolean }> 
   });
 }
 
-export function GamificationHub({ profileId, onOpenChallengePicker }: GamificationHubProps) {
+export function GamificationHub({
+  profileId,
+  onOpenChallengePicker,
+  sharedGroups,
+  sharedGroupsLoading = false,
+}: GamificationHubProps) {
   const { badges, loading: loadingBadges } = useUserBadges(profileId);
   const { primaryBadge, refetch: refetchPrimaryBadge } = usePrimaryBadge(profileId);
   const { progress: calorieProgress, loading: loadingCalories } = useCalorieProgress();
@@ -80,16 +87,22 @@ export function GamificationHub({ profileId, onOpenChallengePicker }: Gamificati
   const [markingToday, setMarkingToday] = useState(false);
 
   const loadActiveChallenges = useCallback(async () => {
-    if (!profileId) return;
+    if (!profileId || sharedGroupsLoading) return;
     try {
       setLoadingChallenges(true);
-      const groupsRes = await fetch(`${API_BASE_URL}/groups/dashboard/${profileId}`);
-      if (!groupsRes.ok) {
-        setActiveItems([]);
-        return;
+      let groups: Array<{ GroupID: number; name: string }> = [];
+      if (sharedGroups !== undefined) {
+        groups = sharedGroups;
+      } else {
+        const groupsRes = await fetch(`${API_BASE_URL}/groups/dashboard/${profileId}`);
+        if (!groupsRes.ok) {
+          setActiveItems([]);
+          return;
+        }
+        const data = await groupsRes.json();
+        groups = Array.isArray(data) ? data : [];
       }
-      const groups: Array<{ GroupID: number; name: string }> = await groupsRes.json();
-      if (!Array.isArray(groups) || groups.length === 0) {
+      if (groups.length === 0) {
         setActiveItems([]);
         return;
       }
@@ -144,7 +157,7 @@ export function GamificationHub({ profileId, onOpenChallengePicker }: Gamificati
     } finally {
       setLoadingChallenges(false);
     }
-  }, [profileId]);
+  }, [profileId, sharedGroups, sharedGroupsLoading]);
 
   useEffect(() => {
     void loadActiveChallenges();

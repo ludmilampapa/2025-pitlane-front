@@ -7,6 +7,7 @@ import { MealsProvider } from "@/lib/contexts/MealsContext";
 import { UserProvider } from "@/lib/contexts/UserContext";
 import { NotificationProvider } from "@/lib/contexts/NotificationContext";
 import { CalorieProgressProvider } from "@/lib/contexts/CalorieProgressContext";
+import { AuthFetchInterceptor } from "@/components/auth/AuthFetchInterceptor";
 import { Toaster } from "sonner";
 
 
@@ -34,6 +35,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.className} antialiased`}>
+        <AuthFetchInterceptor />
         <UserProvider>
           <FoodsProvider>
             <MealsProvider>

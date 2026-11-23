@@ -1,4 +1,6 @@
-import React from 'react';
+'use client';
+
+import React, { useState } from 'react';
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +23,7 @@ interface UserBadgesProps {
 }
 
 export function UserBadges({ badges, loading = false }: UserBadgesProps) {
+  const [failedImages, setFailedImages] = useState<Record<number, boolean>>({});
   if (loading) {
     return (
       <Card>
@@ -123,21 +126,14 @@ export function UserBadges({ badges, loading = false }: UserBadgesProps) {
             >
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 flex-shrink-0">
-                  {badge.iconUrl && badge.iconUrl.trim() !== '' ? (
+                  {badge.iconUrl && badge.iconUrl.trim() !== '' && !failedImages[badge.BadgeID] ? (
                     <Image
                       src={badge.iconUrl}
                       alt={badge.name}
                       width={32}
                       height={32}
-                      className="w-full h-full rounded-full border border-gray-200 bg-white p-0.5"
-                      onError={(e) => {
-                        // Fallback to emoji if image fails
-                        const target = e.target as HTMLImageElement;
-                        const parent = target.parentElement;
-                        if (parent) {
-                          parent.innerHTML = `<div class="text-2xl flex items-center justify-center">${getDefaultBadgeEmoji(badge.badgeType)}</div>`;
-                        }
-                      }}
+                      className="w-full h-full rounded-full border border-border bg-card p-0.5"
+                      onError={() => setFailedImages((prev) => ({ ...prev, [badge.BadgeID]: true }))}
                     />
                   ) : (
                     <div className="text-2xl flex items-center justify-center">

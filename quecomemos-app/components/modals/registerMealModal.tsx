@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { X, Plus } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { X, Plus, Clock, Calendar, SlidersHorizontal, Utensils, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { useUser } from '@/lib/contexts/UserContext';
 import { useMeals, Meal } from '@/lib/contexts/MealsContext';
 import AddMealForm from '../meal/AddMealForm';
 import { MealSearchBar } from '../meal/MealSearchBar';
 import { MealComposition } from '../meal/MealComposition';
-import { MealPortionSelector, type PortionData } from '../meal';
+import { MealPortionSelector, PortionPlateSvg, type PortionData } from '../meal/MealPortionSelector';
 import { fetchGroupDietaryInfo } from '@/lib/utils/groupService';
 import { Group } from '../groups/index';
 
@@ -17,7 +17,7 @@ interface GroupDietaryInfo {
     name: string;
   }>;
   preferences: Array<{
-    PreferenceID: number; 
+    PreferenceID: number;
     name: string;
   }>;
 }
@@ -25,94 +25,158 @@ interface GroupDietaryInfo {
 interface RegisterMealModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (mealData: { 
-    mealId: number; 
-    date: string; 
-    portions?: PortionData; 
+  onSubmit: (mealData: {
+    mealId: number;
+    date: string;
+    portions?: PortionData;
   }) => void;
-  group?: Group | null; // For group meal registration
+  group?: Group | null;
 }
+
+const QUICK_PORTIONS = [
+  { label: '1/4', fraction: 0.25 },
+  { label: '1/2', fraction: 0.5 },
+  { label: '3/4', fraction: 0.75 },
+  { label: 'Full', fraction: 1 },
+];
 
 export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: RegisterMealModalProps) {
   const { userData } = useUser();
   const { allMeals, addMeal } = useMeals();
-  
+
   // Form state
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
-  const [mealDate, setMealDate] = useState('');
-  const [mealTime, setMealTime] = useState('');
+  const [mealDate, setMealDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [mealTime, setMealTime] = useState(() => new Date().toTimeString().slice(0, 5));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Group restrictions state
   const [groupDietaryInfo, setGroupDietaryInfo] = useState<GroupDietaryInfo | null>(null);
-  
-  // Create new meal state
-  const [showCreateMeal, setShowCreateMeal] = useState(false);
-  
-  // Date/time selection mode
-  const [useCurrentTime, setUseCurrentTime] = useState(true);
-  const [showDateTimeSelection, setShowDateTimeSelection] = useState(false);
 
-  // Portion selection state
-  const [portionMode, setPortionMode] = useState<'full' | 'partial'>('full');
+  // Mode: choose existing vs create new
+  const [showCreateMeal, setShowCreateMeal] = useState(false);
+
+  // Time mode: defaults to Now (1-click submit)
+  const [useCurrentTime, setUseCurrentTime] = useState(true);
+
+  // Portion state
+  const [activeFraction, setActiveFraction] = useState<number | null>(1);
   const [showPortionSelector, setShowPortionSelector] = useState(false);
   const [selectedPortions, setSelectedPortions] = useState<PortionData | null>(null);
+  const [showComposition, setShowComposition] = useState(false);
 
   const profile = userData?.profile;
   const userRestrictions = userData?.preferences?.dietaryRestrictions || [];
-  const groupRestrictions = groupDietaryInfo?.dietaryRestrictions?.map(r => r.DietaryRestrictionID) || [];
+  const groupRestrictions = groupDietaryInfo?.dietaryRestrictions?.map((r) => r.DietaryRestrictionID) || [];
   const isGroupMode = !!group;
 
-  // Fetch group dietary info when group is provided
+  const fullMealCalories = useMemo(() => {
+    if (!selectedMeal) return 0;
+    return selectedMeal.mealFoods.reduce((sum, mf) => sum + mf.food.kCal * mf.quantity, 0);
+  }, [selectedMeal]);
+
+  const effectiveCalories = useMemo(() => {
+    if (!selectedMeal) return 0;
+    if (selectedPortions) return Math.round(selectedPortions.totalCalories);
+    return Math.round(fullMealCalories);
+  }, [selectedMeal, selectedPortions, fullMealCalories]);
+
+  const recentMeals = useMemo(() => {
+    return [...allMeals]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 4);
+  }, [allMeals]);
+
   useEffect(() => {
     const fetchGroupInfo = async () => {
       if (group && isOpen) {
         try {
           const info = await fetchGroupDietaryInfo(group.GroupID.toString());
           setGroupDietaryInfo(info);
-        } catch (error) {
-          console.error('Error fetching group dietary info:', error);
+        } catch (err) {
+          console.error('Error fetching group dietary info:', err);
         }
       }
     };
-
     fetchGroupInfo();
   }, [group, isOpen]);
 
-  // Handle form submission
+  const handleClose = useCallback(() => {
+    setSelectedMeal(null);
+    setMealDate(new Date().toISOString().split('T')[0]);
+    setMealTime(new Date().toTimeString().slice(0, 5));
+    setError(null);
+    setShowCreateMeal(false);
+    setUseCurrentTime(true);
+    setActiveFraction(1);
+    setShowPortionSelector(false);
+    setSelectedPortions(null);
+    setShowComposition(false);
+    onClose();
+  }, [onClose]);
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        if (showPortionSelector) setShowPortionSelector(false);
+        else handleClose();
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen, showPortionSelector, handleClose]);
+
+  const handleSelectMeal = (meal: Meal | null) => {
+    setSelectedMeal(meal);
+    setActiveFraction(1);
+    setSelectedPortions(null);
+    setError(null);
+  };
+
+  const applyQuickFraction = (fraction: number) => {
+    if (!selectedMeal) return;
+    setActiveFraction(fraction);
+    if (fraction === 1) {
+      setSelectedPortions(null);
+      return;
+    }
+    const foodPortions = selectedMeal.mealFoods.map((mf) => ({
+      foodId: mf.food.FoodID,
+      portionFraction: fraction,
+      absoluteQuantity: Number((mf.quantity * fraction).toFixed(3)),
+    }));
+    setSelectedPortions({
+      mode: 'percentage',
+      portionFraction: fraction,
+      foodPortions,
+      totalCalories: fullMealCalories * fraction,
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
 
     if (!selectedMeal) {
-      setError('Please select a meal.');
+      setError('Please select a meal first.');
       return;
     }
-
-    // Validate date/time based on mode
     if (!useCurrentTime && (!mealDate || !mealTime)) {
-      setError('Please select a date and time.');
+      setError('Please choose both a date and a time.');
       return;
     }
 
     setIsSubmitting(true);
-
     try {
-      let finalDateTime: string;
-      
-      if (useCurrentTime) {
-        // Use current date and time
-        finalDateTime = new Date().toISOString();
-      } else {
-        // Combine selected date and time
-        finalDateTime = new Date(`${mealDate}T${mealTime}`).toISOString();
-      }
+      const finalDateTime = useCurrentTime
+        ? new Date().toISOString()
+        : new Date(`${mealDate}T${mealTime}`).toISOString();
 
-      await onSubmit({ 
-        mealId: selectedMeal.MealID, 
+      await onSubmit({
+        mealId: selectedMeal.MealID,
         date: finalDateTime,
-        portions: selectedPortions || undefined
+        portions: selectedPortions || undefined,
       });
       handleClose();
     } catch {
@@ -122,147 +186,113 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
     }
   };
 
-  // Handle modal close and reset form
-  const handleClose = useCallback(() => {
-    setSelectedMeal(null);
-    setMealDate('');
-    setMealTime('');
-    setError(null);
-    setShowCreateMeal(false);
-    setUseCurrentTime(true);
-    setShowDateTimeSelection(false);
-    setPortionMode('full');
-    setShowPortionSelector(false);
-    setSelectedPortions(null);
-    onClose();
-  }, [onClose]);
-
-  // Handle closing the AddMealForm
-  const handleCloseAddMealForm = () => {
-    setShowCreateMeal(false);
-    setError(null);
-  };
-
-  // Handle register now button
-  const handleRegisterNow = () => {
-    setUseCurrentTime(true);
-    setShowDateTimeSelection(true);
-  };
-
-  // Handle choose date/time button
-  const handleChooseDateTime = () => {
-    setUseCurrentTime(false);
-    setShowDateTimeSelection(true);
-    // Set default values for date and time if empty
-    if (!mealDate) {
-      setMealDate(new Date().toISOString().split('T')[0]);
-    }
-    if (!mealTime) {
-      setMealTime(new Date().toTimeString().slice(0, 5));
-    }
-  };
-
-  // Go back to time selection
-  const handleBackToTimeSelection = () => {
-    setShowDateTimeSelection(false);
-  };
-
-  // Handle when a new meal is successfully created
   const handleMealAdded = async (newMeal: Meal) => {
-    // Add the new meal to context instead of refetching
     if (profile?.id && newMeal) {
       addMeal(newMeal);
     }
-    
-    // Automatically select the newly created meal if it has ID
     if (newMeal && newMeal.MealID) {
-      setSelectedMeal(newMeal);
+      handleSelectMeal(newMeal);
     }
-    
-    // Return to the main form
     setShowCreateMeal(false);
+    setError(null);
   };
-
-  // Close modal with ESC key and prevent body scroll
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        if (showCreateMeal) {
-          setShowCreateMeal(false);
-        } else {
-          handleClose();
-        }
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'hidden';
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'unset';
-    };
-  }, [isOpen, showCreateMeal, handleClose]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      {/* Modal Container */}
-      <div className="relative w-full max-w-4xl bg-card rounded-2xl shadow-2xl border border-border overflow-hidden max-h-[90vh] overflow-y-auto">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+      onClick={handleClose}
+    >
+      <div
+        className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-border bg-card shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="p-6 bg-gradient-to-r from-card to-card border-b border-border">
-          <div className="flex items-center justify-between">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary">
+              <Utensils className="h-5 w-5" />
+            </div>
             <div>
-              <h2 className="text-2xl font-bold text-foreground">
-                {group ? `Register Meal for ${group.name}` : 'Register Meal'}
+              <h2 className="text-lg font-bold text-foreground">
+                {group ? `Log Meal for ${group.name}` : 'Log a Meal'}
               </h2>
-              <p className="text-muted-foreground mt-1">
-                {group ? 'Add a meal consumption for your group' : 'Track your meal consumption'}
+              <p className="text-xs text-muted-foreground">
+                Pick a meal, adjust portion if needed, and log in one click.
               </p>
             </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleClose}
+            className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            aria-label="Close"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Mode Switch Tabs */}
+        <div className="border-b border-border bg-background/60 px-6 py-3">
+          <div className="grid grid-cols-2 gap-2 rounded-xl border border-border bg-muted/50 p-1">
             <button
-              onClick={handleClose}
-              className="text-muted-foreground hover:text-white transition-colors p-2"
+              type="button"
+              onClick={() => setShowCreateMeal(false)}
+              className={`rounded-lg py-2 text-xs font-semibold transition-all ${
+                !showCreateMeal
+                  ? 'bg-card text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
             >
-              <X className="w-6 h-6" />
+              Choose Existing Meal
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowCreateMeal(true)}
+              className={`inline-flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-semibold transition-all ${
+                showCreateMeal
+                  ? 'bg-card text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Create New Meal
             </button>
           </div>
         </div>
 
-        {/* Content */}
+        {/* Body */}
         <div className="p-6">
           {!showCreateMeal ? (
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Error Message */}
+            <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
-                <div className="p-3 bg-red-900/50 border border-red-700 rounded-lg text-red-200">
+                <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
                   {error}
                 </div>
               )}
 
-              {/* Group Info */}
               {group && groupDietaryInfo && (
-                <div className="p-4 bg-muted border border-border rounded-lg">
-                  <h3 className="text-foreground font-medium mb-2">Group Dietary Information</h3>
-                  <div className="text-sm text-muted-foreground">
-                    <p>Members: {group.members?.length || 0}</p>
-                    {groupDietaryInfo.dietaryRestrictions.length > 0 && (
-                      <p>Group Restrictions: {groupDietaryInfo.dietaryRestrictions.map(r => r.name).join(', ')}</p>
-                    )}
-                  </div>
+                <div className="rounded-xl border border-border bg-muted/50 p-3.5 text-xs text-muted-foreground">
+                  <span className="font-semibold text-foreground">{group.name}</span> ·{' '}
+                  {group.members?.length || 0} members
+                  {groupDietaryInfo.dietaryRestrictions.length > 0 && (
+                    <>
+                      {' · Restrictions: '}
+                      <span className="text-foreground">
+                        {groupDietaryInfo.dietaryRestrictions.map((r) => r.name).join(', ')}
+                      </span>
+                    </>
+                  )}
                 </div>
               )}
 
-              {/* Meal Search Section */}
+              {/* Step 1: Select Meal */}
               <div className="space-y-3">
-                {/* Meal Search */}
                 <MealSearchBar
                   allMeals={allMeals}
                   selectedMeal={selectedMeal}
-                  onMealSelect={setSelectedMeal}
+                  onMealSelect={handleSelectMeal}
                   userRestrictions={userRestrictions}
                   groupRestrictions={groupRestrictions}
                   isGroupMode={isGroupMode}
@@ -271,267 +301,268 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
                   showAdvancedFilters={true}
                 />
 
-                {/* Selected Meal Composition */}
-                {selectedMeal && (
-                  <MealComposition meal={selectedMeal} />
-                )}
-
-                {/* Portion Selection Option */}
-                {selectedMeal && !showPortionSelector && (
-                  <div className="space-y-3">
-                    <label className="block text-sm font-medium text-foreground">
-                      Portion Selection
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPortionMode('full');
-                          setSelectedPortions(null);
-                        }}
-                        className={`p-3 rounded-lg border-2 transition-all ${
-                          portionMode === 'full'
-                            ? 'bg-primary border-border text-primary-foreground'
-                            : 'bg-card border-border text-muted-foreground hover:border-border'
-                        }`}
-                      >
-                        <div className="text-center">
-                          <div className="font-semibold">Full Meal</div>
-                          <div className="text-xs opacity-80 mt-1">100% of all foods</div>
-                        </div>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPortionMode('partial');
-                          setShowPortionSelector(true);
-                        }}
-                        className={`p-3 rounded-lg border-2 transition-all ${
-                          portionMode === 'partial'
-                            ? 'bg-primary border-border text-primary-foreground'
-                            : 'bg-card border-border text-muted-foreground hover:border-border'
-                        }`}
-                      >
-                        <div className="text-center">
-                          <div className="font-semibold">Partial Portion</div>
-                          <div className="text-xs opacity-80 mt-1">
-                            {selectedPortions 
-                              ? `${(selectedPortions.portionFraction * 100).toFixed(0)}% selected`
-                              : 'Customize amounts'
-                            }
-                          </div>
-                        </div>
-                      </button>
+                {/* Quick-pick chips for recent meals */}
+                {!selectedMeal && recentMeals.length > 0 && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-medium text-muted-foreground">Quick pick:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {recentMeals.map((meal) => (
+                        <button
+                          key={meal.MealID}
+                          type="button"
+                          onClick={() => handleSelectMeal(meal)}
+                          className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-primary hover:bg-primary/10"
+                        >
+                          {meal.name}
+                        </button>
+                      ))}
                     </div>
                   </div>
                 )}
 
-                <div className="flex items-center justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setShowCreateMeal(true)}
-                    className="text-xs text-primary hover:text-primary flex items-center gap-1 transition-colors"
-                  >
-                    <Plus className="w-3 h-3" />
-                    Create New Meal
-                  </button>
-                </div>
+                {selectedMeal && (
+                  <div className="rounded-xl border border-border bg-background">
+                    <button
+                      type="button"
+                      onClick={() => setShowComposition((prev) => !prev)}
+                      aria-expanded={showComposition}
+                      className="flex w-full items-center justify-between gap-2 px-4 py-2.5 text-left text-xs font-semibold text-foreground transition-colors hover:bg-muted/50 rounded-xl"
+                    >
+                      <span>
+                        Meal composition ({selectedMeal.mealFoods.length}{' '}
+                        {selectedMeal.mealFoods.length === 1 ? 'ingredient' : 'ingredients'} ·{' '}
+                        {Math.round(fullMealCalories)} kcal)
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-primary">
+                        {showComposition ? (
+                          <>
+                            Hide
+                            <ChevronUp className="h-3.5 w-3.5" />
+                          </>
+                        ) : (
+                          <>
+                            View ingredients
+                            <ChevronDown className="h-3.5 w-3.5" />
+                          </>
+                        )}
+                      </span>
+                    </button>
+                    {showComposition && (
+                      <div className="border-t border-border p-3">
+                        <MealComposition meal={selectedMeal} />
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
-              {/* Portion Selector Modal */}
-              {showPortionSelector && selectedMeal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80">
-                  <div className="relative w-full max-w-2xl bg-card rounded-2xl shadow-2xl border border-border overflow-hidden max-h-[90vh] overflow-y-auto">
-                    <div className="p-6 bg-gradient-to-r from-card to-card border-b border-border">
-                      <h3 className="text-xl font-bold text-foreground">Select Portion</h3>
-                      <p className="text-muted-foreground mt-1 text-sm">
-                        Customize how much of {selectedMeal.name} you consumed
-                      </p>
-                    </div>
-                    <div className="p-6">
-                      <MealPortionSelector
-                        meal={{
-                          mealId: selectedMeal.MealID,
-                          name: selectedMeal.name,
-                          description: selectedMeal.description,
-                          mealFoods: selectedMeal.mealFoods.map(mf => ({
-                            foodId: mf.food.FoodID,
-                            foodName: mf.food.name,
-                            quantity: mf.quantity,
-                            svgLink: mf.food.svgLink,
-                            kCal: mf.food.kCal
-                          })),
-                          totalCalories: selectedMeal.mealFoods.reduce(
-                            (sum, mf) => sum + mf.food.kCal * mf.quantity,
-                            0
-                          )
-                        }}
-                        onConfirm={(portionData) => {
-                          setSelectedPortions(portionData);
-                          setShowPortionSelector(false);
-                        }}
-                        onCancel={() => {
-                          setShowPortionSelector(false);
-                          setPortionMode('full');
-                          setSelectedPortions(null);
-                        }}
-                        loading={false}
-                        profileId={profile?.id}
-                        date={!useCurrentTime && mealDate && mealTime
-                          ? new Date(`${mealDate}T${mealTime}`)
-                          : new Date()}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Date/Time Selection Mode */}
-              {!showDateTimeSelection ? (
-                <div className="space-y-4">
-                  <label className="block text-sm font-medium text-foreground">
-                    When did you eat this meal? <span className="text-red-400">*</span>
-                  </label>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {/* Register Now Button */}
+              {/* Step 2: Inline Portion Pills + Dynamic Plate SVG + Optional Custom Breakdown */}
+              {selectedMeal && (
+                <div className="space-y-3 rounded-xl border border-border bg-background p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      Select Your Portion
+                    </span>
                     <button
                       type="button"
-                      onClick={handleRegisterNow}
-                      disabled={!selectedMeal || isSubmitting}
-                      className="p-4 bg-primary hover:bg-primary/90 disabled:bg-gray-600 disabled:cursor-not-allowed text-primary-foreground rounded-lg transition-colors font-medium border-2 border-transparent hover:border-border disabled:border-border"
+                      onClick={() => setShowPortionSelector(true)}
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
                     >
-                      <div className="text-center">
-                        <div className="font-semibold">Register Now</div>
-                        <div className="text-sm opacity-90 mt-1">
-                          Current time: {new Date().toLocaleString('es-ES', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </div>
-                      </div>
-                    </button>
-
-                    {/* Choose Date/Time Button */}
-                    <button
-                      type="button"
-                      onClick={handleChooseDateTime}
-                      disabled={!selectedMeal || isSubmitting}
-                      className="p-4 bg-muted hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed text-foreground rounded-lg transition-colors font-medium border-2 border-transparent hover:border-border disabled:border-border"
-                    >
-                      <div className="text-center">
-                        <div className="font-semibold">Choose Date & Time</div>
-                        <div className="text-sm opacity-90 mt-1">
-                          Specify when you ate this meal
-                        </div>
-                      </div>
+                      <SlidersHorizontal className="h-3.5 w-3.5" />
+                      Customize ingredients
                     </button>
                   </div>
 
-                  {!selectedMeal && (
-                    <p className="text-sm text-muted-foreground text-center">
-                      Please select a meal first
+                  <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
+                    <div className="grid w-full flex-1 grid-cols-4 gap-2">
+                      {QUICK_PORTIONS.map((opt) => {
+                        const isActive = activeFraction === opt.fraction;
+                        return (
+                          <button
+                            key={opt.label}
+                            type="button"
+                            onClick={() => applyQuickFraction(opt.fraction)}
+                            className={`h-11 rounded-xl border text-xs font-semibold transition-all ${
+                              isActive
+                                ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+                                : 'border-border bg-card text-foreground hover:border-primary/60 hover:bg-muted'
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <PortionPlateSvg
+                      size="md"
+                      percentage={
+                        selectedPortions
+                          ? Math.round(selectedPortions.portionFraction * 100)
+                          : Math.round((activeFraction ?? 1) * 100)
+                      }
+                    />
+                  </div>
+
+                  {activeFraction === null && selectedPortions && (
+                    <p className="flex items-center gap-1 text-xs font-medium text-primary">
+                      <Check className="h-3.5 w-3.5" />
+                      Custom ingredient breakdown active ({Math.round(selectedPortions.portionFraction * 100)}% ·{' '}
+                      {effectiveCalories} kcal)
                     </p>
                   )}
                 </div>
-              ) : (
-                /* Date/Time Selection Form */
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium text-foreground">
-                      {useCurrentTime ? 'Register Now' : 'Choose Date & Time'} <span className="text-red-400">*</span>
-                    </label>
+              )}
+
+              {/* Step 3: When (Now by default, optional date/time) */}
+              <div className="space-y-3 rounded-xl border border-border bg-background p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    When
+                  </span>
+                  <div className="inline-flex rounded-lg border border-border bg-muted/50 p-0.5">
                     <button
                       type="button"
-                      onClick={handleBackToTimeSelection}
-                      className="text-xs text-muted-foreground hover:text-foreground underline"
+                      onClick={() => setUseCurrentTime(true)}
+                      className={`inline-flex items-center gap-1 rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
+                        useCurrentTime
+                          ? 'bg-card text-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
                     >
-                      Back to time options
+                      <Clock className="h-3 w-3" />
+                      Now
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setUseCurrentTime(false)}
+                      className={`inline-flex items-center gap-1 rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
+                        !useCurrentTime
+                          ? 'bg-card text-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <Calendar className="h-3 w-3" />
+                      Pick date &amp; time
                     </button>
                   </div>
-
-                  {useCurrentTime ? (
-                    <div className="p-4 bg-card rounded-lg border border-border">
-                      <p className="text-muted-foreground">
-                        Meal will be registered at: <span className="text-foreground font-medium">
-                          {new Date().toLocaleString('es-ES', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </span>
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label htmlFor="mealDate" className="block text-sm font-medium text-muted-foreground mb-2">
-                          Date
-                        </label>
-                        <input
-                          type="date"
-                          id="mealDate"
-                          value={mealDate}
-                          onChange={(e) => setMealDate(e.target.value)}
-                          max={new Date().toISOString().split('T')[0]}
-                          className="w-full px-3 py-2 bg-background text-foreground border border-border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent"
-                          disabled={isSubmitting}
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="mealTime" className="block text-sm font-medium text-muted-foreground mb-2">
-                          Time
-                        </label>
-                        <input
-                          type="time"
-                          id="mealTime"
-                          value={mealTime}
-                          onChange={(e) => setMealTime(e.target.value)}
-                          className="w-full px-3 py-2 bg-background text-foreground border border-border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent"
-                          disabled={isSubmitting}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Submit Button */}
-                  <button
-                    type="submit"
-                    disabled={isSubmitting || !selectedMeal || (!useCurrentTime && (!mealDate || !mealTime))}
-                    className="w-full py-3 bg-primary hover:bg-primary/90 disabled:bg-gray-600 disabled:cursor-not-allowed text-primary-foreground rounded-lg transition-colors font-medium"
-                  >
-                    {isSubmitting ? 'Registering...' : 'Register Meal'}
-                  </button>
                 </div>
-              )}
+
+                {!useCurrentTime && (
+                  <div className="grid grid-cols-1 gap-3 pt-1 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="mealDate" className="mb-1 block text-xs font-medium text-muted-foreground">
+                        Date
+                      </label>
+                      <input
+                        type="date"
+                        id="mealDate"
+                        value={mealDate}
+                        onChange={(e) => setMealDate(e.target.value)}
+                        max={new Date().toISOString().split('T')[0]}
+                        className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="mealTime" className="mb-1 block text-xs font-medium text-muted-foreground">
+                        Time
+                      </label>
+                      <input
+                        type="time"
+                        id="mealTime"
+                        value={mealTime}
+                        onChange={(e) => setMealTime(e.target.value)}
+                        className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Single Clear Submit Button */}
+              <button
+                type="submit"
+                disabled={isSubmitting || !selectedMeal || (!useCurrentTime && (!mealDate || !mealTime))}
+                className="w-full rounded-xl bg-secondary py-3.5 text-sm font-bold text-secondary-foreground shadow-sm transition-colors hover:bg-secondary/90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isSubmitting
+                  ? 'Logging meal...'
+                  : selectedMeal
+                    ? `Log to My Day (${effectiveCalories} kcal)`
+                    : 'Select a meal to log'}
+              </button>
             </form>
           ) : (
-            /* Create New Meal Form */
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-foreground">Create New Meal</h3>
-                <button
-                  onClick={handleCloseAddMealForm}
-                  className="text-muted-foreground hover:text-white transition-colors p-2"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              
-              <AddMealForm 
-                onFoodAdded={(meal) => handleMealAdded(meal as Meal)}
-                onClose={handleCloseAddMealForm}
-                initialMealName={undefined}
-              />
-            </div>
+            <AddMealForm
+              onFoodAdded={(meal) => handleMealAdded(meal as Meal)}
+              onClose={() => setShowCreateMeal(false)}
+              initialMealName={undefined}
+            />
           )}
         </div>
       </div>
+
+      {/* Optional Custom Ingredient Breakdown Modal */}
+      {showPortionSelector && selectedMeal && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 p-4"
+          onClick={() => setShowPortionSelector(false)}
+        >
+          <div
+            className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-border bg-card shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-border px-6 py-4">
+              <div>
+                <h3 className="text-lg font-bold text-foreground">Customize Ingredients</h3>
+                <p className="text-xs text-muted-foreground">
+                  Fine-tune how much of {selectedMeal.name} you consumed
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPortionSelector(false)}
+                className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-6">
+              <MealPortionSelector
+                meal={{
+                  mealId: selectedMeal.MealID,
+                  name: selectedMeal.name,
+                  description: selectedMeal.description,
+                  mealFoods: selectedMeal.mealFoods.map((mf) => ({
+                    foodId: mf.food.FoodID,
+                    foodName: mf.food.name,
+                    quantity: mf.quantity,
+                    svgLink: mf.food.svgLink,
+                    kCal: mf.food.kCal,
+                  })),
+                  totalCalories: fullMealCalories,
+                }}
+                onConfirm={(portionData) => {
+                  setSelectedPortions(portionData);
+                  setActiveFraction(null);
+                  setShowPortionSelector(false);
+                }}
+                onCancel={() => setShowPortionSelector(false)}
+                loading={false}
+                profileId={profile?.id}
+                date={
+                  !useCurrentTime && mealDate && mealTime
+                    ? new Date(`${mealDate}T${mealTime}`)
+                    : new Date()
+                }
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

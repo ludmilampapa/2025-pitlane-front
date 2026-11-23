@@ -22,6 +22,7 @@ interface KorvenProduct {
   category?: string;
   area?: string;
   thumb?: string;
+  ingredients?: string[];
 }
 
 type Props = AddMealFormProps & { onClose?: () => void };
@@ -40,6 +41,7 @@ export default function AddMealForm({ onFoodAdded, onClose, initialMealName }: P
   const [isLoadingKorvenMeals, setIsLoadingKorvenMeals] = useState(false);
   const [showKorvenMealOptions, setShowKorvenMealOptions] = useState(false);
   const [selectedKorvenMealProduct, setSelectedKorvenMealProduct] = useState<string | null>(null);
+  const [isImportingIngredients, setIsImportingIngredients] = useState(false);
   
   // Foods management with custom hook
   const { foods, addFood, updateFood, removeFood, totalKcal, clearFoods } = useFoodsList();
@@ -95,6 +97,58 @@ export default function AddMealForm({ onFoodAdded, onClose, initialMealName }: P
       console.error('Error fetching suggested meals:', error);
     } finally {
       setIsLoadingKorvenMeals(false);
+    }
+  };
+
+  const handleSelectSuggestedMeal = async (product: KorvenProduct) => {
+    setMealName(product.name);
+    setSelectedKorvenMealProduct(product.name);
+    setIsMealKorvenInspired(true);
+
+    if (!description.trim() && (product.category || product.area)) {
+      setDescription([product.category, product.area].filter(Boolean).join(' · '));
+    }
+
+    const ingredientNames =
+      product.ingredients && product.ingredients.length > 0
+        ? product.ingredients
+        : [product.name];
+
+    setIsImportingIngredients(true);
+    try {
+      clearFoods();
+      const resolved = await Promise.all(
+        ingredientNames.map(async (ingName) => {
+          let kcal = 120;
+          try {
+            const res = await fetch(`/api/nutrition-lookup?q=${encodeURIComponent(ingName)}`);
+            if (res.ok) {
+              const data = (await res.json()) as { kcal?: number | null };
+              if (typeof data.kcal === 'number' && data.kcal > 0) {
+                kcal = data.kcal;
+              }
+            }
+          } catch {
+            // Keep default 120 kcal fallback
+          }
+          return {
+            name: ingName,
+            kCal: kcal,
+            kcalPerUnit: kcal,
+            quantity: 1,
+            svgLink: `https://www.themealdb.com/images/ingredients/${encodeURIComponent(ingName)}-small.png`,
+            preferences: [],
+            dietaryRestrictions: [],
+            hasNoRestrictions: true,
+          };
+        })
+      );
+
+      for (const foodItem of resolved) {
+        addFood(foodItem);
+      }
+    } finally {
+      setIsImportingIngredients(false);
     }
   };
 
@@ -172,68 +226,64 @@ export default function AddMealForm({ onFoodAdded, onClose, initialMealName }: P
     }
 
     await withSubmission(async () => {
-      // First, create all foods that don't exist yet and collect meal foods with quantities
+      // First, fetch existing foods ONCE if any new foods need name lookup
+      const needsLookup = foods.some((f) => !f.id);
+      const existingByName = new Map<string, number>();
+      if (needsLookup) {
+        const existingFoodsResponse = await fetch(`${API_BASE_URL}/foods`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+        if (!existingFoodsResponse.ok) {
+          throw new Error('Failed to check existing foods');
+        }
+        const existingFoods = (await existingFoodsResponse.json()) as Array<{ name: string; FoodID: number }>;
+        for (const f of existingFoods) {
+          existingByName.set(f.name.toLowerCase(), f.FoodID);
+        }
+      }
+
       const mealFoods: { foodId: number; quantity: number }[] = [];
-      
+
       for (const food of foods) {
         let foodId: number;
 
         if (food.id) {
-          // Food already exists, use its ID
           foodId = food.id;
         } else {
-          // Check if food with this name already exists
-          try {
-            const existingFoodsResponse = await fetch(`${API_BASE_URL}/foods`, {
-              method: "GET",
+          const existingId = existingByName.get(food.name.toLowerCase());
+          if (existingId) {
+            foodId = existingId;
+          } else {
+            const processed = processDietaryRestrictions(food.hasNoRestrictions ?? null, food.dietaryRestrictions || []);
+            const foodResponse = await fetch(`${API_BASE_URL}/foods`, {
+              method: "POST",
               headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                name: food.name,
+                kCal: food.kcalPerUnit || (food.kCal / food.quantity),
+                svgLink: food.svgLink || "",
+                preferences: food.preferences || [],
+                dietaryRestrictions: processed.dietaryRestrictions,
+                hasNoRestrictions: processed.hasNoRestrictions,
+                profileId: userData.profile!.id,
+              }),
             });
-            
-            if (existingFoodsResponse.ok) {
-              const existingFoods = await existingFoodsResponse.json();
-              const existingFood = existingFoods.find((f: { name: string; FoodID: number }) => f.name.toLowerCase() === food.name.toLowerCase());
-              
-              if (existingFood) {
-                // Food already exists, use its ID
-                foodId = existingFood.FoodID;
-              } else {
-                // Create new food
-                const processed = processDietaryRestrictions(food.hasNoRestrictions ?? null, food.dietaryRestrictions || []);
-                const foodResponse = await fetch(`${API_BASE_URL}/foods`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    name: food.name,
-                    kCal: food.kcalPerUnit || (food.kCal / food.quantity), // Use kcalPerUnit for API
-                    svgLink: food.svgLink || "",
-                    preferences: food.preferences || [],
-                    dietaryRestrictions: processed.dietaryRestrictions,
-                    hasNoRestrictions: processed.hasNoRestrictions,
-                    profileId: userData.profile!.id,
-                  }),
-                });
-                
-                if (!foodResponse.ok) {
-                  const errorData = await foodResponse.json().catch(() => ({}));
-                  throw new Error(`Failed to create food: ${food.name} - ${errorData.error || 'Unknown error'}`);
-                }
-                
-                const createdFood = await foodResponse.json();
-                foodId = createdFood.FoodID;
-              }
-            } else {
-              throw new Error('Failed to check existing foods');
+
+            if (!foodResponse.ok) {
+              const errorData = await foodResponse.json().catch(() => ({}));
+              throw new Error(`Failed to create food: ${food.name} - ${errorData.error || 'Unknown error'}`);
             }
-          } catch (error) {
-            console.error('Error processing food:', error);
-            throw new Error(`Failed to process food: ${food.name}`);
+
+            const createdFood = await foodResponse.json();
+            foodId = createdFood.FoodID;
+            existingByName.set(food.name.toLowerCase(), foodId);
           }
         }
 
-        // Add to meal foods with quantity
         mealFoods.push({
           foodId: foodId,
-          quantity: food.quantity
+          quantity: food.quantity,
         });
       }
 
@@ -326,11 +376,7 @@ export default function AddMealForm({ onFoodAdded, onClose, initialMealName }: P
                     <button
                       key={index}
                       type="button"
-                      onClick={() => {
-                        setMealName(product.name);
-                        setSelectedKorvenMealProduct(product.name);
-                        setIsMealKorvenInspired(true);
-                      }}
+                      onClick={() => void handleSelectSuggestedMeal(product)}
                       className={`w-full text-left px-2.5 py-2 rounded-lg text-sm transition-colors flex items-center gap-3 ${
                         selectedKorvenMealProduct === product.name
                           ? 'bg-primary text-primary-foreground border border-border'
@@ -366,10 +412,18 @@ export default function AddMealForm({ onFoodAdded, onClose, initialMealName }: P
                   No suggested meals available.
                 </p>
               )}
-              {selectedKorvenMealProduct && (
+              {isImportingIngredients && (
+                <div className="flex items-center gap-2 rounded-lg border border-border bg-card p-2 text-xs text-primary">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Importing ingredients &amp; calories from TheMealDB + Open Food Facts...
+                </div>
+              )}
+              {selectedKorvenMealProduct && !isImportingIngredients && (
                 <div className="text-xs text-primary bg-card border border-border rounded p-2 flex items-center gap-2">
                   <Hexagon className="w-3 h-3 fill-primary/15" />
-                  <span>Selected suggestion: <strong>{selectedKorvenMealProduct}</strong></span>
+                  <span>
+                    Selected suggestion: <strong>{selectedKorvenMealProduct}</strong> — ingredients auto-filled below!
+                  </span>
                 </div>
               )}
             </div>

@@ -43,6 +43,30 @@ export function AddFoodForm({ className, onSuccess, ...props }: AddFoodFormProps
   const [showKorvenOptions, setShowKorvenOptions] = useState(false);
   const [selectedKorvenProduct, setSelectedKorvenProduct] = useState<string | null>(null);
   const [isKorvenInspired, setIsKorvenInspired] = useState(false);
+  const [isLookingUpKcal, setIsLookingUpKcal] = useState(false);
+  const [kcalHint, setKcalHint] = useState<string | null>(null);
+
+  const lookupCalories = async (query: string) => {
+    const trimmed = query.trim();
+    if (!trimmed) return;
+    setIsLookingUpKcal(true);
+    setKcalHint(null);
+    try {
+      const res = await fetch(`/api/nutrition-lookup?q=${encodeURIComponent(trimmed)}`);
+      if (!res.ok) return;
+      const data = (await res.json()) as { kcal: number | null; productName?: string; source?: string };
+      if (typeof data.kcal === 'number' && data.kcal > 0) {
+        setKCal(data.kcal);
+        setKcalHint(`Auto-filled from ${data.source || 'Open Food Facts'} (${data.kcal} kcal / 100g)`);
+      } else {
+        setKcalHint('No calorie data found — enter kcal manually.');
+      }
+    } catch {
+      setKcalHint('Could not reach Open Food Facts.');
+    } finally {
+      setIsLookingUpKcal(false);
+    }
+  };
 
   // Filter products without connectors for foods
   const hasConnectors = (name: string) => {
@@ -173,6 +197,7 @@ export function AddFoodForm({ className, onSuccess, ...props }: AddFoodFormProps
                               setFoodName(product.name);
                               setSelectedKorvenProduct(product.name);
                               setIsKorvenInspired(true);
+                              void lookupCalories(product.name);
                             }}
                             className={`w-full text-left px-2.5 py-1.5 rounded-lg text-sm transition-colors flex items-center gap-2.5 ${
                               selectedKorvenProduct === product.name
@@ -229,17 +254,34 @@ export function AddFoodForm({ className, onSuccess, ...props }: AddFoodFormProps
               </div>
 
               <div>
-                <Label htmlFor="kcal" className="text-foreground">Calories (kCal)</Label>
+                <div className="mb-1.5 flex items-center justify-between gap-2">
+                  <Label htmlFor="kcal" className="text-foreground">Calories (kCal)</Label>
+                  <button
+                    type="button"
+                    disabled={!foodName.trim() || isLookingUpKcal}
+                    onClick={() => void lookupCalories(foodName)}
+                    className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2.5 py-1 text-xs font-semibold text-primary transition-colors hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isLookingUpKcal && <Loader2 className="h-3 w-3 animate-spin" />}
+                    {isLookingUpKcal ? 'Looking up...' : 'Auto-fill kcal'}
+                  </button>
+                </div>
                 <Input
                   id="kcal"
                   type="number"
                   min="0"
                   value={kCal}
-                  onChange={(e) => setKCal(Math.max(0, parseInt(e.target.value) || 0))}
+                  onChange={(e) => {
+                    setKCal(Math.max(0, parseInt(e.target.value) || 0));
+                    setKcalHint(null);
+                  }}
                   required
-                  className="bg-muted border-border text-foreground placeholder:text-muted-foreground focus:border-border focus:ring-amber-600/20"
+                  className="bg-muted border-border text-foreground placeholder:text-muted-foreground focus:border-border focus:ring-ring"
                   placeholder="Enter calories"
                 />
+                {kcalHint && (
+                  <p className="mt-1 text-xs text-muted-foreground">{kcalHint}</p>
+                )}
               </div>
 
               <DropdownWrapper label="Preferences">

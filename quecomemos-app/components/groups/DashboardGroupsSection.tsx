@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import GroupCard from './GroupCard';
 import { API_BASE_URL } from '@/lib/config/api';
 
-interface Group {
+export interface DashboardGroup {
   GroupID: number;
   name: string;
   description?: string;
@@ -28,40 +28,59 @@ interface Group {
 
 interface DashboardGroupsSectionProps {
   userId: string;
+  sharedGroups?: DashboardGroup[];
+  sharedLoading?: boolean;
+  sharedError?: string | null;
+  onRefresh?: () => void;
 }
 
-export function DashboardGroupsSection({ userId }: DashboardGroupsSectionProps) {
-  const [groups, setGroups] = useState<Group[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export function DashboardGroupsSection({
+  userId,
+  sharedGroups,
+  sharedLoading,
+  sharedError,
+  onRefresh,
+}: DashboardGroupsSectionProps) {
+  const [internalGroups, setInternalGroups] = useState<DashboardGroup[]>([]);
+  const [internalLoading, setInternalLoading] = useState(sharedGroups === undefined);
+  const [internalError, setInternalError] = useState<string | null>(null);
   const router = useRouter();
 
+  const useShared = sharedGroups !== undefined;
+
   const fetchDashboardGroups = useCallback(async () => {
+    if (useShared) {
+      onRefresh?.();
+      return;
+    }
     try {
-      setLoading(true);
+      setInternalLoading(true);
       const url = `${API_BASE_URL}/groups/dashboard/${userId}`;
-      console.log('[DEBUG] DashboardGroupsSection - fetching dashboard groups', { url, userId });
       const response = await fetch(url);
-      
+
       if (!response.ok) {
-        const text = await response.text().catch(() => null);
-        console.error('[DEBUG] DashboardGroupsSection - fetch failed', { status: response.status, statusText: response.statusText, body: text });
         throw new Error('Error loading groups');
       }
-      
+
       const data = await response.json();
-      console.log('[DEBUG] DashboardGroupsSection - received groups', { count: Array.isArray(data) ? data.length : undefined, data });
-      setGroups(data);
+      setInternalGroups(Array.isArray(data) ? data : []);
+      setInternalError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setInternalError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
-      setLoading(false);
+      setInternalLoading(false);
     }
-  }, [userId]);
+  }, [userId, useShared, onRefresh]);
 
   useEffect(() => {
-    fetchDashboardGroups();
-  }, [fetchDashboardGroups]);
+    if (!useShared) {
+      fetchDashboardGroups();
+    }
+  }, [fetchDashboardGroups, useShared]);
+
+  const groups = useShared ? sharedGroups : internalGroups;
+  const loading = useShared ? Boolean(sharedLoading) : internalLoading;
+  const error = useShared ? (sharedError ?? null) : internalError;
 
   const handleViewAllGroups = () => {
     router.push(`/protected/groups`);

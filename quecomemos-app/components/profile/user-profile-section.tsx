@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -19,7 +19,7 @@ import {
 import { useUser } from '@/lib/contexts/UserContext';
 import { AllMeals } from './all-meals';
 import { PreferencesWarning } from '@/components/forms';
-import DashboardGroupsSection from '@/components/groups/DashboardGroupsSection';
+import DashboardGroupsSection, { type DashboardGroup } from '@/components/groups/DashboardGroupsSection';
 import { GamificationHub } from '@/components/dashboard/GamificationHub';
 import { Button } from '@/components/ui/button';
 import {
@@ -65,34 +65,37 @@ export function UserProfileSection() {
 
   const [showQuickGuide, setShowQuickGuide] = useState(false);
   const [pickerDestination, setPickerDestination] = useState<GroupDestination | null>(null);
-  const [userGroups, setUserGroups] = useState<UserGroupSummary[]>([]);
-  const [loadingGroups, setLoadingGroups] = useState(false);
+  const [userGroups, setUserGroups] = useState<DashboardGroup[]>([]);
+  const [loadingGroups, setLoadingGroups] = useState(true);
   const [groupsError, setGroupsError] = useState<string | null>(null);
 
   const profile = userData.profile;
 
-  const openGroupPicker = useCallback(
-    async (destination: GroupDestination) => {
-      setPickerDestination(destination);
-      if (!profile?.id) return;
-
-      try {
-        setLoadingGroups(true);
-        setGroupsError(null);
-        const response = await fetch(`${API_BASE_URL}/groups/dashboard/${profile.id}`);
-        if (!response.ok) {
-          throw new Error('Could not load your groups');
-        }
-        const data = await response.json();
-        setUserGroups(Array.isArray(data) ? data : []);
-      } catch (err) {
-        setGroupsError(err instanceof Error ? err.message : 'Error loading groups');
-      } finally {
-        setLoadingGroups(false);
+  const fetchUserGroups = useCallback(async () => {
+    if (!profile?.id) return;
+    try {
+      setLoadingGroups(true);
+      setGroupsError(null);
+      const response = await fetch(`${API_BASE_URL}/groups/dashboard/${profile.id}`);
+      if (!response.ok) {
+        throw new Error('Could not load your groups');
       }
-    },
-    [profile?.id]
-  );
+      const data = await response.json();
+      setUserGroups(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setGroupsError(err instanceof Error ? err.message : 'Error loading groups');
+    } finally {
+      setLoadingGroups(false);
+    }
+  }, [profile?.id]);
+
+  useEffect(() => {
+    void fetchUserGroups();
+  }, [fetchUserGroups]);
+
+  const openGroupPicker = useCallback((destination: GroupDestination) => {
+    setPickerDestination(destination);
+  }, []);
 
   const handleSelectGroup = (groupId: number) => {
     if (!pickerDestination) return;
@@ -306,7 +309,7 @@ export function UserProfileSection() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => openGroupPicker(pickerDestination)}
+                    onClick={() => void fetchUserGroups()}
                     className="mt-3"
                   >
                     Retry
@@ -364,6 +367,8 @@ export function UserProfileSection() {
       <GamificationHub
         profileId={profile.id}
         onOpenChallengePicker={() => openGroupPicker('challenges')}
+        sharedGroups={userGroups}
+        sharedGroupsLoading={loadingGroups}
       />
 
       {/* Show preferences warning if user doesn't have preferences set */}
@@ -374,7 +379,13 @@ export function UserProfileSection() {
       {/* Dashboard with groups and meals */}
       <div className="flex flex-col gap-10">
         <div>
-          <DashboardGroupsSection userId={profile.id} />
+          <DashboardGroupsSection
+            userId={profile.id}
+            sharedGroups={userGroups}
+            sharedLoading={loadingGroups}
+            sharedError={groupsError}
+            onRefresh={() => void fetchUserGroups()}
+          />
         </div>
 
         <div>

@@ -1,4 +1,6 @@
-import React from 'react';
+'use client';
+
+import React, { useState } from 'react';
 import Image from 'next/image';
 import { useUserDisplayBadges } from '@/lib/hooks/useUserDisplayBadges';
 
@@ -48,6 +50,7 @@ export function UserBadgeDisplay({
   showTooltip = true,
   className = '' 
 }: UserBadgeDisplayProps) {
+  const [failedImages, setFailedImages] = useState<Record<number, boolean>>({});
   // Fetch badges automatically if profileId is provided and badges are not provided
   const { badges: fetchedBadges } = useUserDisplayBadges(
     providedBadges ? undefined : profileId
@@ -74,7 +77,7 @@ export function UserBadgeDisplay({
       <div className="flex items-center gap-1">
         {displayBadges.map((badge) => {
           // Use iconUrl from database if available, otherwise show default emoji
-          const hasCustomIcon = badge.iconUrl && badge.iconUrl.trim() !== '';
+          const hasCustomIcon = badge.iconUrl && badge.iconUrl.trim() !== '' && !failedImages[badge.BadgeID];
           
           return (
             <div
@@ -88,18 +91,11 @@ export function UserBadgeDisplay({
                   alt={badge.name}
                   width={size === 'sm' ? 16 : size === 'md' ? 24 : 32}
                   height={size === 'sm' ? 16 : size === 'md' ? 24 : 32}
-                  className="rounded-full border border-gray-200 bg-white p-0.5"
-                  onError={(e) => {
-                    // If Supabase image fails, show emoji fallback
-                    const target = e.target as HTMLImageElement;
-                    const parent = target.parentElement;
-                    if (parent) {
-                      parent.innerHTML = `<div class="flex items-center justify-center ${sizeClasses[size]} text-center">${getDefaultBadgeIcon(badge.badgeType)}</div>`;
-                    }
-                  }}
+                  className="rounded-full border border-border bg-card p-0.5"
+                  onError={() => setFailedImages((prev) => ({ ...prev, [badge.BadgeID]: true }))}
                 />
               ) : (
-                <div className={`flex items-center justify-center ${sizeClasses[size]} text-center bg-gray-100 rounded-full border border-gray-200`}>
+                <div className={`flex items-center justify-center ${sizeClasses[size]} text-center bg-muted rounded-full border border-border`}>
                   {getDefaultBadgeIcon(badge.badgeType)}
                 </div>
               )}

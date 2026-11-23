@@ -6,6 +6,7 @@ interface ExternalProduct {
   category?: string;
   area?: string;
   thumb?: string;
+  ingredients?: string[];
 }
 
 interface TheMealDBMeal {
@@ -13,6 +14,7 @@ interface TheMealDBMeal {
   strCategory?: string;
   strArea?: string;
   strMealThumb?: string;
+  [key: string]: string | null | undefined;
 }
 
 interface TheMealDBIngredient {
@@ -43,12 +45,22 @@ export async function GET() {
       const meals: TheMealDBMeal[] = Array.isArray(data?.meals) ? data.meals : [];
       for (const meal of meals) {
         if (meal.strMeal?.trim()) {
+          const seen = new Set<string>();
+          const ingredients: string[] = [];
+          for (let i = 1; i <= 20 && ingredients.length < 5; i++) {
+            const raw = meal[`strIngredient${i}`]?.trim();
+            if (raw && !seen.has(raw.toLowerCase())) {
+              seen.add(raw.toLowerCase());
+              ingredients.push(raw);
+            }
+          }
           products.push({
             name: meal.strMeal.trim(),
             type: 'meal',
             category: meal.strCategory || undefined,
             area: meal.strArea || undefined,
             thumb: meal.strMealThumb || undefined,
+            ingredients,
           });
         }
       }
