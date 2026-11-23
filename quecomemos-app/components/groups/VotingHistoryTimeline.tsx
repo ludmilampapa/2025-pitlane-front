@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { Calendar, ChefHat, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -57,7 +58,7 @@ export function VotingHistoryTimeline({ sessions, initiatorId, groupId, loadPart
   if (sessions.length === 0) {
     return (
       <Card className="border border-dashed border-[#E8E2D9] bg-[#FAF7F2]">
-        <CardContent className="py-12 text-center"><Calendar className="mx-auto h-10 w-10 text-[#A8B89F]" /><h3 className="mt-3 font-semibold text-neutral-900">Todavía no hay votaciones completadas</h3><p class="mt-1 text-sm text-neutral-500">La línea de tiempo aparecerá después de la primera juntada.</p></CardContent>
+        <CardContent className="py-12 text-center"><Calendar className="mx-auto h-10 w-10 text-[#A8B89F]" /><h3 className="mt-3 font-semibold text-neutral-900">Todavía no hay votaciones completadas</h3><p className="mt-1 text-sm text-muted-foreground">La línea de tiempo aparecerá después de la primera juntada.</p></CardContent>
       </Card>
     );
   }
