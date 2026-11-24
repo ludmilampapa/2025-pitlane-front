@@ -20,3 +20,8 @@ SqueakDebug.log
 # Metacello-github cache
 /github-cache
 github-*.zip
+
+# Ignore markdown docs except root README.md
+*.md
+!/README.md
+
