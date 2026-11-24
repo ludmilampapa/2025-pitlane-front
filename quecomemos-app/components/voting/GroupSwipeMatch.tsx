@@ -80,7 +80,19 @@ export function GroupSwipeMatch({
     };
   }, [groupId]);
 
-  const currentMeal = meals[index] ?? null;
+  const proposedMealIds = useMemo(
+    () => new Set((session?.proposals || []).map((p) => p.mealId)),
+    [session?.proposals],
+  );
+
+  const availableToSwipe = useMemo(() => {
+    if (session?.status === 'proposal_phase') {
+      return meals.filter((meal) => !proposedMealIds.has(meal.MealID));
+    }
+    return meals;
+  }, [meals, proposedMealIds, session?.status]);
+
+  const currentMeal = availableToSwipe[index] ?? availableToSwipe[0] ?? null;
 
   const restrictions = useMemo(() => {
     if (!currentMeal) return [];
@@ -110,7 +122,7 @@ export function GroupSwipeMatch({
   };
 
   const handlePass = () => {
-    if (index + 1 >= meals.length) {
+    if (index + 1 >= availableToSwipe.length) {
       finishSwiping();
       return;
     }
@@ -166,9 +178,9 @@ export function GroupSwipeMatch({
       }
 
       await refreshSession();
-      if (index + 1 >= meals.length) {
+      if (index + 1 >= availableToSwipe.length) {
         finishSwiping();
-      } else {
+      } else if (session.status !== 'proposal_phase') {
         setIndex((current) => current + 1);
       }
     } catch (err) {
@@ -265,7 +277,7 @@ export function GroupSwipeMatch({
                 )}
               </div>
               <p className="mt-1 text-sm text-muted-foreground">
-                {index + 1} of {meals.length} compatible options
+                {Math.min(index + 1, availableToSwipe.length)} of {availableToSwipe.length} compatible options left to propose
               </p>
             </div>
             <div className="flex items-center gap-3">

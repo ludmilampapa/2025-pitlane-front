@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Clock, Users, Trophy, Vote, Plus, CheckCircle } from 'lucide-react';
+import { Clock, Users, Trophy, Vote, Plus, CheckCircle, Flame } from 'lucide-react';
 import { useUser } from '@/lib/contexts/UserContext';
 import { useGlobalNotification } from '@/lib/contexts/NotificationContext';
 import { useVoting } from '@/lib/contexts/VotingContext';
@@ -15,6 +15,7 @@ import { MealProposalCard } from './MealProposalCard';
 import { VotingTimer } from './VotingTimer';
 import { ProposeMealModal } from './ProposeMealModal';
 import { EarlyCompletionModal } from './EarlyCompletionModal';
+import { GroupSwipeMatch } from './GroupSwipeMatch';
 import type { VotingSession, MealProposal } from './types';
 import { API_BASE_URL } from '@/lib/config/api';
 import { toast } from 'sonner';
@@ -32,6 +33,7 @@ export function VotingSessionCard({ session: initialSession, onVotingComplete, c
   
   const [loading, setLoading] = useState(false);
   const [showProposeMeal, setShowProposeMeal] = useState(false);
+  const [showSwipeMatch, setShowSwipeMatch] = useState(false);
   const [showEarlyCompletion, setShowEarlyCompletion] = useState(false);
   const [groupRestrictions, setGroupRestrictions] = useState<DietaryRestriction[]>([]);
 
@@ -716,10 +718,24 @@ export function VotingSessionCard({ session: initialSession, onVotingComplete, c
                   <Button
                     onClick={() => setShowProposeMeal(true)}
                     size="sm"
-                    className="bg-blue-600 hover:bg-blue-700"
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
                   >
                     <Plus className="w-4 h-4 mr-1" />
                     Propose Meal
+                  </Button>
+
+                  <Button
+                    onClick={() => setShowSwipeMatch((prev) => !prev)}
+                    size="sm"
+                    variant={showSwipeMatch ? 'default' : 'outline'}
+                    className={
+                      showSwipeMatch
+                        ? 'bg-[#C85A32] hover:bg-[#B84F2B] text-white'
+                        : 'border-[#C85A32] text-[#C85A32] hover:bg-[#C85A32] hover:text-white'
+                    }
+                  >
+                    <Flame className="w-4 h-4 mr-1" />
+                    {showSwipeMatch ? 'Hide Swipe Match' : 'Swipe Match'}
                   </Button>
                   
                   {/* Ready for Voting Button */}
@@ -763,6 +779,16 @@ export function VotingSessionCard({ session: initialSession, onVotingComplete, c
             ) : (
               <div className="text-center p-4 bg-amber-900/20 border border-amber-700/30 rounded-lg">
                 <p className="text-amber-200 text-sm">Please log in to propose meals and participate in voting</p>
+              </div>
+            )}
+
+            {canParticipate && showSwipeMatch && (
+              <div className="pt-3">
+                <GroupSwipeMatch
+                  groupId={updatedSession.groupId}
+                  session={updatedSession}
+                  onFinished={() => setShowSwipeMatch(false)}
+                />
               </div>
             )}
           </div>
