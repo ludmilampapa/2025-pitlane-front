@@ -4,10 +4,10 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Vote, History, ListChecks, Flame } from 'lucide-react';
+import { ArrowLeft, Vote, History, ListChecks, Flame, Dices } from 'lucide-react';
 import { VotingProvider, useVoting } from '@/lib/contexts/VotingContext';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { GroupVotingSystem, GroupSwipeMatch, VotingHistorySection } from '@/components/voting';
+import { GroupVotingSystem, GroupSwipeMatch, GroupMealRoulette, VotingHistorySection } from '@/components/voting';
 import type { VotingMode } from '@/components/voting/GroupVotingSystem';
 import { API_BASE_URL } from '@/lib/config/api';
 import type { Group } from '@/components/groups';
@@ -208,20 +208,27 @@ function VotingModes({ group, onVotingComplete }: VotingModesProps) {
       onValueChange={(value) => setMode(value as VotingMode)}
       className="w-full"
     >
-      <TabsList className="mb-4 grid h-auto w-full grid-cols-2 rounded-xl border border-border bg-muted/60 p-1">
+      <TabsList className="mb-4 grid h-auto w-full grid-cols-3 rounded-xl border border-border bg-muted/60 p-1">
         <TabsTrigger
           value="classic"
-          className="flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+          className="flex items-center justify-center gap-1.5 rounded-lg py-2.5 text-xs font-medium sm:text-sm data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm"
         >
-          <ListChecks className="h-4 w-4 text-amber-600" />
-          Classic List
+          <ListChecks className="h-4 w-4 shrink-0 text-amber-600" />
+          <span>Classic List</span>
         </TabsTrigger>
         <TabsTrigger
           value="match"
-          className="flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+          className="flex items-center justify-center gap-1.5 rounded-lg py-2.5 text-xs font-medium sm:text-sm data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm"
         >
-          <Flame className="h-4 w-4 text-[#C85A32]" />
-          Quick Swipe Match
+          <Flame className="h-4 w-4 shrink-0 text-[#C85A32]" />
+          <span>Swipe Match</span>
+        </TabsTrigger>
+        <TabsTrigger
+          value="roulette"
+          className="flex items-center justify-center gap-1.5 rounded-lg py-2.5 text-xs font-medium sm:text-sm data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+        >
+          <Dices className="h-4 w-4 shrink-0 text-emerald-600" />
+          <span>Meal Roulette</span>
         </TabsTrigger>
       </TabsList>
 
@@ -243,6 +250,16 @@ function VotingModes({ group, onVotingComplete }: VotingModesProps) {
           onSessionStarted={startSession}
           onSwitchToClassic={() => setMode('classic')}
           onFinished={() => setMode('classic')}
+        />
+      </TabsContent>
+
+      <TabsContent value="roulette">
+        <GroupMealRoulette
+          groupId={group.GroupID}
+          group={group}
+          session={activeSession}
+          onSessionStarted={startSession}
+          onSwitchToClassic={() => setMode('classic')}
         />
       </TabsContent>
     </Tabs>

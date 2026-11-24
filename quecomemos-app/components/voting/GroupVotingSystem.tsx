@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Vote, ChefHat, Users, Clock, ListChecks, Flame } from 'lucide-react';
+import { Vote, ChefHat, Users, Clock, ListChecks, Flame, Dices } from 'lucide-react';
 import { useUser } from '@/lib/contexts/UserContext';
 import { useVoting } from '@/lib/contexts/VotingContext';
 import {
@@ -13,7 +13,7 @@ import {
 } from '@/components/voting';
 import type { Group } from '@/components/groups/index';
 
-export type VotingMode = 'classic' | 'match';
+export type VotingMode = 'classic' | 'match' | 'roulette';
 
 interface GroupVotingSystemProps {
   group: Group;
@@ -175,7 +175,7 @@ export function GroupVotingSystem({
 
             {/* Voting Style Picker */}
             {onSelectMode && (
-              <div className="mx-auto mb-6 grid max-w-lg grid-cols-1 gap-3 text-left sm:grid-cols-2">
+              <div className="mx-auto mb-6 grid max-w-2xl grid-cols-1 gap-3 text-left sm:grid-cols-3">
                 <button
                   type="button"
                   onClick={() => onSelectMode('classic')}
@@ -187,7 +187,7 @@ export function GroupVotingSystem({
                 >
                   <div className="flex items-center gap-2 font-semibold text-foreground">
                     <ListChecks className="h-4 w-4 text-amber-600" />
-                    Classic List Voting
+                    Classic List
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
                     Propose meals to a shared list and upvote your favorites with a live timer.
@@ -205,10 +205,28 @@ export function GroupVotingSystem({
                 >
                   <div className="flex items-center gap-2 font-semibold text-foreground">
                     <Flame className="h-4 w-4 text-[#C85A32]" />
-                    Quick Swipe Match
+                    Swipe Match
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
                     Swipe Like or Pass through group-safe meal cards one by one.
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onSelectMode('roulette')}
+                  className={`rounded-xl border p-3.5 transition-all ${
+                    selectedMode === 'roulette'
+                      ? 'border-amber-600 bg-amber-500/10 ring-1 ring-amber-600/40'
+                      : 'border-border bg-background hover:bg-muted/50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 font-semibold text-foreground">
+                    <Dices className="h-4 w-4 text-emerald-600" />
+                    Meal Roulette
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Spin the wheel to randomly pick from proposals or safe meals.
                   </p>
                 </button>
               </div>
