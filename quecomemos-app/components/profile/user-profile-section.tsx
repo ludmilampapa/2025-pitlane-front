@@ -21,6 +21,7 @@ import { AllMeals } from './all-meals';
 import { PreferencesWarning } from '@/components/forms';
 import DashboardGroupsSection, { type DashboardGroup } from '@/components/groups/DashboardGroupsSection';
 import { GamificationHub } from '@/components/dashboard/GamificationHub';
+import { LiveActivityBanner } from '@/components/dashboard/LiveActivityBanner';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -174,6 +175,9 @@ export function UserProfileSection() {
 
   return (
     <div className="flex-1 w-full flex flex-col gap-8">
+      {/* Live Group Alerts (Active Votes, Menu Change Proposals & Invitations) */}
+      <LiveActivityBanner />
+
       {/* Collapsible Quick Guide & Shortcuts */}
       <section className="rounded-2xl border border-border bg-card shadow-sm">
         <button

@@ -3,6 +3,7 @@ import { AuthButton } from "@/components/auth";
 import { Logo } from "@/components/common";
 import { NavLinks } from "@/components/common/nav-links";
 import { NavbarBadgeButton } from "@/components/common/navbar-badge-button";
+import { NavbarNotificationsBell } from "@/components/common/navbar-notifications-bell";
 
 export default function ProtectedLayout({
   children,
@@ -33,6 +34,7 @@ export default function ProtectedLayout({
             >
               Register a meal
             </Link>
+            <NavbarNotificationsBell />
             <AuthButton />
           </div>
         </div>
