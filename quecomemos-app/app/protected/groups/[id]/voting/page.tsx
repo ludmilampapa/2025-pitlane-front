@@ -4,10 +4,11 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Vote, History } from 'lucide-react';
+import { ArrowLeft, Vote, History, ListChecks, Flame } from 'lucide-react';
 import { VotingProvider, useVoting } from '@/lib/contexts/VotingContext';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { GroupVotingSystem, GroupSwipeMatch, VotingHistorySection } from '@/components/voting';
+import type { VotingMode } from '@/components/voting/GroupVotingSystem';
 import { API_BASE_URL } from '@/lib/config/api';
 import type { Group } from '@/components/groups';
 
@@ -24,7 +25,6 @@ export default function GroupVotingPage() {
   const fetchGroup = useCallback(async () => {
     try {
       setLoading(true);
-      console.debug('Fetching group for voting', `${API_BASE_URL}/groups/${groupId}`);
       const res = await fetch(`${API_BASE_URL}/groups/${groupId}`);
       if (!res.ok) {
         if (res.status === 404) {
@@ -34,10 +34,8 @@ export default function GroupVotingPage() {
         throw new Error(`HTTP ${res.status}`);
       }
       const data = await res.json();
-      console.debug('Group data loaded for voting', data);
       setGroup(data);
     } catch (err) {
-      console.debug('Error fetching group for voting', err);
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
@@ -49,7 +47,6 @@ export default function GroupVotingPage() {
   }, [fetchGroup]);
 
   const handleVotingComplete = useCallback(() => {
-    // Refresh group data after voting completes
     fetchGroup();
   }, [fetchGroup]);
 
@@ -58,11 +55,11 @@ export default function GroupVotingPage() {
       <div className="container mx-auto p-6">
         <div className="space-y-6">
           <div className="flex items-center space-x-4">
-            <div className="h-8 w-8 bg-muted animate-pulse rounded" />
-            <div className="h-8 bg-muted animate-pulse rounded flex-1" />
+            <div className="h-8 w-8 animate-pulse rounded bg-muted" />
+            <div className="h-8 flex-1 animate-pulse rounded bg-muted" />
           </div>
-          <div className="h-64 bg-muted animate-pulse rounded-lg" />
-          <div className="h-32 bg-muted animate-pulse rounded-lg" />
+          <div className="h-64 animate-pulse rounded-lg bg-muted" />
+          <div className="h-32 animate-pulse rounded-lg bg-muted" />
         </div>
       </div>
     );
@@ -71,14 +68,16 @@ export default function GroupVotingPage() {
   if (notFound) {
     return (
       <div className="container mx-auto p-6">
-        <div className="text-center py-12">
-          <h1 className="text-3xl font-bold mb-4">Group Not Found</h1>
-          <p className="text-muted-foreground mb-6">The group you&apos;re looking for doesn&apos;t exist or has been deleted.</p>
+        <div className="py-12 text-center">
+          <h1 className="mb-4 text-3xl font-bold">Group Not Found</h1>
+          <p className="mb-6 text-muted-foreground">
+            The group you&apos;re looking for doesn&apos;t exist or has been deleted.
+          </p>
           <div className="flex justify-center gap-4">
             <Button onClick={() => router.back()} variant="outline">
               Go Back
             </Button>
-            <Button onClick={() => router.push('/protected/groups')} className="bg-amber-700 text-white">
+            <Button onClick={() => router.push('/protected/groups')} className="bg-amber-700 text-white hover:bg-amber-800">
               Go to Groups
             </Button>
           </div>
@@ -90,14 +89,14 @@ export default function GroupVotingPage() {
   if (error) {
     return (
       <div className="container mx-auto p-6">
-        <div className="flex items-center space-x-4 mb-6">
+        <div className="mb-6 flex items-center space-x-4">
           <Button variant="ghost" size="sm" onClick={() => router.back()} className="p-2">
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="h-4 w-4" />
           </Button>
           <h1 className="text-2xl font-bold">Error Loading Voting Page</h1>
         </div>
         <Card>
-          <CardContent>
+          <CardContent className="pt-6">
             <p className="text-destructive">{error}</p>
             <div className="mt-4 flex gap-2">
               <Button variant="outline" onClick={() => router.back()}>
@@ -112,49 +111,43 @@ export default function GroupVotingPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center space-x-4">
         <Button variant="ghost" size="sm" onClick={() => router.back()} className="p-2">
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold flex items-center">
-            <Vote className="w-8 h-8 mr-3 text-amber-600" />
+          <h1 className="flex items-center text-3xl font-bold text-foreground">
+            <Vote className="mr-3 h-8 w-8 text-amber-600" />
             Group Voting
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="mt-1 text-muted-foreground">
             Voting for <span className="font-medium text-amber-600">{group?.name}</span>
           </p>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {group && (
           <VotingProvider groupId={group.GroupID}>
             {/* Voting System - Takes up 2 columns on large screens */}
-            <div className="lg:col-span-2 space-y-6">
-              <VotingModes 
-                group={group} 
-                onVotingComplete={handleVotingComplete}
-              />
+            <div className="space-y-6 lg:col-span-2">
+              <VotingModes group={group} onVotingComplete={handleVotingComplete} />
             </div>
 
             {/* Voting History - Takes up 1 column on large screens */}
             <div className="space-y-6">
-              <Card className="bg-gradient-to-br from-gray-800/30 to-gray-900/30 border-gray-700/50">
+              <Card className="border-border bg-card shadow-sm">
                 <CardHeader>
-                  <CardTitle className="flex items-center text-gray-200">
-                    <History className="w-5 h-5 mr-2" />
+                  <CardTitle className="flex items-center text-foreground">
+                    <History className="mr-2 h-5 w-5 text-muted-foreground" />
                     Voting History
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <VotingHistorySection 
-                    groupId={group.GroupID}
-                    className="w-full"
-                  />
+                  <VotingHistorySection groupId={group.GroupID} className="w-full" />
                 </CardContent>
               </Card>
             </div>
@@ -163,27 +156,35 @@ export default function GroupVotingPage() {
       </div>
 
       {/* Instructions Card */}
-      <Card className="bg-gradient-to-br from-blue-800/20 to-blue-900/20 border-blue-700/30">
+      <Card className="border-border bg-card shadow-sm">
         <CardHeader>
-          <CardTitle className="text-blue-200">How to Use Group Voting</CardTitle>
+          <CardTitle className="text-foreground">How to Use Group Voting</CardTitle>
         </CardHeader>
-        <CardContent className="text-blue-100">
+        <CardContent className="text-muted-foreground">
           <div className="space-y-3 text-sm">
             <div className="flex items-start gap-3">
-              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold">1</div>
-              <p>Any group member can start a voting session by clicking &quot;Start Voting Session&quot;</p>
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                1
+              </div>
+              <p>Choose your preferred mode (Classic List or Quick Swipe Match) and click &quot;Start Group Vote&quot;.</p>
             </div>
             <div className="flex items-start gap-3">
-              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold">2</div>
-              <p>During the proposal phase, members can suggest meals they&apos;d like to eat</p>
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                2
+              </div>
+              <p>During the proposal phase, members suggest meals from the list or by swiping Like on meal cards.</p>
             </div>
             <div className="flex items-start gap-3">
-              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold">3</div>
-              <p>Once voting begins, all members vote on their preferred meal options</p>
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                3
+              </div>
+              <p>Once voting begins, everyone votes on their preferred meal options in either mode.</p>
             </div>
             <div className="flex items-start gap-3">
-              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold">4</div>
-              <p>The meal with the most votes wins and gets automatically registered!</p>
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                4
+              </div>
+              <p>The meal with the most votes wins and gets automatically registered for the group!</p>
             </div>
           </div>
         </CardContent>
@@ -198,25 +199,50 @@ interface VotingModesProps {
 }
 
 function VotingModes({ group, onVotingComplete }: VotingModesProps) {
-  const { activeSession } = useVoting();
+  const { activeSession, startSession } = useVoting();
+  const [mode, setMode] = useState<VotingMode>('classic');
 
   return (
-    <Tabs defaultValue="classic" className="w-full">
-      <TabsList className="mb-4 grid w-full grid-cols-2 bg-[#F3EEE6]">
-        <TabsTrigger value="classic">Votación clásica</TabsTrigger>
-        <TabsTrigger value="match">Modo Match Rápido</TabsTrigger>
+    <Tabs
+      value={mode}
+      onValueChange={(value) => setMode(value as VotingMode)}
+      className="w-full"
+    >
+      <TabsList className="mb-4 grid h-auto w-full grid-cols-2 rounded-xl border border-border bg-muted/60 p-1">
+        <TabsTrigger
+          value="classic"
+          className="flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+        >
+          <ListChecks className="h-4 w-4 text-amber-600" />
+          Classic List
+        </TabsTrigger>
+        <TabsTrigger
+          value="match"
+          className="flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+        >
+          <Flame className="h-4 w-4 text-[#C85A32]" />
+          Quick Swipe Match
+        </TabsTrigger>
       </TabsList>
+
       <TabsContent value="classic">
         <GroupVotingSystem
           group={group}
           onVotingComplete={onVotingComplete}
+          selectedMode={mode}
+          onSelectMode={setMode}
           className="w-full"
         />
       </TabsContent>
+
       <TabsContent value="match">
         <GroupSwipeMatch
           groupId={group.GroupID}
+          group={group}
           session={activeSession}
+          onSessionStarted={startSession}
+          onSwitchToClassic={() => setMode('classic')}
+          onFinished={() => setMode('classic')}
         />
       </TabsContent>
     </Tabs>
