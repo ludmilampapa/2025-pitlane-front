@@ -11,8 +11,13 @@ interface NavLink {
 export function NavLinks({ links }: { links: NavLink[] }) {
   const pathname = usePathname();
 
-  const isActive = (href: string) =>
-    href === '/protected' ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+  const isActive = (href: string) => {
+    if (href === '/protected') return pathname === href;
+    if (href === '/protected/meals' && pathname.startsWith('/protected/community-meals')) {
+      return true;
+    }
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
 
   return (
     <div className="hidden items-center gap-1 md:flex">

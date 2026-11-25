@@ -71,7 +71,7 @@ export default function GroupDetailPage() {
   }, [fetchGroup]);
 
   const formatDate = (d?: string) =>
-    d ? new Date(d).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+    d ? new Date(d).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
 
   const goInfo = () => router.push(`/protected/groups/${groupId}/info`);
   const goHistory = () => router.push(`/protected/groups/${groupId}/history`);
@@ -179,52 +179,62 @@ export default function GroupDetailPage() {
         />
       )}
 
-        {/* Recent Activity */}
-      <Card className="border-[#E8E2D9] bg-white shadow-sm">
+      {/* Recent Activity */}
+      <Card className="rounded-2xl border-border bg-card shadow-sm">
         <CardHeader>
-          <CardTitle className="flex items-center text-amber-200">
-            <Activity className="w-5 h-5 mr-2" /> Recent Activity
+          <CardTitle className="flex items-center text-foreground">
+            <Activity className="mr-2 h-5 w-5 text-secondary" /> Recent Activity
           </CardTitle>
         </CardHeader>
         <CardContent>
           {group?.consumptions && group.consumptions.length > 0 ? (
             <div className="space-y-3">
               {/* Scrollable container for activities */}
-              <div className="max-h-80 overflow-y-auto pr-2 space-y-3">
-                {group!.consumptions!.slice(0, 10).map((c: Consumption) => (
-                  <div key={c.ConsumptionID} className="border-l-4 border-amber-700 pl-4 py-2">
+              <div className="max-h-80 space-y-3 overflow-y-auto pr-2">
+                {group.consumptions.slice(0, 10).map((c: Consumption) => (
+                  <div
+                    key={c.ConsumptionID}
+                    className="rounded-r-xl border-l-4 border-secondary bg-muted/25 py-2.5 pl-4 pr-3"
+                  >
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-gray-300">{c.name}</p>
-                        <p className="text-sm text-gray-400">{formatDate(c.consumedAt)}</p>
+                        <p className="font-medium text-foreground">{c.name}</p>
+                        <p className="text-xs text-muted-foreground">{formatDate(c.consumedAt)}</p>
                       </div>
-                      <div className="flex items-center text-amber-700">
-                        <ChefHat className="w-4 h-4" />
+                      <div className="flex items-center text-secondary">
+                        <ChefHat className="h-4 w-4" />
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-              
+
               {/* View more button */}
-              <div className="pt-4 border-t border-amber-700/30">
+              <div className="border-t border-border pt-4">
                 <div className="flex items-center justify-between">
-                  {group!.consumptions!.length > 10 && (
-                    <p className="text-sm text-gray-400">
-                      Showing 10 of {group!.consumptions!.length} activities
+                  {group.consumptions.length > 10 && (
+                    <p className="text-xs text-muted-foreground">
+                      Showing 10 of {group.consumptions.length} activities
                     </p>
                   )}
-                  <Button variant="outline" size="sm" onClick={goHistory} className="ml-auto bg-amber-700 hover:bg-amber-600 text-white border-amber-600">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={goHistory}
+                    className="ml-auto rounded-xl"
+                  >
                     View Complete History
                   </Button>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="text-center py-8">
-              <Activity className="w-12 h-12 mx-auto text-amber-700 mb-4" />
-              <h3 className="text-lg font-medium mb-2 text-gray-300">No recent activity</h3>
-              <p className="text-gray-400 mb-4">Group meals will appear here once members start eating together</p>
+            <div className="py-8 text-center">
+              <Activity className="mx-auto mb-3 h-10 w-10 text-muted-foreground/60" />
+              <h3 className="mb-1 text-base font-semibold text-foreground">No recent activity</h3>
+              <p className="text-sm text-muted-foreground">
+                Group meals will appear here once members start eating together.
+              </p>
             </div>
           )}
         </CardContent>

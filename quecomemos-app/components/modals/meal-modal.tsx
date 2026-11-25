@@ -125,9 +125,9 @@ export function MealModal({ meal, isOpen, onClose, onEdit }: MealModalProps) {
               <div className="flex items-center gap-2 flex-1">
                 <h3 className="text-2xl font-bold text-foreground">{meal.name}</h3>
                 {isKorvenInspiredMeal(meal.name) && (
-                  <span className="text-xs bg-muted text-foreground px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <Hexagon className="w-3 h-3 fill-amber-400/30" />
-                    Korven
+                  <span className="text-xs bg-primary/10 text-primary border border-primary/25 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <Hexagon className="w-3 h-3 fill-primary/20" />
+                    TheMealDB
                   </span>
                 )}
               </div>
@@ -205,9 +205,9 @@ export function MealModal({ meal, isOpen, onClose, onEdit }: MealModalProps) {
                         <div className="flex items-center gap-2">
                           <h5 className="font-semibold text-foreground">{mealFood.food.name}</h5>
                           {isKorvenInspiredFood(mealFood.food.name) && (
-                            <span className="text-xs bg-muted text-foreground px-1.5 py-0.5 rounded-full flex items-center gap-1">
-                              <Hexagon className="w-2.5 h-2.5 fill-amber-400/30" />
-                              Korven
+                            <span className="text-xs bg-primary/10 text-primary border border-primary/25 px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                              <Hexagon className="w-2.5 h-2.5 fill-primary/20" />
+                              TheMealDB
                             </span>
                           )}
                         </div>

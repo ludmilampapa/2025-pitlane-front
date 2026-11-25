@@ -2,13 +2,23 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Vote, History, ListChecks, Dices } from 'lucide-react';
-import { VotingProvider, useVoting } from '@/lib/contexts/VotingContext';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { GroupVotingSystem, GroupMealRoulette, VotingHistorySection } from '@/components/voting';
-import type { VotingMode } from '@/components/voting/GroupVotingSystem';
+import { Badge } from '@/components/ui/badge';
+import {
+  ArrowLeft,
+  Vote,
+  Users,
+  CalendarDays,
+  Trophy,
+  Gamepad2,
+} from 'lucide-react';
+import { VotingProvider } from '@/lib/contexts/VotingContext';
+import {
+  GroupVotingSystem,
+  VotingHistorySection,
+  VotingInfoCard,
+} from '@/components/voting';
 import { API_BASE_URL } from '@/lib/config/api';
 import type { Group } from '@/components/groups';
 
@@ -27,7 +37,7 @@ export default function GroupVotingPage() {
       setLoading(true);
       const res = await fetch(`${API_BASE_URL}/groups/${groupId}`);
       if (!res.ok) {
-        if (res.status === 404) {
+        if (res.status === 404 || res.status === 403) {
           setNotFound(true);
           return;
         }
@@ -52,14 +62,11 @@ export default function GroupVotingPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="space-y-6">
-          <div className="flex items-center space-x-4">
-            <div className="h-8 w-8 animate-pulse rounded bg-muted" />
-            <div className="h-8 flex-1 animate-pulse rounded bg-muted" />
-          </div>
-          <div className="h-64 animate-pulse rounded-lg bg-muted" />
-          <div className="h-32 animate-pulse rounded-lg bg-muted" />
+      <div className="container mx-auto max-w-6xl space-y-6 p-6">
+        <div className="h-28 animate-pulse rounded-2xl border border-border bg-card" />
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="h-96 animate-pulse rounded-2xl border border-border bg-card lg:col-span-2" />
+          <div className="h-96 animate-pulse rounded-2xl border border-border bg-card" />
         </div>
       </div>
     );
@@ -67,37 +74,43 @@ export default function GroupVotingPage() {
 
   if (notFound) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="py-12 text-center">
-          <h1 className="mb-4 text-3xl font-bold">Group Not Found</h1>
-          <p className="mb-6 text-muted-foreground">
-            The group you&apos;re looking for doesn&apos;t exist or has been deleted.
-          </p>
-          <div className="flex justify-center gap-4">
-            <Button onClick={() => router.back()} variant="outline">
-              Go Back
-            </Button>
-            <Button onClick={() => router.push('/protected/groups')} className="bg-amber-700 text-white hover:bg-amber-800">
-              Go to Groups
-            </Button>
-          </div>
-        </div>
+      <div className="container mx-auto max-w-2xl p-6">
+        <Card className="border-border bg-card shadow-sm">
+          <CardContent className="py-12 text-center">
+            <Vote className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+            <h1 className="mb-2 text-2xl font-bold text-foreground">Group Not Available</h1>
+            <p className="mb-6 text-sm text-muted-foreground">
+              This group does not exist or you don&apos;t have access to it.
+            </p>
+            <div className="flex justify-center gap-3">
+              <Button onClick={() => router.back()} variant="outline">
+                Go Back
+              </Button>
+              <Button
+                onClick={() => router.push('/protected/groups')}
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                My Groups
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="mb-6 flex items-center space-x-4">
+      <div className="container mx-auto max-w-2xl p-6">
+        <div className="mb-4 flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={() => router.back()} className="p-2">
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-2xl font-bold">Error Loading Voting Page</h1>
+          <h1 className="text-xl font-bold text-foreground">Error Loading Voting Page</h1>
         </div>
-        <Card>
+        <Card className="border-border bg-card">
           <CardContent className="pt-6">
-            <p className="text-destructive">{error}</p>
+            <p className="text-sm text-destructive">{error}</p>
             <div className="mt-4 flex gap-2">
               <Button variant="outline" onClick={() => router.back()}>
                 Back
@@ -110,140 +123,108 @@ export default function GroupVotingPage() {
     );
   }
 
+  const memberCount = group?.members?.length ?? 0;
+
   return (
-    <div className="container mx-auto space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-center space-x-4">
-        <Button variant="ghost" size="sm" onClick={() => router.back()} className="p-2">
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex-1">
-          <h1 className="flex items-center text-3xl font-bold text-foreground">
-            <Vote className="mr-3 h-8 w-8 text-amber-600" />
-            Group Voting
-          </h1>
-          <p className="mt-1 text-muted-foreground">
-            Voting for <span className="font-medium text-amber-600">{group?.name}</span>
-          </p>
+    <div className="container mx-auto max-w-6xl space-y-6 p-4 sm:p-6">
+      {/* Editorial Hero Header */}
+      <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-secondary/10 blur-2xl"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -bottom-14 left-1/3 h-36 w-36 rounded-full bg-primary/10 blur-2xl"
+        />
+
+        <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-start gap-3.5">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => router.push(`/protected/groups/${groupId}`)}
+              aria-label="Back to group"
+              className="mt-0.5 h-9 w-9 shrink-0 rounded-xl border-border bg-background/80 hover:bg-muted"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-secondary">
+                  <Gamepad2 className="h-3.5 w-3.5" />
+                  Meal Showdown
+                </span>
+                <span className="text-muted-foreground/40">•</span>
+                <Badge
+                  variant="secondary"
+                  className="rounded-full border border-border bg-muted/70 px-2.5 py-0.5 text-xs font-medium text-foreground"
+                >
+                  <Users className="mr-1 h-3 w-3 text-primary" />
+                  {memberCount} {memberCount === 1 ? 'player' : 'players'}
+                </Badge>
+              </div>
+
+              <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                {group?.name}
+              </h1>
+              {group?.description ? (
+                <p className="mt-1 line-clamp-1 max-w-xl text-sm text-muted-foreground">
+                  {group.description}
+                </p>
+              ) : (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Swipe dishes tailored to your tastes &amp; diet, then play Classic List or Meal Roulette.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push(`/protected/groups/${groupId}/menu`)}
+              className="rounded-xl border-border bg-background/80 text-xs hover:bg-muted"
+            >
+              <CalendarDays className="mr-1.5 h-3.5 w-3.5 text-primary" />
+              Weekly Menu
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push(`/protected/groups/${groupId}/challenges`)}
+              className="rounded-xl border-border bg-background/80 text-xs hover:bg-muted"
+            >
+              <Trophy className="mr-1.5 h-3.5 w-3.5 text-secondary" />
+              Challenges
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      {/* Unified Immersive Game Stage + Past Decisions */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         {group && (
           <VotingProvider groupId={group.GroupID}>
-            {/* Voting System - Takes up 2 columns on large screens */}
-            <div className="space-y-6 lg:col-span-2">
-              <VotingModes group={group} onVotingComplete={handleVotingComplete} />
+            <div className="space-y-6 lg:col-span-8">
+              <GroupVotingSystem
+                group={group}
+                onVotingComplete={handleVotingComplete}
+                className="w-full"
+              />
             </div>
 
-            {/* Voting History - Takes up 1 column on large screens */}
-            <div className="space-y-6">
-              <Card className="border-border bg-card shadow-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center text-foreground">
-                    <History className="mr-2 h-5 w-5 text-muted-foreground" />
-                    Voting History
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <VotingHistorySection groupId={group.GroupID} className="w-full" />
-                </CardContent>
-              </Card>
+            <div className="space-y-6 lg:col-span-4">
+              <VotingHistorySection groupId={group.GroupID} className="w-full" />
             </div>
           </VotingProvider>
         )}
       </div>
 
-      {/* Instructions Card */}
-      <Card className="border-border bg-card shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-foreground">How to Use Group Voting</CardTitle>
-        </CardHeader>
-        <CardContent className="text-muted-foreground">
-          <div className="space-y-3 text-sm">
-            <div className="flex items-start gap-3">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                1
-              </div>
-              <p>Choose your voting method (Classic List or Meal Roulette) and click &quot;Start Group Vote&quot;.</p>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                2
-              </div>
-              <p>During the proposal phase, suggest meals via &quot;Propose Meal&quot; or browse group-safe cards with &quot;Swipe Match&quot;.</p>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                3
-              </div>
-              <p>Once voting begins, everyone votes on their preferred meal options in either mode.</p>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                4
-              </div>
-              <p>The meal with the most votes wins and gets automatically registered for the group!</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Compact 4-Step Game Guide */}
+      <VotingInfoCard />
     </div>
-  );
-}
-
-interface VotingModesProps {
-  group: Group;
-  onVotingComplete: () => void;
-}
-
-function VotingModes({ group, onVotingComplete }: VotingModesProps) {
-  const { activeSession, startSession } = useVoting();
-  const [mode, setMode] = useState<VotingMode>('classic');
-
-  return (
-    <Tabs
-      value={mode}
-      onValueChange={(value) => setMode(value as VotingMode)}
-      className="w-full"
-    >
-      <TabsList className="mb-4 grid h-auto w-full grid-cols-2 rounded-xl border border-border bg-muted/60 p-1">
-        <TabsTrigger
-          value="classic"
-          className="flex items-center justify-center gap-1.5 rounded-lg py-2.5 text-sm font-medium data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-        >
-          <ListChecks className="h-4 w-4 shrink-0 text-amber-600" />
-          <span>Classic List</span>
-        </TabsTrigger>
-        <TabsTrigger
-          value="roulette"
-          className="flex items-center justify-center gap-1.5 rounded-lg py-2.5 text-sm font-medium data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-        >
-          <Dices className="h-4 w-4 shrink-0 text-emerald-600" />
-          <span>Meal Roulette</span>
-        </TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="classic">
-        <GroupVotingSystem
-          group={group}
-          onVotingComplete={onVotingComplete}
-          selectedMode={mode}
-          onSelectMode={setMode}
-          className="w-full"
-        />
-      </TabsContent>
-
-      <TabsContent value="roulette">
-        <GroupMealRoulette
-          groupId={group.GroupID}
-          group={group}
-          session={activeSession}
-          onSessionStarted={startSession}
-          onSwitchToClassic={() => setMode('classic')}
-        />
-      </TabsContent>
-    </Tabs>
   );
 }

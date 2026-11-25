@@ -1,14 +1,21 @@
 'use client';
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Vote, ChefHat, Users, Clock, ListChecks, Dices } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  Users,
+  Dices,
+  RefreshCw,
+  WifiOff,
+  Flame,
+  Gamepad2,
+  Trophy,
+} from 'lucide-react';
 import { useUser } from '@/lib/contexts/UserContext';
 import { useVoting } from '@/lib/contexts/VotingContext';
 import {
   VotingSessionCard,
   StartVotingButton,
-  VotingInfoCard,
   VotingResultsModal,
 } from '@/components/voting';
 import type { Group } from '@/components/groups/index';
@@ -26,8 +33,6 @@ interface GroupVotingSystemProps {
 export function GroupVotingSystem({
   group,
   onVotingComplete,
-  selectedMode = 'classic',
-  onSelectMode,
   className = '',
 }: GroupVotingSystemProps) {
   const { userData } = useUser();
@@ -55,204 +60,199 @@ export function GroupVotingSystem({
 
   if (loading) {
     return (
-      <Card className={`border-border bg-card ${className}`}>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-center py-8">
-            <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
-            <span className="ml-3 text-muted-foreground">Loading voting system...</span>
+      <Card className={`rounded-2xl border-border bg-card shadow-sm ${className}`}>
+        <CardContent className="p-8">
+          <div className="flex flex-col items-center justify-center gap-3 py-8">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-primary" />
+            <span className="text-sm text-muted-foreground">Loading game stage...</span>
           </div>
         </CardContent>
       </Card>
     );
   }
 
-  // Enhanced connection status indicator with manual sync
-  const ConnectionStatusIndicator = () => {
-    const formatTime = (date: Date | null) => {
-      if (!date) return 'Never';
-      return date.toLocaleTimeString();
-    };
+  const formatTime = (date: Date | null) => {
+    if (!date) return 'Just now';
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
 
+  const SyncBar = () => {
     if (isOffline) {
       return (
-        <div className="mb-4 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center text-amber-800 dark:text-amber-200">
-              <div className="mr-3 h-2 w-2 animate-pulse rounded-full bg-amber-500" />
-              <div>
-                <div className="text-sm font-medium">Connection Issues Detected</div>
-                <div className="mt-0.5 text-xs text-amber-700/80 dark:text-amber-300/80">
-                  Showing last known state. Last sync: {formatTime(lastSyncTime)}
-                </div>
-              </div>
-            </div>
-            <button
-              onClick={forceSyncNow}
-              className="flex items-center gap-1 rounded-md bg-amber-600 px-3 py-1 text-xs text-white transition-colors hover:bg-amber-700"
-            >
-              Sync Now
-            </button>
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-2.5">
+          <div className="flex items-center gap-2.5 text-amber-800 dark:text-amber-200">
+            <WifiOff className="h-4 w-4 shrink-0 text-amber-600" />
+            <span className="text-xs font-medium">
+              Connection interrupted · Showing state from {formatTime(lastSyncTime)}
+            </span>
           </div>
+          <button
+            type="button"
+            onClick={forceSyncNow}
+            className="inline-flex items-center gap-1 rounded-lg bg-amber-600 px-3 py-1 text-xs font-semibold text-white transition-colors hover:bg-amber-700"
+          >
+            <RefreshCw className="h-3 w-3" />
+            Reconnect
+          </button>
         </div>
       );
     }
 
     return (
-      <div className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">
-        <div className="flex items-center justify-between text-emerald-800 dark:text-emerald-200">
-          <div className="flex items-center">
-            <div className="mr-3 h-2 w-2 rounded-full bg-emerald-500" />
-            <span className="text-sm">Connected • Last sync: {formatTime(lastSyncTime)}</span>
-          </div>
-          <button
-            onClick={forceSyncNow}
-            className="px-2 py-1 text-xs font-medium opacity-80 transition-opacity hover:opacity-100"
-          >
-            Refresh
-          </button>
-        </div>
+      <div className="flex items-center justify-between px-1 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full bg-emerald-500" />
+          Live multiplayer sync · Updated {formatTime(lastSyncTime)}
+        </span>
+        <button
+          type="button"
+          onClick={forceSyncNow}
+          className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <RefreshCw className="h-3 w-3" />
+          Refresh
+        </button>
       </div>
     );
   };
 
-  // If there's an active voting session, show the voting interface
   if (activeSession) {
     return (
       <>
-        <div className={`space-y-4 ${className}`}>
-          <ConnectionStatusIndicator />
-
+        <div className={`space-y-3 ${className}`}>
+          <SyncBar />
           <VotingSessionCard
             session={activeSession}
             onVotingComplete={onVotingComplete}
-            className="border-border"
           />
         </div>
 
-        {/* Results modal displayed independently at group level */}
         {showResultsModal && activeSession && (
           <VotingResultsModal
             isOpen={showResultsModal}
             onClose={handleCloseResults}
-            onViewMeal={() => {
-              handleCloseResults();
-            }}
+            onViewMeal={handleCloseResults}
             session={activeSession}
-            winnerProposal={activeSession.proposals?.find((p) => p.mealId === activeSession.winnerMealId)}
+            winnerProposal={activeSession.proposals?.find(
+              (p) => p.mealId === activeSession.winnerMealId
+            )}
           />
         )}
       </>
     );
   }
 
-  // No active session - show the start voting interface with mode picker
-  return (
-    <div className={`space-y-4 ${className}`}>
-      <ConnectionStatusIndicator />
+  const members = group.members || [];
 
-      <Card className="border-border bg-card shadow-sm">
-        <CardHeader>
-          <CardTitle className="flex items-center text-foreground">
-            <Vote className="mr-2 h-5 w-5 text-amber-600" />
-            Group Meal Voting
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="py-4 text-center">
-            <div className="mb-4 flex justify-center">
-              <div className="rounded-full bg-amber-500/15 p-4">
-                <Vote className="h-10 w-10 text-amber-600" />
-              </div>
+  return (
+    <div className={`space-y-3 ${className}`}>
+      <SyncBar />
+
+      {/* Immersive Game Lobby */}
+      <Card className="relative overflow-hidden rounded-3xl border-border bg-card shadow-sm">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -left-16 -top-16 h-52 w-52 rounded-full bg-secondary/10 blur-3xl"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -bottom-16 -right-16 h-52 w-52 rounded-full bg-primary/10 blur-3xl"
+        />
+
+        <CardContent className="relative p-6 sm:p-10">
+          <div className="mx-auto max-w-xl text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-secondary/30 bg-secondary/10 shadow-sm">
+              <Gamepad2 className="h-8 w-8 text-secondary" />
             </div>
 
-            <h3 className="mb-2 text-xl font-semibold text-foreground">
-              Ready to Decide What to Eat?
-            </h3>
-
-            <p className="mx-auto mb-6 max-w-md text-sm text-muted-foreground">
-              Choose how your group wants to vote, then start a session. Everyone can also switch views at any time.
+            <span className="text-xs font-bold uppercase tracking-[0.16em] text-secondary">
+              Multiplayer Food Showdown
+            </span>
+            <h2 className="mt-1.5 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+              Ready to Play What We Eat?
+            </h2>
+            <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
+              Swipe dishes matched to your personal tastes &amp; diet, add favorites manually or let fate load random dishes, then enter <strong className="font-semibold text-foreground">Classic List</strong> or <strong className="font-semibold text-foreground">Meal Roulette</strong>!
             </p>
 
-            {/* Voting Style Picker */}
-            {onSelectMode && (
-              <div className="mx-auto mb-6 grid max-w-lg grid-cols-1 gap-3 text-left sm:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => onSelectMode('classic')}
-                  className={`rounded-xl border p-3.5 transition-all ${
-                    selectedMode === 'classic'
-                      ? 'border-amber-600 bg-amber-500/10 ring-1 ring-amber-600/40'
-                      : 'border-border bg-background hover:bg-muted/50'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 font-semibold text-foreground">
-                    <ListChecks className="h-4 w-4 text-amber-600" />
-                    Classic List
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Propose meals (from the list or via Swipe Match) and upvote your favorites with a live timer.
-                  </p>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => onSelectMode('roulette')}
-                  className={`rounded-xl border p-3.5 transition-all ${
-                    selectedMode === 'roulette'
-                      ? 'border-amber-600 bg-amber-500/10 ring-1 ring-amber-600/40'
-                      : 'border-border bg-background hover:bg-muted/50'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 font-semibold text-foreground">
-                    <Dices className="h-4 w-4 text-emerald-600" />
-                    Meal Roulette
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Spin the wheel to randomly pick from proposals or group-safe meals.
-                  </p>
-                </button>
+            {/* Connected Group Players */}
+            {members.length > 0 && (
+              <div className="mt-6 flex flex-col items-center gap-2">
+                <div className="flex -space-x-2">
+                  {members.slice(0, 7).map((member) => (
+                    <div
+                      key={member.profile.id}
+                      title={member.profile.username}
+                      className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-card bg-primary/15 text-xs font-bold text-primary shadow-sm"
+                    >
+                      {(member.profile.username || 'P').slice(0, 2).toUpperCase()}
+                    </div>
+                  ))}
+                  {members.length > 7 && (
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-card bg-muted text-xs font-semibold text-muted-foreground">
+                      +{members.length - 7}
+                    </div>
+                  )}
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {members.length} {members.length === 1 ? 'player' : 'players'} in {group.name}
+                </span>
               </div>
             )}
 
-            <div className="space-y-4">
+            {/* Start Game CTA */}
+            <div className="mt-7">
               {isGroupMember ? (
                 <StartVotingButton
                   group={group}
                   onVotingStarted={handleVotingStarted}
-                  className="px-8 py-3 text-base"
+                  className="h-12 rounded-2xl px-9 text-base font-bold"
                 />
               ) : (
-                <div className="rounded-lg border border-border bg-muted/40 p-4">
-                  <Users className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">
-                    You must be a member of this group to start voting sessions.
+                <div className="rounded-2xl border border-border bg-muted/40 p-4">
+                  <Users className="mx-auto mb-1.5 h-6 w-6 text-muted-foreground" />
+                  <p className="text-xs text-muted-foreground">
+                    You must be a member of this group to start a game round.
                   </p>
                 </div>
               )}
+            </div>
 
-              <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-muted-foreground sm:gap-4 sm:text-sm">
-                <div className="flex items-center gap-1">
-                  <Clock className="h-4 w-4" />
-                  <span>5 min proposals</span>
+            {/* 3-Round Preview Strip */}
+            <div className="mt-8 grid grid-cols-1 gap-2.5 border-t border-border/70 pt-6 text-left sm:grid-cols-3">
+              <div className="rounded-2xl border border-border/70 bg-muted/30 p-3.5">
+                <div className="flex items-center gap-2 text-xs font-bold text-secondary">
+                  <Flame className="h-4 w-4" />
+                  Round 1 · Cravings
                 </div>
-                <div className="hidden h-1 w-1 rounded-full bg-muted-foreground/50 sm:block" />
-                <div className="flex items-center gap-1">
-                  <Users className="h-4 w-4" />
-                  <span>Democratic voting</span>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Swipe dishes tailored to your tastes &amp; restrictions, or add manually.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-border/70 bg-muted/30 p-3.5">
+                <div className="flex items-center gap-2 text-xs font-bold text-primary">
+                  <Dices className="h-4 w-4" />
+                  Round 2 · Choose Arena
                 </div>
-                <div className="hidden h-1 w-1 rounded-full bg-muted-foreground/50 sm:block" />
-                <div className="flex items-center gap-1">
-                  <ChefHat className="h-4 w-4" />
-                  <span>Automatic registration</span>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Play Classic List or Meal Roulette with your pool — or random dishes!
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-border/70 bg-muted/30 p-3.5">
+                <div className="flex items-center gap-2 text-xs font-bold text-amber-600 dark:text-amber-400">
+                  <Trophy className="h-4 w-4" />
+                  Round 3 · Podium
                 </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Crown the winning meal and pick each member&apos;s portion.
+                </p>
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
-
-      {/* Information card for new users */}
-      <VotingInfoCard />
     </div>
   );
 }

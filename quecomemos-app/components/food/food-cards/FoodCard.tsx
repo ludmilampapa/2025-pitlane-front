@@ -108,7 +108,7 @@ export function FoodCard({
               {isKorven && (
                 <span className="text-xs bg-amber-600/50 text-amber-100 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
                   <Hexagon className="w-3 h-3 fill-amber-400/30" />
-                  Korven
+                  TheMealDB
                 </span>
               )}
             </div>
@@ -225,7 +225,7 @@ export function FoodCard({
               {isKorven && (
                 <span className="text-xs bg-amber-600/50 text-amber-100 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
                   <Hexagon className="w-3 h-3 fill-amber-400/30" />
-                  Korven
+                  TheMealDB
                 </span>
               )}
             </div>
@@ -358,7 +358,7 @@ export function FoodCard({
               {isKorven && (
                 <span className="text-xs bg-amber-600/50 text-amber-100 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
                   <Hexagon className="w-3 h-3 fill-amber-400/30" />
-                  Korven
+                  TheMealDB
                 </span>
               )}
             </div>

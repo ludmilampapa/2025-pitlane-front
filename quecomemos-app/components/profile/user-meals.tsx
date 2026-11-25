@@ -1,13 +1,14 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { ChefHat, Plus, X, AlertTriangle } from 'lucide-react';
 import { useUser } from '@/lib/contexts/UserContext';
 import { useMeals, Meal } from '@/lib/contexts/MealsContext';
-import { useEffect, useState } from 'react';
-import { ChefHat } from 'lucide-react';
-import AddMealForm from "@/components/meal";
-import { MealModal } from '@/components/modals';
-import { EditMealForm } from '@/components/modals';
+import AddMealForm from '@/components/meal';
+import { MealModal, EditMealForm } from '@/components/modals';
 import { MealCard } from '@/components/meal';
+import { Button } from '@/components/ui/button';
 
 interface UserMealsProps {
   onfoodAdded?: () => void;
@@ -15,15 +16,15 @@ interface UserMealsProps {
 
 export function UserMeals({ onfoodAdded }: UserMealsProps = {}) {
   const { userData } = useUser();
-  const { 
-    userMeals, 
-    loadingUserMeals, 
-    userMealsError, 
-    fetchUserMeals, 
+  const {
+    userMeals,
+    loadingUserMeals,
+    userMealsError,
+    fetchUserMeals,
     updateMeal,
-    addMeal
+    addMeal,
   } = useMeals();
-  
+
   const [openCreator, setOpenCreator] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
   const [isMealModalOpen, setIsMealModalOpen] = useState(false);
@@ -33,7 +34,7 @@ export function UserMeals({ onfoodAdded }: UserMealsProps = {}) {
 
   useEffect(() => {
     if (profile?.id) {
-      fetchUserMeals(profile.id);
+      void fetchUserMeals(profile.id);
     }
   }, [profile?.id, fetchUserMeals]);
 
@@ -72,10 +73,13 @@ export function UserMeals({ onfoodAdded }: UserMealsProps = {}) {
   if (loadingUserMeals) {
     return (
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-amber-200">Your Meals</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-32 bg-amber-700/30 rounded-lg animate-pulse"></div>
+        <h2 className="text-2xl font-bold text-foreground">Your Meals</h2>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[...Array(3)].map((_, i) => (
+            <div
+              key={i}
+              className="h-36 animate-pulse rounded-2xl border border-border bg-card"
+            />
           ))}
         </div>
       </div>
@@ -85,93 +89,93 @@ export function UserMeals({ onfoodAdded }: UserMealsProps = {}) {
   if (userMealsError) {
     return (
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-amber-200">Your Meals</h2>
-        <div className="text-center py-12 bg-red-900/20 rounded-lg border border-red-700/50">
-          <div className="text-red-400 mb-4">
-            <svg className="mx-auto h-12 w-12 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-            <p className="text-lg font-medium">Unable to load meals</p>
-            <p className="text-sm text-red-300 mt-1">{userMealsError}</p>
-          </div>
+        <h2 className="text-2xl font-bold text-foreground">Your Meals</h2>
+        <div className="rounded-2xl border border-destructive/35 bg-destructive/10 py-10 text-center">
+          <AlertTriangle className="mx-auto mb-2 h-10 w-10 text-destructive" />
+          <p className="text-base font-semibold text-foreground">Unable to load meals</p>
+          <p className="mt-1 text-sm text-muted-foreground">{userMealsError}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-amber-200">Your Meals</h2>
-        <span className="text-sm text-gray-400">
-          {userMeals.length} meal{userMeals.length !== 1 ? 's' : ''}
-        </span>
-      </div>
-
-      {/* Botón SOLO abre el modal, no renderiza el formulario inline */}
-      <div className="flex justify-end mb-4">
-        <button
-          onClick={() => setOpenCreator(true)}
-          className="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-medium"
-        >
-          + New meal
-        </button>
-      </div>
-
-      {/* Modal para crear meal */}
-      {openCreator && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" role="dialog" aria-modal="true">
-          {/* Overlay */}
-          <div
-            className="absolute inset-0 bg-black/70 z-[80]"
-            onClick={() => setOpenCreator(false)}
-          />
-          {/* Contenido */}
-          <div
-            className="relative z-[81] w-full max-w-2xl bg-neutral-900 border border-amber-800/30 rounded-2xl shadow-2xl overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-amber-800/40">
-              <h3 className="text-amber-100 font-semibold">New Meal</h3>
-              <button
-                onClick={() => setOpenCreator(false)}
-                className="px-2 py-1 text-amber-200 hover:text-amber-50"
-                aria-label="Cerrar modal"
-              >
-                ✖
-              </button>
-            </div>
-
-            {/* Body */}
-            <div className="p-4 max-h-[80vh] overflow-y-auto">
-              <AddMealForm
-                onFoodAdded={(newMeal) => {
-                  // Add the new meal to context instead of refetching
-                  if (profile?.id && newMeal) {
-                    // The API returns a complete meal object, so we can cast it safely
-                    addMeal(newMeal as Meal);
-                  }
-                  setOpenCreator(false);
-                  onfoodAdded?.();
-                }}
-                onClose={() => setOpenCreator(false)}
-              />
-            </div>
-          </div>
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">Your Meals</h2>
+          <p className="text-sm text-muted-foreground">
+            {userMeals.length} {userMeals.length === 1 ? 'recipe' : 'recipes'} created by you
+          </p>
         </div>
-      )}
+
+        <Button
+          type="button"
+          onClick={() => setOpenCreator(true)}
+          className="rounded-xl bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
+        >
+          <Plus className="mr-1.5 h-4 w-4" />
+          New Meal
+        </Button>
+      </div>
+
+      {/* Create Meal Modal */}
+      {openCreator &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4 backdrop-blur-[2px]"
+            role="dialog"
+            aria-modal="true"
+            onClick={() => setOpenCreator(false)}
+          >
+            <div
+              className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-border bg-card text-card-foreground shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-border px-6 py-4">
+                <h3 className="text-lg font-bold text-foreground">Create New Meal</h3>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setOpenCreator(false)}
+                  aria-label="Close modal"
+                  className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="p-6">
+                <AddMealForm
+                  onFoodAdded={(newMeal) => {
+                    if (profile?.id && newMeal) {
+                      addMeal(newMeal as Meal);
+                    }
+                    setOpenCreator(false);
+                    onfoodAdded?.();
+                  }}
+                  onClose={() => setOpenCreator(false)}
+                />
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
 
       {userMeals.length === 0 ? (
-        <div className="text-center py-12 bg-amber-900/20 rounded-lg border-2 border-dashed border-amber-700/50">
-          <ChefHat className="mx-auto h-12 w-12 text-amber-600 mb-4" />
-          <h3 className="text-lg font-medium text-amber-200 mb-2">No meals created yet</h3>
-          <p className="text-gray-400 mb-4">
-            Start creating delicious meals with your favorite foods!
+        <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-12 text-center shadow-sm">
+          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary/10 text-secondary">
+            <ChefHat className="h-7 w-7" />
+          </div>
+          <h3 className="text-base font-semibold text-foreground">No meals created yet</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Combine your favorite ingredients into custom meals for logging and group votes.
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {userMeals.map((meal) => (
             <MealCard
               key={meal.MealID}
@@ -185,7 +189,7 @@ export function UserMeals({ onfoodAdded }: UserMealsProps = {}) {
       )}
 
       {/* Meal Details Modal */}
-      <MealModal 
+      <MealModal
         meal={selectedMeal}
         isOpen={isMealModalOpen}
         onClose={closeMealModal}
@@ -193,41 +197,45 @@ export function UserMeals({ onfoodAdded }: UserMealsProps = {}) {
       />
 
       {/* Edit Meal Modal */}
-      {isEditModalOpen && selectedMeal && (
-        <div className="fixed inset-0 z-[85] flex items-center justify-center p-4" role="dialog" aria-modal="true">
-          {/* Overlay */}
+      {isEditModalOpen &&
+        selectedMeal &&
+        typeof document !== 'undefined' &&
+        createPortal(
           <div
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm z-[85]"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4 backdrop-blur-[2px]"
+            role="dialog"
+            aria-modal="true"
             onClick={closeEditModal}
-          />
-          {/* Content */}
-          <div
-            className="relative z-[86] w-full max-w-2xl bg-neutral-900 border border-amber-800/30 rounded-2xl shadow-2xl overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-amber-800/40">
-              <h3 className="text-amber-100 font-semibold">Edit Meal</h3>
-              <button
-                onClick={closeEditModal}
-                className="px-2 py-1 text-amber-200 hover:text-amber-50"
-                aria-label="Close modal"
-              >
-                ✖
-              </button>
-            </div>
+            <div
+              className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-border bg-card text-card-foreground shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-border px-6 py-4">
+                <h3 className="text-lg font-bold text-foreground">Edit Meal</h3>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={closeEditModal}
+                  aria-label="Close modal"
+                  className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
 
-            {/* Body */}
-            <div className="p-4 max-h-[80vh] overflow-y-auto">
-              <EditMealForm
-                meal={selectedMeal}
-                onSuccess={handleEditSuccess}
-                onMealUpdated={handleMealUpdated}
-              />
+              <div className="p-6">
+                <EditMealForm
+                  meal={selectedMeal}
+                  onSuccess={handleEditSuccess}
+                  onMealUpdated={handleMealUpdated}
+                />
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

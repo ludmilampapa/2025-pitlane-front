@@ -75,9 +75,9 @@ export function MealCard({
               {meal.name}
             </h3>
             {isKorven && (
-              <span className="text-xs bg-amber-600/50 text-amber-100 px-2 py-0.5 rounded-full flex items-center gap-1 flex-shrink-0">
-                <Hexagon className="w-3 h-3 fill-amber-400/30" />
-                Korven
+              <span className="text-xs bg-primary/15 text-primary border border-primary/30 px-2 py-0.5 rounded-full flex items-center gap-1 flex-shrink-0">
+                <Hexagon className="w-3 h-3 fill-primary/20" />
+                TheMealDB
               </span>
             )}
           </div>

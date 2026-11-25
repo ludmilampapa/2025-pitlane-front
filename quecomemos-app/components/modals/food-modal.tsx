@@ -99,9 +99,9 @@ export function FoodModal({ food, isOpen, onClose }: FoodModalProps) {
             <div className="flex flex-col items-center gap-2">
               <h3 className="text-2xl font-bold text-foreground">{food.name}</h3>
               {isKorvenInspiredFood(food.name) && (
-                <span className="text-xs bg-muted text-foreground px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <Hexagon className="w-3 h-3 fill-amber-400/30" />
-                  Korven
+                <span className="text-xs bg-primary/10 text-primary border border-primary/25 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <Hexagon className="w-3 h-3 fill-primary/20" />
+                  TheMealDB
                 </span>
               )}
             </div>

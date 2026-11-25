@@ -324,7 +324,31 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       }
     );
 
-    return () => subscription.unsubscribe();
+    // Sync active session across browser tabs: if another tab signed in as a different user
+    // (updating shared Supabase cookies), refresh UserContext immediately when this tab regains focus.
+    const syncSessionOnFocus = async () => {
+      if (document.visibilityState === 'hidden') return;
+      const { data: { session } } = await supabase.auth.getSession();
+      const sessionUserId = session?.user?.id ?? null;
+      const currentProfileId = userData.profile?.id ?? null;
+      if (!sessionUserId && currentProfileId) {
+        userDataCache.clear();
+        setUserData({ profile: null, preferences: null });
+        window.location.assign('/auth/login');
+      } else if (sessionUserId && sessionUserId !== currentProfileId) {
+        userDataCache.delete(sessionUserId);
+        await fetchUserData(true);
+      }
+    };
+
+    window.addEventListener('focus', syncSessionOnFocus);
+    document.addEventListener('visibilitychange', syncSessionOnFocus);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('focus', syncSessionOnFocus);
+      document.removeEventListener('visibilitychange', syncSessionOnFocus);
+    };
   }, [supabase, isInitialized, userData.profile?.id, fetchUserData]);
 
 

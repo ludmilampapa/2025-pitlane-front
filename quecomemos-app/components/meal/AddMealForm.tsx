@@ -9,6 +9,7 @@ import { useGlobalNotification } from "@/lib/contexts/NotificationContext";
 import { AddMealFormProps, FoodItem } from "./types";
 import { COMMON_STYLES } from "./constants";
 import { processDietaryRestrictions } from "./utils";
+import { violatesRestrictionByName, type RestrictionItem } from "@/lib/utils/dietaryCompatibility";
 import { useFoodsList } from "./hooks/useFoodsList";
 import { useFormSubmission, useDietaryRestrictions } from "./hooks/useFormHelpers";
 import FoodsList from "./FoodsList";
@@ -117,6 +118,22 @@ export default function AddMealForm({ onFoodAdded, onClose, initialMealName }: P
     setIsImportingIngredients(true);
     try {
       clearFoods();
+
+      // Load real DietaryRestriction rows from PostgreSQL so each TheMealDB ingredient
+      // is linked to the exact restrictions it genuinely satisfies.
+      let dbRestrictions: RestrictionItem[] = [];
+      try {
+        const restRes = await fetch(`${API_BASE_URL}/dietary-restrictions`);
+        if (restRes.ok) {
+          const raw = (await restRes.json()) as RestrictionItem[];
+          dbRestrictions = raw.filter(
+            (r) => r.DietaryRestrictionID !== 0 && !r.name.toLowerCase().includes('everyone')
+          );
+        }
+      } catch {
+        // Fallback to runtime allergen guard if catalog fetch fails
+      }
+
       const resolved = await Promise.all(
         ingredientNames.map(async (ingName) => {
           let kcal = 120;
@@ -131,6 +148,19 @@ export default function AddMealForm({ onFoodAdded, onClose, initialMealName }: P
           } catch {
             // Keep default 120 kcal fallback
           }
+
+          // Check which DB dietary restrictions this ingredient satisfies vs violates
+          const contextText = `${ingName} ${product.category || ''}`;
+          const violatedAny = dbRestrictions.some((r) =>
+            violatesRestrictionByName(contextText, r.name)
+          );
+          const compatibleIds = dbRestrictions
+            .filter((r) => !violatesRestrictionByName(contextText, r.name))
+            .map((r) => r.DietaryRestrictionID);
+
+          // Note: in FoodItem / processDietaryRestrictions:
+          // - hasNoRestrictions === true  -> "For Everyone" ([0]) when it violates 0 restrictions
+          // - hasNoRestrictions === false -> specific compatible restriction IDs in DB
           return {
             name: ingName,
             kCal: kcal,
@@ -138,8 +168,8 @@ export default function AddMealForm({ onFoodAdded, onClose, initialMealName }: P
             quantity: 1,
             svgLink: `https://www.themealdb.com/images/ingredients/${encodeURIComponent(ingName)}-small.png`,
             preferences: [],
-            dietaryRestrictions: [],
-            hasNoRestrictions: true,
+            dietaryRestrictions: violatedAny ? compatibleIds : [],
+            hasNoRestrictions: !violatedAny,
           };
         })
       );
@@ -435,9 +465,9 @@ export default function AddMealForm({ onFoodAdded, onClose, initialMealName }: P
           <div className="flex items-center gap-2 mb-2">
             <label className="text-foreground text-sm">Meal Name</label>
             {isMealKorvenInspired && (
-              <span className="text-xs bg-muted text-foreground px-2 py-0.5 rounded-full flex items-center gap-1">
-                <Hexagon className="w-3 h-3 fill-amber-400/30" />
-                Korven
+              <span className="text-xs bg-primary/10 text-primary border border-primary/25 px-2 py-0.5 rounded-full flex items-center gap-1">
+                <Hexagon className="w-3 h-3 fill-primary/20" />
+                TheMealDB
               </span>
             )}
           </div>

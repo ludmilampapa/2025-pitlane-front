@@ -226,8 +226,8 @@ export function AddFoodForm({ className, onSuccess, ...props }: AddFoodFormProps
 
                     {selectedKorvenProduct && (
                       <div className="text-xs text-primary bg-muted border border-border rounded p-2 flex items-center gap-2">
-                        <Hexagon className="w-3 h-3 fill-amber-400/20" />
-                        <span>Using Korven inspired name: <strong>{selectedKorvenProduct}</strong></span>
+                        <Hexagon className="w-3 h-3 fill-primary/15" />
+                        <span>Selected suggestion: <strong>{selectedKorvenProduct}</strong></span>
                       </div>
                     )}
                   </div>
@@ -238,9 +238,9 @@ export function AddFoodForm({ className, onSuccess, ...props }: AddFoodFormProps
                 <Label htmlFor="food-name" className="text-foreground text-sm mb-2 block flex items-center gap-2">
                   Food Name
                   {isKorvenInspired && (
-                    <span className="text-xs bg-muted text-foreground px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <Hexagon className="w-3 h-3 fill-amber-400/30" />
-                      Korven
+                    <span className="text-xs bg-primary/10 text-primary border border-primary/25 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <Hexagon className="w-3 h-3 fill-primary/20" />
+                      TheMealDB
                     </span>
                   )}
                 </Label>

@@ -200,9 +200,9 @@ export function EditFoodForm({ food, onSuccess }: EditFoodFormProps) {
           <Label className="text-amber-200 text-sm mb-2 block flex items-center gap-2">
             Food Name
             {isKorvenInspired && (
-              <span className="text-xs bg-amber-600/50 text-amber-100 px-2 py-0.5 rounded-full flex items-center gap-1">
-                <Hexagon className="w-3 h-3 fill-amber-400/30" />
-                Korven
+              <span className="text-xs bg-primary/15 text-primary border border-primary/30 px-2 py-0.5 rounded-full flex items-center gap-1">
+                <Hexagon className="w-3 h-3 fill-primary/20" />
+                TheMealDB
               </span>
             )}
           </Label>

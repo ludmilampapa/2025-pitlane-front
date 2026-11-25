@@ -11,109 +11,92 @@ interface MealCompositionProps {
   className?: string;
 }
 
-export function MealComposition({ meal, className = "" }: MealCompositionProps) {
+export function MealComposition({ meal, className = '' }: MealCompositionProps) {
   const calculateTotalCalories = () => {
-    return meal.mealFoods.reduce((sum, mf) => sum + (mf.food.kCal * mf.quantity), 0);
+    return meal.mealFoods.reduce((sum, mf) => sum + mf.food.kCal * mf.quantity, 0);
   };
 
-  const getPreferenceNames = (preferences: { name?: string; PreferenceID?: number }[] | number[] | undefined) => {
+  const getPreferenceNames = (
+    preferences: { name?: string; PreferenceID?: number }[] | number[] | undefined
+  ) => {
     if (!preferences) return [];
-    return preferences.map(p => typeof p === 'object' ? p.name || 'Unknown' : 'Preference');
+    return preferences.map((p) => (typeof p === 'object' ? p.name || 'Unknown' : 'Preference'));
   };
 
   const totalCalories = calculateTotalCalories();
 
   return (
-    <Card className={`bg-amber-900/20 border-amber-700/50 ${className}`}>
+    <Card className={`rounded-2xl border-border bg-card shadow-sm ${className}`}>
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-amber-200">
-          <UtensilsCrossed className="w-5 h-5" />
+        <CardTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
+          <UtensilsCrossed className="h-4 w-4 text-primary" />
           Meal Composition
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Meal Overview */}
-        <div className="flex items-center justify-between p-3 bg-amber-800/20 rounded-lg">
+        <div className="flex items-center justify-between rounded-xl border border-border bg-muted/40 p-3.5">
           <div>
-            <h3 className="font-semibold text-amber-100">{meal.name}</h3>
+            <h3 className="font-semibold text-foreground">{meal.name}</h3>
             {meal.description && (
-              <p className="text-sm text-gray-400 mt-1">{meal.description}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{meal.description}</p>
             )}
           </div>
           <div className="text-right">
-            <div className="flex items-center gap-2 text-amber-200">
-              <Flame className="w-4 h-4" />
-              <span className="font-bold text-lg">{totalCalories}</span>
-              <span className="text-sm">kcal</span>
+            <div className="inline-flex items-center gap-1.5 text-foreground">
+              <Flame className="h-4 w-4 text-secondary" />
+              <span className="text-lg font-bold">{totalCalories}</span>
+              <span className="text-xs text-muted-foreground">kcal</span>
             </div>
-            <p className="text-xs text-gray-400">{meal.mealFoods.length} ingredients</p>
+            <p className="text-xs text-muted-foreground">{meal.mealFoods.length} ingredients</p>
           </div>
         </div>
 
-        {/* Food Breakdown */}
         <div className="space-y-2">
-          <h4 className="text-sm font-medium text-amber-200 mb-3">Ingredients Breakdown:</h4>
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Ingredients Breakdown
+          </h4>
           {meal.mealFoods.map((mealFood, index) => {
             const food = mealFood.food;
             const individualCalories = food.kCal * mealFood.quantity;
             const preferences = getPreferenceNames(food.preferences);
 
             return (
-              <div key={index} className="flex items-center justify-between p-2 bg-neutral-800/50 rounded border border-amber-700/30">
-                <div className="flex-1">
+              <div
+                key={index}
+                className="flex items-center justify-between rounded-xl border border-border bg-background/60 p-2.5"
+              >
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-amber-100">{food.name}</span>
-                    <span className="text-gray-400 text-sm">× {mealFood.quantity}</span>
+                    <span className="font-medium text-foreground">{food.name}</span>
+                    <span className="text-xs text-muted-foreground">× {mealFood.quantity}</span>
                   </div>
-                  
-                  {/* Food Preferences */}
+
                   {preferences.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1">
+                    <div className="mt-1 flex flex-wrap gap-1">
                       {preferences.map((pref, prefIndex) => (
-                        <Badge 
-                          key={prefIndex} 
-                          variant="secondary" 
-                          className="text-xs bg-amber-800/40 text-amber-200 border-amber-600/50"
-                        >
+                        <Badge key={prefIndex} variant="secondary" className="text-xs">
                           {pref}
                         </Badge>
                       ))}
                     </div>
                   )}
                 </div>
-                
+
                 <div className="text-right">
-                  <div className="flex items-center gap-1 text-amber-300">
-                    <Flame className="w-3 h-3" />
-                    <span className="font-medium">{individualCalories}</span>
-                    <span className="text-xs">kcal</span>
+                  <div className="inline-flex items-center gap-1 text-sm font-medium text-foreground">
+                    <Flame className="h-3 w-3 text-secondary" />
+                    <span>{individualCalories}</span>
+                    <span className="text-xs text-muted-foreground">kcal</span>
                   </div>
-                  <div className="text-xs text-gray-400">
-                    {food.kCal} kcal/unit
-                  </div>
+                  <div className="text-xs text-muted-foreground">{food.kCal} kcal/unit</div>
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* Summary */}
-        <div className="border-t border-amber-700/30 pt-3 mt-4">
-          <div className="grid grid-cols-2 gap-4 text-center">
-            <div>
-              <div className="text-sm text-gray-400">Total Ingredients</div>
-              <div className="text-lg font-bold text-amber-200">{meal.mealFoods.length}</div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-400">Total Calories</div>
-              <div className="text-lg font-bold text-amber-200">{totalCalories} kcal</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Creator Info */}
-        <div className="text-center text-xs text-gray-400 pt-2 border-t border-amber-700/30">
-          Created by <span className="text-amber-300">{meal.profile?.username || 'Unknown'}</span>
+        <div className="border-t border-border pt-3 text-center text-xs text-muted-foreground">
+          Created by <span className="font-medium text-foreground">{meal.profile?.username || 'Member'}</span>
         </div>
       </CardContent>
     </Card>

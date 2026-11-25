@@ -6,6 +6,7 @@ import { Meal } from '@/lib/contexts/MealsContext';
 import { CalorieRangeSlider } from '@/components/common/sliders';
 import { MultiSelect } from '@/components/common/MultiSelect';
 import { fetchAllPreferences, fetchAllDietaryRestrictions, Preference, DietaryRestriction } from '@/lib/utils/preferencesService';
+import { isMealCompatibleWithRestrictions } from '@/lib/utils/dietaryCompatibility';
 
 interface MealSearchBarProps {
   allMeals: Meal[];
@@ -86,22 +87,19 @@ export function MealSearchBar({
     return meal.mealFoods.reduce((sum, mf) => sum + (mf.food.kCal * mf.quantity), 0);
   }, []);
 
-  // Check if meal is compatible with restrictions
+  // Check if meal is compatible with user + group dietary restrictions (including restriction names for allergen checks)
   const isMealCompatible = React.useCallback((meal: Meal) => {
-    const restrictions = isGroupMode ? groupRestrictions : userRestrictions;
-    
-    if (restrictions.length === 0) return true;
+    const combinedIds = isGroupMode
+      ? Array.from(new Set([...userRestrictions, ...groupRestrictions]))
+      : userRestrictions;
 
-    // Check if all foods in the meal are compatible with restrictions
-    return meal.mealFoods.every(mf => {
-      const foodRestrictionsIds = mf.food.dietaryRestrictions?.map(r => 
-        typeof r === 'number' ? r : r.DietaryRestrictionID || 0
-      ) || [];
-      
-      // Food is compatible if it has "For Everyone" (0) or matches user's restrictions
-      return foodRestrictionsIds.includes(0) || restrictions.some(restId => foodRestrictionsIds.includes(restId));
+    const resolvedRestrictions = combinedIds.map((id) => {
+      const found = allRestrictions.find((r) => r.DietaryRestrictionID === id);
+      return found ? { DietaryRestrictionID: id, name: found.name } : id;
     });
-  }, [isGroupMode, groupRestrictions, userRestrictions]);
+
+    return isMealCompatibleWithRestrictions(meal, resolvedRestrictions);
+  }, [isGroupMode, groupRestrictions, userRestrictions, allRestrictions]);
 
   // Filter and search meals
   const searchResults = useMemo(() => {
@@ -348,8 +346,8 @@ export function MealSearchBar({
 
       {/* Restriction Info */}
       {(userRestrictions.length > 0 || groupRestrictions.length > 0) && (
-        <div className="mt-2 p-2 bg-blue-900/20 border border-blue-700/50 rounded text-xs text-blue-200 flex items-center gap-2">
-          <Info className="w-4 h-4" />
+        <div className="mt-2 p-2.5 bg-primary/10 border border-primary/25 rounded-lg text-xs text-primary flex items-center gap-2">
+          <Info className="w-4 h-4 shrink-0" />
           <span>
             {isGroupMode 
               ? `Showing meals compatible with ${groupRestrictions.length} group restriction(s)`
@@ -361,7 +359,10 @@ export function MealSearchBar({
 
       {/* Search Results Dropdown */}
       {showDropdown && (
-        <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-xl max-h-64 overflow-y-auto">
+        <div
+          onMouseDown={(e) => e.preventDefault()}
+          className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-xl max-h-64 overflow-y-auto"
+        >
           {searchResults.length > 0 ? (
             <div className="py-1">
               {searchResults.map((meal, index) => (

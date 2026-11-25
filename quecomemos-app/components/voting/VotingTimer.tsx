@@ -10,14 +10,14 @@ interface VotingTimerProps {
   className?: string;
 }
 
-export function VotingTimer({ endTime, label = "Time remaining", onExpired, className = '' }: VotingTimerProps) {
+export function VotingTimer({ endTime, label = 'Time remaining', onExpired, className = '' }: VotingTimerProps) {
   const [timeRemaining, setTimeRemaining] = useState('');
   const [isExpired, setIsExpired] = useState(false);
 
   useEffect(() => {
     const updateTimer = () => {
       const { total } = VotingService.getTimeRemaining(endTime);
-      
+
       if (total <= 0) {
         if (!isExpired) {
           setIsExpired(true);
@@ -32,18 +32,18 @@ export function VotingTimer({ endTime, label = "Time remaining", onExpired, clas
       setIsExpired(false);
     };
 
-    // Update immediately
     updateTimer();
-
-    // Update every second
     const interval = setInterval(updateTimer, 1000);
-
     return () => clearInterval(interval);
   }, [endTime, isExpired, onExpired]);
 
   return (
-    <span className={`${isExpired ? 'text-red-400' : 'text-amber-400'} ${className}`}>
-      {label}: {timeRemaining}
+    <span
+      className={`font-medium tabular-nums ${
+        isExpired ? 'text-destructive' : 'text-secondary'
+      } ${className}`}
+    >
+      {label}: <span className="font-semibold">{timeRemaining}</span>
     </span>
   );
 }

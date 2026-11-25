@@ -1,34 +1,63 @@
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, Leaf } from 'lucide-react';
+import {
+  getUnsatisfiedRestrictions,
+  type RestrictionItem,
+  type RestrictionTag,
+} from '@/lib/utils/dietaryCompatibility';
 
-interface DietaryRestriction {
-  DietaryRestrictionID: number;
-  name: string;
+interface MealLike {
+  mealFoods?: Array<{
+    food?: {
+      dietaryRestrictions?: Array<RestrictionTag | number>;
+    };
+  }>;
 }
 
 interface DietaryCompatibilityBadgeProps {
-  mealRestrictions: Array<{ DietaryRestrictionID: number; name: string }>;
-  groupRestrictions: DietaryRestriction[];
+  meal?: MealLike;
+  mealRestrictions?: RestrictionItem[];
+  groupRestrictions: RestrictionItem[];
 }
 
-export function DietaryCompatibilityBadge({ mealRestrictions, groupRestrictions }: DietaryCompatibilityBadgeProps) {
-  const clashes = mealRestrictions.filter((restriction) =>
-    groupRestrictions.some((groupRestriction) =>
-      groupRestriction.DietaryRestrictionID === restriction.DietaryRestrictionID
-    )
+export function DietaryCompatibilityBadge({
+  meal,
+  mealRestrictions = [],
+  groupRestrictions,
+}: DietaryCompatibilityBadgeProps) {
+  const activeGroupRestrictions = groupRestrictions.filter(
+    (r) => r.DietaryRestrictionID !== 0 && !r.name.toLowerCase().includes('everyone')
   );
 
-  if (clashes.length === 0) {
+  // Evaluate per-ingredient compatibility when meal is provided; fallback to tag list otherwise
+  const missing = meal
+    ? getUnsatisfiedRestrictions(meal, activeGroupRestrictions)
+    : activeGroupRestrictions.filter(
+        (req) =>
+          mealRestrictions.length > 0 &&
+          !mealRestrictions.some(
+            (m) =>
+              m.DietaryRestrictionID === 0 ||
+              m.name.toLowerCase().includes('everyone') ||
+              m.DietaryRestrictionID === req.DietaryRestrictionID
+          )
+      );
+
+  if (missing.length === 0) {
     return (
-      <Badge className="border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50">
-        <Leaf className="mr-1 h-3 w-3" />100% Apto Grupo
+      <Badge className="border border-emerald-500/30 bg-emerald-500/10 font-medium text-emerald-700 hover:bg-emerald-500/15 dark:text-emerald-300">
+        <Leaf className="mr-1 h-3 w-3" />
+        {activeGroupRestrictions.length > 0
+          ? `Safe (${activeGroupRestrictions.map((r) => r.name).join(', ')})`
+          : 'Group Safe'}
       </Badge>
     );
   }
 
   return (
-    <Badge className="border border-[#E7B3A0] bg-[#FFF3EE] text-[#A84526] hover:bg-[#FFF3EE]">
-      <AlertTriangle className="mr-1 h-3 w-3" />Restricción detectada: {clashes.map((item) => item.name).join(', ')}
+    <Badge className="border border-destructive/35 bg-destructive/10 font-medium text-destructive hover:bg-destructive/15">
+      <AlertTriangle className="mr-1 h-3 w-3" />
+      Not {missing.map((item) => item.name).join(', ')}
     </Badge>
   );
 }

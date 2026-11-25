@@ -3,8 +3,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import { Trophy, Users, Clock, PieChart, X, Eye } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { VotingService } from './VotingService';
 import { MealModal } from '@/components/modals/meal-modal';
 import { useUser } from '@/lib/contexts/UserContext';
@@ -59,11 +61,8 @@ export function VotingDetailsModal({ isOpen, onClose, sessionId }: VotingDetails
   const [loading, setLoading] = useState(true);
   const [sessionDetails, setSessionDetails] = useState<SessionDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
-  
-  // Portion selection modal
+
   const [showPortionModal, setShowPortionModal] = useState(false);
-  
-  // Meal details modal
   const [showMealModal, setShowMealModal] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<{
     MealID: number;
@@ -110,12 +109,11 @@ export function VotingDetailsModal({ isOpen, onClose, sessionId }: VotingDetails
 
   const handleViewWinnerMeal = async () => {
     if (!sessionDetails?.winnerMeal) return;
-    
+
     try {
-      // Fetch full meal details from API
       const response = await fetch(`${API_BASE_URL}/meals/${sessionDetails.winnerMeal.mealId}`);
       if (!response.ok) throw new Error('Failed to fetch meal details');
-      
+
       const mealData = await response.json();
       setSelectedMeal(mealData);
       setShowMealModal(true);
@@ -124,18 +122,9 @@ export function VotingDetailsModal({ isOpen, onClose, sessionId }: VotingDetails
     }
   };
 
-  const handleSelectPortion = () => {
-    setShowPortionModal(true);
-  };
-
-  const handlePortionSuccess = () => {
-    // Reload session details to update participant status
-    loadSessionDetails();
-  };
-
   const getCurrentUserParticipant = () => {
     if (!userId || !sessionDetails?.participants) return null;
-    return sessionDetails.participants.find(p => p.userId === userId);
+    return sessionDetails.participants.find((p) => p.userId === userId);
   };
 
   useEffect(() => {
@@ -147,146 +136,130 @@ export function VotingDetailsModal({ isOpen, onClose, sessionId }: VotingDetails
 
   const renderProposals = () => {
     if (!sessionDetails?.proposals || sessionDetails.proposals.length === 0) {
-      return <p className="text-sm text-neutral-400">No proposals found</p>;
+      return <p className="text-sm text-muted-foreground">No proposals found.</p>;
     }
 
-    // Sort proposals by vote count (descending)
     const sortedProposals = [...sessionDetails.proposals].sort(
       (a, b) => b.voteCount - a.voteCount
     );
-
     const totalVotes = sortedProposals.reduce((sum, p) => sum + p.voteCount, 0);
     const winner = sortedProposals[0];
     const currentParticipant = getCurrentUserParticipant();
+    const deadlinePassed =
+      !!currentParticipant?.portionDeadline &&
+      new Date() > new Date(currentParticipant.portionDeadline);
 
     return (
       <div className="space-y-4">
-        {/* Winner Section */}
         {winner && sessionDetails.winnerMeal && (
-          <Card className="border-yellow-600/50 bg-yellow-900/20">
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between gap-4 mb-3">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Trophy className="h-5 w-5 text-yellow-400" />
-                    <h3 className="font-semibold text-lg text-amber-200">Winner</h3>
-                  </div>
-                  <p 
-                    className="text-base font-medium text-neutral-100 hover:text-amber-200 cursor-pointer transition-colors"
-                    onClick={handleViewWinnerMeal}
-                  >
-                    {winner.mealName}
-                  </p>
-                  <p className="text-sm text-neutral-400 mt-1">
-                    Proposed by {winner.proposedBy}
-                  </p>
-                  {sessionDetails.winnerMeal.description && (
-                    <p className="text-sm text-neutral-400 mt-2 line-clamp-2">
-                      {sessionDetails.winnerMeal.description}
-                    </p>
-                  )}
+          <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4">
+            <div className="mb-3 flex items-start justify-between gap-4">
+              <div className="min-w-0 flex-1">
+                <div className="mb-1 flex items-center gap-2">
+                  <Trophy className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <span className="text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300">
+                    Winner
+                  </span>
                 </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-yellow-400">
-                    {winner.voteCount}
-                  </div>
-                  <p className="text-xs text-neutral-400">
-                    {totalVotes > 0
-                      ? `${Math.round((winner.voteCount / totalVotes) * 100)}%`
-                      : '0%'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
+                <button
+                  type="button"
                   onClick={handleViewWinnerMeal}
-                  className="flex-1 border-yellow-600 text-yellow-300 hover:bg-yellow-900/30"
+                  className="text-left text-base font-bold text-foreground transition-colors hover:text-primary"
                 >
-                  <Eye className="h-4 w-4 mr-2" />
-                  View Meal Details
-                </Button>
-                
-                {/* Show portion selection if user hasn't selected yet */}
-                {userId && sessionDetails.status === 'completed' && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSelectPortion}
-                    className={`flex-1 ${
-                      // If the deadline passed, show disabled/greyed style
-                      new Date() > new Date(currentParticipant?.portionDeadline || '')
-                        ? 'border-gray-600 text-gray-400 cursor-not-allowed'
-                        // If user already selected and deadline not passed, show selected (but editable)
-                        : currentParticipant?.hasSelectedPortion
-                        ? 'border-green-600 text-green-300'
-                        : 'border-amber-600 text-amber-300 hover:bg-amber-900/30'
-                    }`}
-                    disabled={
-                      // Disable only if defaulted to whole OR deadline has passed
-                      currentParticipant?.defaultedToWhole ||
-                      new Date() > new Date(currentParticipant?.portionDeadline || '')
-                    }
-                  >
-                    <PieChart className="h-4 w-4 mr-2" />
-                    {currentParticipant?.hasSelectedPortion
-                      ? `Portion: ${Math.round((currentParticipant.portionFraction || 1) * 100)}%`
-                      : new Date() > new Date(currentParticipant?.portionDeadline || '')
-                      ? 'Deadline Passed'
-                      : currentParticipant?.defaultedToWhole
-                      ? 'Whole Meal (Default)'
-                      : 'Select Your Portion'}
-                  </Button>
+                  {winner.mealName}
+                </button>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Proposed by {winner.proposedBy}
+                </p>
+                {sessionDetails.winnerMeal.description && (
+                  <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">
+                    {sessionDetails.winnerMeal.description}
+                  </p>
                 )}
               </div>
-            </CardContent>
-          </Card>
+
+              <div className="text-right">
+                <div className="text-2xl font-bold text-foreground">{winner.voteCount}</div>
+                <p className="text-xs text-muted-foreground">
+                  {totalVotes > 0 ? `${Math.round((winner.voteCount / totalVotes) * 100)}%` : '0%'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleViewWinnerMeal}
+                className="flex-1 rounded-xl bg-card"
+              >
+                <Eye className="mr-1.5 h-3.5 w-3.5" />
+                View Meal
+              </Button>
+
+              {userId && sessionDetails.status === 'completed' && (
+                <Button
+                  size="sm"
+                  variant={currentParticipant?.hasSelectedPortion ? 'outline' : 'default'}
+                  onClick={() => setShowPortionModal(true)}
+                  disabled={Boolean(currentParticipant?.defaultedToWhole || deadlinePassed)}
+                  className={
+                    currentParticipant?.hasSelectedPortion
+                      ? 'flex-1 rounded-xl border-primary/40 bg-card text-primary'
+                      : 'flex-1 rounded-xl bg-secondary text-secondary-foreground hover:bg-secondary/90'
+                  }
+                >
+                  <PieChart className="mr-1.5 h-3.5 w-3.5" />
+                  {currentParticipant?.hasSelectedPortion
+                    ? `Portion: ${Math.round((currentParticipant.portionFraction || 1) * 100)}%`
+                    : deadlinePassed
+                      ? 'Deadline Passed'
+                      : currentParticipant?.defaultedToWhole
+                        ? 'Whole Meal (Default)'
+                        : 'Select Portion'}
+                </Button>
+              )}
+            </div>
+          </div>
         )}
 
-        {/* Other Proposals */}
         {sortedProposals.length > 1 && (
           <div className="space-y-2">
-            <h4 className="font-semibold text-sm text-neutral-400">Other Proposals</h4>
-            {sortedProposals.slice(1).map((proposal, index) => (
-              <Card key={proposal.proposalId} className="bg-neutral-800/50 border-neutral-700">
-                <CardContent className="p-3">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex-1">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Other Proposals
+            </h4>
+            {sortedProposals.slice(1).map((proposal, index) => {
+              const pct = totalVotes > 0 ? (proposal.voteCount / totalVotes) * 100 : 0;
+              return (
+                <div
+                  key={proposal.proposalId}
+                  className="rounded-xl border border-border bg-background/60 p-3"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-xs border-neutral-600 text-neutral-300">
+                        <Badge variant="outline" className="text-xs">
                           #{index + 2}
                         </Badge>
-                        <p className="text-sm font-medium text-neutral-100">{proposal.mealName}</p>
+                        <p className="truncate text-sm font-medium text-foreground">
+                          {proposal.mealName}
+                        </p>
                       </div>
-                      <p className="text-xs text-neutral-400 mt-1">
+                      <p className="mt-0.5 text-xs text-muted-foreground">
                         by {proposal.proposedBy}
                       </p>
                     </div>
                     <div className="text-right">
-                      <div className="text-lg font-semibold text-neutral-100">{proposal.voteCount}</div>
-                      <p className="text-xs text-neutral-400">
-                        {totalVotes > 0
-                          ? `${Math.round((proposal.voteCount / totalVotes) * 100)}%`
-                          : '0%'}
-                      </p>
+                      <div className="text-base font-bold text-foreground">
+                        {proposal.voteCount}
+                      </div>
+                      <p className="text-xs text-muted-foreground">{Math.round(pct)}%</p>
                     </div>
                   </div>
-
-                  {/* Vote percentage bar */}
-                  <div className="mt-2 w-full bg-neutral-700 rounded-full h-2">
-                    <div
-                      className="bg-amber-500 h-2 rounded-full transition-all"
-                      style={{
-                        width: totalVotes > 0 ? `${(proposal.voteCount / totalVotes) * 100}%` : '0%',
-                      }}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  <Progress value={pct} className="mt-2 h-1.5" />
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -295,42 +268,38 @@ export function VotingDetailsModal({ isOpen, onClose, sessionId }: VotingDetails
 
   const renderParticipants = () => {
     if (!sessionDetails?.participants || sessionDetails.participants.length === 0) {
-      return <p className="text-sm text-neutral-400">No participants found</p>;
+      return <p className="text-sm text-muted-foreground">No participants recorded.</p>;
     }
 
     return (
       <div className="space-y-2">
-        <div className="flex items-center gap-2 mb-2">
-          <Users className="h-4 w-4 text-neutral-400" />
-          <h4 className="font-semibold text-sm text-neutral-300">
-            Participants ({sessionDetails.participants.length})
-          </h4>
+        <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <Users className="h-3.5 w-3.5 text-primary" />
+          Participants ({sessionDetails.participants.length})
         </div>
 
         <div className="grid gap-2">
-          {sessionDetails.participants.map((participant: Participant) => (
+          {sessionDetails.participants.map((participant) => (
             <div
               key={participant.userId}
-              className="flex items-center justify-between p-2 rounded-lg bg-neutral-800/50 border border-neutral-700"
+              className="flex items-center justify-between rounded-xl border border-border bg-background/60 px-3.5 py-2.5"
             >
-              <span className="text-sm font-medium text-neutral-100">{participant.userName}</span>
+              <span className="text-sm font-medium text-foreground">{participant.userName}</span>
               <div className="flex items-center gap-2">
                 {participant.hasSelectedPortion ? (
-                  <>
-                    <PieChart className="h-4 w-4 text-green-500" />
-                    <Badge variant="outline" className="text-xs border-green-600 text-green-400">
-                      {participant.portionFraction
-                        ? `${Math.round(participant.portionFraction * 100)}% of meal`
-                        : 'Portion selected'}
-                    </Badge>
-                  </>
+                  <Badge className="border border-primary/30 bg-primary/15 text-primary hover:bg-primary/15 text-xs">
+                    <PieChart className="mr-1 h-3 w-3" />
+                    {participant.portionFraction
+                      ? `${Math.round(participant.portionFraction * 100)}% portion`
+                      : 'Portion selected'}
+                  </Badge>
                 ) : participant.defaultedToWhole ? (
-                  <Badge variant="secondary" className="text-xs bg-neutral-700 text-neutral-300">
-                    Whole meal (default)
+                  <Badge variant="secondary" className="text-xs">
+                    Full meal (default)
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="text-xs border-amber-600 text-amber-400">
-                    Pending selection
+                  <Badge variant="outline" className="text-xs text-secondary border-secondary/40">
+                    Pending portion
                   </Badge>
                 )}
               </div>
@@ -343,77 +312,79 @@ export function VotingDetailsModal({ isOpen, onClose, sessionId }: VotingDetails
 
   return (
     <>
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <Card className="w-full max-w-2xl bg-neutral-900 border-amber-700/50 max-h-[90vh] overflow-y-auto">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-amber-200">
-                <Trophy className="h-5 w-5" />
+      {isOpen && typeof document !== 'undefined' &&
+        createPortal(
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4 backdrop-blur-[2px]"
+          onClick={onClose}
+        >
+          <Card
+            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-border bg-card text-card-foreground shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <CardHeader className="flex flex-row items-center justify-between border-b border-border/60 bg-card pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg font-bold text-foreground">
+                <Trophy className="h-5 w-5 text-secondary" />
                 Voting Session Details
               </CardTitle>
               <Button
                 variant="ghost"
-                size="sm"
+                size="icon"
                 onClick={onClose}
-                className="text-neutral-400 hover:text-amber-200"
+                className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground"
               >
                 <X className="h-4 w-4" />
               </Button>
             </CardHeader>
 
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-6 pt-5">
               {loading && (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500"></div>
+                <div className="flex items-center justify-center py-10">
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-primary" />
                 </div>
               )}
 
               {error && (
-                <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-4">
-                  <p className="text-sm text-red-400">{error}</p>
+                <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4">
+                  <p className="text-sm text-destructive">{error}</p>
                 </div>
               )}
 
               {!loading && !error && sessionDetails && (
                 <div className="space-y-6">
-                  {/* Session Info */}
-                  <div className="flex items-center gap-4 text-sm text-neutral-400">
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-4 w-4" />
-                      <span>
-                        {new Date(sessionDetails.createdAt).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </span>
-                    </div>
-                    <Badge variant="outline" className="border-amber-700/50 text-amber-200">
-                      {sessionDetails.status}
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                    <span className="inline-flex items-center gap-1.5">
+                      <Clock className="h-3.5 w-3.5" />
+                      {new Date(sessionDetails.createdAt).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                    <Badge variant="secondary" className="capitalize">
+                      {sessionDetails.status.replace('_', ' ')}
                     </Badge>
                   </div>
 
-                  {/* Proposals Section */}
                   <div>
-                    <h3 className="font-semibold mb-3 text-amber-200">Voting Results</h3>
+                    <h3 className="mb-3 text-sm font-semibold text-foreground">Voting Results</h3>
                     {renderProposals()}
                   </div>
 
-                  {/* Participants Section */}
                   <div>
-                    <h3 className="font-semibold mb-3 text-amber-200">Meal Portions</h3>
+                    <h3 className="mb-3 text-sm font-semibold text-foreground">Member Portions</h3>
                     {renderParticipants()}
                   </div>
                 </div>
               )}
             </CardContent>
           </Card>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* Portion Selection Modal */}
       {sessionDetails?.winnerMeal && userId && (
         <PortionSelectionModal
           isOpen={showPortionModal}
@@ -421,11 +392,10 @@ export function VotingDetailsModal({ isOpen, onClose, sessionId }: VotingDetails
           sessionId={sessionId!}
           winnerMeal={sessionDetails.winnerMeal}
           userId={userId}
-          onSuccess={handlePortionSuccess}
+          onSuccess={loadSessionDetails}
         />
       )}
 
-      {/* Meal Details Modal */}
       {selectedMeal && (
         <MealModal
           meal={selectedMeal}

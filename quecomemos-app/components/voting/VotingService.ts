@@ -162,6 +162,29 @@ export class VotingService {
   }
 
   /**
+   * Undo an active vote on a meal proposal
+   */
+  static async undoVote(sessionId: number, proposalId: number, voterId: string) {
+    const response = await fetch(
+      `${VOTING_BASE_URL}/sessions/${sessionId}/proposals/${proposalId}/vote`,
+      {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ voterId }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Failed to undo vote');
+    }
+
+    return response.json();
+  }
+
+  /**
    * Complete voting session and determine winner
    */
   static async completeVotingSession(sessionId: number) {
@@ -359,7 +382,6 @@ export class VotingService {
       }
 
       const data = await response.json();
-      console.log('[VotingService] Voting history response:', data);
       return data;
     } catch (error) {
       console.error('[VotingService] Error fetching voting history:', error);
@@ -386,7 +408,6 @@ export class VotingService {
       }
 
       const data = await response.json();
-      console.log('[VotingService] Session details response:', data);
       return data;
     } catch (error) {
       console.error('[VotingService] Error fetching session details:', error);

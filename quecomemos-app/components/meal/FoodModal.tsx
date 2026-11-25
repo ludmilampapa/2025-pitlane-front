@@ -848,9 +848,9 @@ export default function FoodModal(props: Props) {
                       <Label className="text-foreground text-sm mb-2 block flex items-center gap-2">
                         Food Name
                         {isKorvenInspired && (
-                          <span className="text-xs bg-muted text-foreground px-2 py-0.5 rounded-full flex items-center gap-1">
-                            <Hexagon className="w-3 h-3 fill-amber-400/30" />
-                            Korven
+                          <span className="text-xs bg-primary/10 text-primary border border-primary/25 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <Hexagon className="w-3 h-3 fill-primary/20" />
+                            TheMealDB
                           </span>
                         )}
                       </Label>
@@ -998,14 +998,14 @@ export default function FoodModal(props: Props) {
           ) : (
             // CREATE MODE - Full form
             <div className="space-y-4">
-              {/* Korven Inspiration Section */}
+              {/* TheMealDB Suggestions Section */}
               {!editingItem && (
-                <div className="bg-gradient-to-r from-card to-yellow-900/30 border border-border rounded-lg p-4">
+                <div className="bg-muted/50 border border-border rounded-lg p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <Hexagon className="w-5 h-5 text-primary fill-amber-400/20" />
+                      <Hexagon className="w-5 h-5 text-primary fill-primary/15" />
                       <Label className="text-foreground text-sm font-semibold">
-                        Get Korven Inspired
+                        TheMealDB Suggestions
                       </Label>
                     </div>
                     <button
@@ -1022,7 +1022,7 @@ export default function FoodModal(props: Props) {
                       {isLoadingKorven ? (
                         <div className="flex items-center justify-center gap-2 text-primary py-4">
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          <span className="text-sm">Loading Korven products...</span>
+                          <span className="text-sm">Loading suggestions...</span>
                         </div>
                       ) : korvenProducts.length > 0 ? (
                         <div className="max-h-40 overflow-y-auto space-y-1">
@@ -1046,16 +1046,16 @@ export default function FoodModal(props: Props) {
                           ))}
                         </div>
                       ) : (
-                        <p className="text-xs text-primary text-center py-3">
+                        <p className="text-xs text-muted-foreground text-center py-3">
                           {forMeal 
-                            ? 'No Korven products with connectors available for meals.'
-                            : 'No Korven products without connectors available for foods.'}
+                            ? 'No suggested meals available.'
+                            : 'No suggested ingredients available.'}
                         </p>
                       )}
                       {selectedKorvenProduct && (
                         <div className="text-xs text-primary bg-muted border border-border rounded p-2 flex items-center gap-2">
-                          <Hexagon className="w-3 h-3 fill-amber-400/20" />
-                          <span>Using Korven inspired name: <strong>{selectedKorvenProduct}</strong></span>
+                          <Hexagon className="w-3 h-3 fill-primary/15" />
+                          <span>Selected suggestion: <strong>{selectedKorvenProduct}</strong></span>
                         </div>
                       )}
                     </div>
@@ -1069,9 +1069,9 @@ export default function FoodModal(props: Props) {
                   <Label className="text-foreground text-sm mb-2 block flex items-center gap-2">
                     Food Name
                     {isKorvenInspired && (
-                      <span className="text-xs bg-muted text-foreground px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <Hexagon className="w-3 h-3 fill-amber-400/30" />
-                        Korven
+                      <span className="text-xs bg-primary/10 text-primary border border-primary/25 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <Hexagon className="w-3 h-3 fill-primary/20" />
+                        TheMealDB
                       </span>
                     )}
                   </Label>

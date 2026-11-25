@@ -159,8 +159,8 @@ export function UserSidebar() {
           >
             <ChefHat className="h-5 w-5 text-primary" />
             <div>
-              <div className="text-sm font-medium text-foreground">My Meals</div>
-              <div className="text-xs text-muted-foreground">View and manage your created meals</div>
+              <div className="text-sm font-medium text-foreground">Meals</div>
+              <div className="text-xs text-muted-foreground">Browse, create, and manage meals</div>
             </div>
           </Link>
 

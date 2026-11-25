@@ -17,7 +17,7 @@ export default function FoodsList({ foods, onEdit, onRemove }: Props) {
 
   if (foods.length === 0) {
     return (
-      <div className={`${COMMON_STYLES.TEXT_AMBER_MUTED}/90 text-sm bg-neutral-800/60 border border-amber-800/40 rounded-lg p-3`}>
+      <div className="text-muted-foreground text-sm bg-muted/40 border border-border rounded-lg p-3">
         You haven&apos;t added any food yet. Use the <b>Add Food</b> button.
       </div>
     );
@@ -28,20 +28,20 @@ export default function FoodsList({ foods, onEdit, onRemove }: Props) {
       {foods.map((food, i) => (
         <div
           key={`${food.name}-${i}`}
-          className="bg-amber-900/30 border border-amber-700/50 rounded-lg p-4 flex items-center gap-4"
+          className="bg-muted/35 border border-border rounded-xl p-4 flex items-center gap-4"
         >
           <FoodIcon food={food} />
           
           <div className="flex-grow">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2">
-                <h5 className={`font-semibold ${COMMON_STYLES.TEXT_AMBER_SECONDARY}`}>
+                <h5 className="font-semibold text-foreground">
                   {food.name}
                 </h5>
                 {isKorvenInspiredFood(food.name) && (
-                  <span className="text-xs bg-amber-600/50 text-amber-100 px-1.5 py-0.5 rounded-full flex items-center gap-1">
-                    <Hexagon className="w-2.5 h-2.5 fill-amber-400/30" />
-                    Korven
+                  <span className="text-xs bg-primary/10 text-primary border border-primary/25 px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                    <Hexagon className="w-2.5 h-2.5 fill-primary/20" />
+                    TheMealDB
                   </span>
                 )}
               </div>
@@ -57,15 +57,17 @@ export default function FoodsList({ foods, onEdit, onRemove }: Props) {
           <div className="flex items-center gap-2 flex-shrink-0">
             <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={() => onEdit(i)}
-              className="bg-amber-700 hover:bg-amber-600 text-white text-sm px-3 py-1"
+              className="rounded-lg text-xs"
             >
               Edit
             </Button>
             <button
               type="button"
               onClick={() => onRemove(i)}
-              className="text-red-400 hover:text-red-300 p-2 hover:bg-red-900/20 rounded transition-colors"
+              className="text-destructive hover:bg-destructive/10 p-2 rounded-lg transition-colors"
               title="Remove"
             >
               <Trash className="w-4 h-4" />

@@ -9,7 +9,8 @@ export async function PUT(request: Request) {
     
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_OR_ANON_KEY ||
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
           getAll() {
@@ -28,20 +29,25 @@ export async function PUT(request: Request) {
       }
     )
     
-    // Get the user session
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-    
-    if (sessionError || !session) {
+    // Verify user cryptographically and retrieve access token for backend call
+    const [{ data: { user }, error: userError }, { data: { session }, error: sessionError }] =
+      await Promise.all([supabase.auth.getUser(), supabase.auth.getSession()])
+
+    if (userError || !user || sessionError || !session?.access_token) {
       return NextResponse.json(
         { error: 'Not authenticated' },
         { status: 401 }
       )
     }
 
-    const userId = session.user.id
+    const userId = user.id
+    const apiBaseUrl =
+      process.env.NEXT_PUBLIC_API_URL ||
+      process.env.NEXT_PUBLIC_BACKEND_URL ||
+      'http://localhost:3005'
 
     // Make request to backend
-    const backendResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/profile/${userId}/calorie-goal`, {
+    const backendResponse = await fetch(`${apiBaseUrl}/profile/${userId}/calorie-goal`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

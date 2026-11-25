@@ -14,6 +14,11 @@ const lookupBuckets = new Map<string, { count: number; resetAt: number }>();
 export async function GET(request: NextRequest) {
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'local';
   const now = Date.now();
+  if (lookupBuckets.size > 1000) {
+    for (const [k, b] of lookupBuckets) {
+      if (now > b.resetAt) lookupBuckets.delete(k);
+    }
+  }
   const bucket = lookupBuckets.get(ip);
   if (!bucket || now > bucket.resetAt) {
     lookupBuckets.set(ip, { count: 1, resetAt: now + 60_000 });

@@ -19,9 +19,11 @@ interface Group {
   GroupID: number;
   name: string;
   description?: string;
+  createdBy?: string;
   createdAt: string;
   updatedAt: string;
   members: Array<{
+    role?: string;
     profile: {
       id: string;
       username: string;
@@ -38,7 +40,7 @@ export default function GroupsPage() {
   const [filteredGroups, setFilteredGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'mine'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'admin'>('all');
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [isRegisterMealModalOpen, setIsRegisterMealModalOpen] = useState(false);
   const [selectedGroupForMeal, setSelectedGroupForMeal] = useState<Group | null>(null);
@@ -52,37 +54,49 @@ export default function GroupsPage() {
   useEffect(() => {
     if (userData?.profile?.id) {
       setCurrentUserId(userData.profile.id);
+    } else {
+      setCurrentUserId('');
+      setGroups([]);
+      setFilteredGroups([]);
     }
-  }, [userData]);
+  }, [userData?.profile?.id]);
 
   const fetchGroups = useCallback(async () => {
+    if (!userData?.profile?.id) return;
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/groups`);
+      const response = await fetch(`${API_BASE_URL}/groups?userId=${encodeURIComponent(userData.profile.id)}`);
       
       if (!response.ok) {
         throw new Error('Error loading groups');
       }
       
-      const data = await response.json();
-      setGroups(data);
-      setFilteredGroups(data);
+      const data: Group[] = await response.json();
+      setGroups(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching groups:', error);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [userData?.profile?.id]);
 
   useEffect(() => {
-    fetchGroups();
+    void fetchGroups();
   }, [fetchGroups]);
 
-  // Filtrar grupos basado en búsqueda y tipo
+  // Filter strictly within the current user's own groups
   useEffect(() => {
-    let filtered = groups;
+    if (!currentUserId) {
+      setFilteredGroups([]);
+      return;
+    }
 
-    // Filtrar por texto de búsqueda
+    let filtered = groups.filter(
+      (group) =>
+        group.createdBy === currentUserId ||
+        group.members.some((member) => member.profile.id === currentUserId)
+    );
+
     if (searchQuery) {
       filtered = filtered.filter(group =>
         group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -90,18 +104,14 @@ export default function GroupsPage() {
       );
     }
 
-    // Filtrar por tipo
-    if (filterType === 'all') {
-      // Mostrar los primeros 5 grupos con más actividad (más consumptions)
-      filtered = filtered
-        .sort((a, b) => b._count.consumptions - a._count.consumptions)
-        .slice(0, 5);
-    } else if (filterType === 'mine' && currentUserId) {
-      // Mostrar grupos donde el usuario es miembro
-      filtered = filtered.filter(group => {
-        const isMember = group.members.some(member => member.profile.id === currentUserId);
-        return isMember;
-      });
+    if (filterType === 'admin') {
+      filtered = filtered.filter(
+        (group) =>
+          group.createdBy === currentUserId ||
+          group.members.some(
+            (member) => member.profile.id === currentUserId && member.role === 'admin'
+          )
+      );
     }
 
     setFilteredGroups(filtered);
@@ -113,9 +123,9 @@ export default function GroupsPage() {
 
   const getFilterLabel = (type: string) => {
     switch (type) {
-      case 'all': return 'All';
-      case 'mine': return 'My groups';
-      default: return 'All';
+      case 'all': return 'My groups';
+      case 'admin': return 'Managed by me';
+      default: return 'My groups';
     }
   };
 
@@ -178,7 +188,7 @@ export default function GroupsPage() {
         portions: mealData.portions // Include portions if provided
       };
 
-      const response = await fetch('http://localhost:3005/consumptions/group', {
+      const response = await fetch(`${API_BASE_URL}/consumptions/group`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -339,7 +349,7 @@ function GroupsPageSkeleton() {
                 
                   <div className="overflow-x-auto scrollbar-hide">
                   <div className="flex space-x-2 min-w-max">
-                    {(['all', 'mine'] as const).map((type) => (
+                    {(['all', 'admin'] as const).map((type) => (
                       <Button
                         key={type}
                         variant={filterType === type ? 'default' : 'outline'}

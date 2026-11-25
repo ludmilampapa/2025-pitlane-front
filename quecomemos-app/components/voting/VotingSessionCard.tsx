@@ -5,17 +5,32 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Clock, Users, Trophy, Vote, Plus, CheckCircle, Flame } from 'lucide-react';
+import {
+  Clock,
+  Users,
+  Trophy,
+  Plus,
+  CheckCircle,
+  Flame,
+  Sparkles,
+  Dices,
+  ListChecks,
+  ArrowLeft,
+  ArrowRight,
+  Shuffle,
+  Gamepad2,
+} from 'lucide-react';
 import { useUser } from '@/lib/contexts/UserContext';
 import { useGlobalNotification } from '@/lib/contexts/NotificationContext';
 import { useVoting } from '@/lib/contexts/VotingContext';
-import { useVotingSession } from '@/lib/hooks/useVotingSession';
 import { VotingService } from './VotingService';
 import { MealProposalCard } from './MealProposalCard';
 import { VotingTimer } from './VotingTimer';
 import { ProposeMealModal } from './ProposeMealModal';
 import { EarlyCompletionModal } from './EarlyCompletionModal';
 import { GroupSwipeMatch } from './GroupSwipeMatch';
+import { GroupMealRoulette } from './GroupMealRoulette';
+import { isMealCompatibleWithRestrictions } from '@/lib/utils/dietaryCompatibility';
 import type { VotingSession, MealProposal } from './types';
 import { API_BASE_URL } from '@/lib/config/api';
 import { toast } from 'sonner';
@@ -26,116 +41,85 @@ interface VotingSessionCardProps {
   className?: string;
 }
 
-export function VotingSessionCard({ session: initialSession, onVotingComplete, className = '' }: VotingSessionCardProps) {
+interface DietaryRestriction {
+  DietaryRestrictionID: number;
+  name: string;
+}
+
+type ArenaMode = 'chooser' | 'classic' | 'roulette';
+
+export function VotingSessionCard({
+  session: initialSession,
+  onVotingComplete,
+  className = '',
+}: VotingSessionCardProps) {
   const { userData } = useUser();
   const { showSuccess, showError } = useGlobalNotification();
-  const { setShowResultsModal, refreshSession, notifyVotingCompleted, updateSessionOptimistically, isOffline } = useVoting();
-  
+  const {
+    setShowResultsModal,
+    refreshSession,
+    notifyVotingCompleted,
+    updateSessionOptimistically,
+    isOffline,
+  } = useVoting();
+
   const [loading, setLoading] = useState(false);
+  const [proposeModalTab, setProposeModalTab] = useState<'swipe' | 'manual'>('manual');
   const [showProposeMeal, setShowProposeMeal] = useState(false);
-  const [showSwipeMatch, setShowSwipeMatch] = useState(false);
   const [showEarlyCompletion, setShowEarlyCompletion] = useState(false);
   const [groupRestrictions, setGroupRestrictions] = useState<DietaryRestriction[]>([]);
+  const [arenaMode, setArenaMode] = useState<ArenaMode>('chooser');
 
   const userId = userData?.profile?.id;
+  const updatedSession = initialSession;
 
-  // Use the session polling hook for fine-grained updates
-  // NOTE: We disable automatic polling here and rely on VotingContext for background sync (10s interval)
-  // This component only refreshes after user actions to reduce API calls
-  const { 
-    session: polledSession
-  } = useVotingSession({
-    sessionId: initialSession.VotingSessionID,
-    enabled: true,
-    enablePolling: false, // Disable automatic polling - rely on VotingContext for background sync
-    onComplete: (completedSession) => {
-      // Handle voting completion
-      const winnerName = completedSession.winnerMeal?.name || 'Unknown meal';
-      const voteCount = completedSession.totalVotes || 0;
-      
-      showSuccess(
-        '🎉 Voting Complete!', 
-        `The winning meal is "${winnerName}" with ${voteCount} votes! Creating consumption record...`
-      );
+  // Reset to the game-mode chooser whenever a new session enters voting_phase
+  useEffect(() => {
+    setArenaMode('chooser');
+  }, [updatedSession.VotingSessionID]);
 
-      // Auto-create group consumption
-      if (userId && completedSession.winnerMealId) {
-        VotingService.createConsumptionFromVote(completedSession.VotingSessionID, {
-          profileId: userId,
-          name: winnerName,
-          description: `Group meal from voting session: ${completedSession.title || 'Meal Vote'}`,
-          quantity: 1
-        })
-          .then((consumption) => {
-            toast.success('Consumo registrado', {
-              description: `"${winnerName}" se añadió al historial del grupo.`,
-              action: consumption.ConsumptionID ? {
-                label: 'Deshacer',
+  const showLoggedMealToast = useCallback(
+    (winnerName: string, consumptionId?: number) => {
+      toast.success('Group meal logged', {
+        description: `"${winnerName}" was added to the group history.`,
+        action:
+          consumptionId && userId
+            ? {
+                label: 'Undo',
                 onClick: () => {
-                  fetch(`${API_BASE_URL}/consumptions/${consumption.ConsumptionID}`, {
+                  fetch(`${API_BASE_URL}/consumptions/${consumptionId}`, {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ profileId: userId }),
-                  }).then((response) => {
-                    if (!response.ok) throw new Error('Could not undo consumption');
-                    toast.success('Consumo deshecho');
-                    onVotingComplete?.();
-                    refreshSession();
-                  }).catch((error: unknown) => {
-                    toast.error(error instanceof Error ? error.message : 'No se pudo deshacer');
-                  });
+                  })
+                    .then((response) => {
+                      if (!response.ok) throw new Error('Could not undo consumption');
+                      toast.success('Meal log undone');
+                      onVotingComplete?.();
+                      refreshSession();
+                    })
+                    .catch((error: unknown) => {
+                      toast.error(error instanceof Error ? error.message : 'Could not undo');
+                    });
                 },
-              } : undefined,
-            });
-            // Trigger parent refresh for Recent Activity
-            onVotingComplete?.();
-            // Notify listeners via VotingContext
-            notifyVotingCompleted(completedSession.VotingSessionID);
-          })
-          .catch(error => {
-            console.error('Error creating consumption:', error);
-            // Don't show error if consumption already exists or was created by another user
-          });
-      } else {
-        // Still trigger parent refresh even if no consumption created
-        onVotingComplete?.();
-        notifyVotingCompleted(completedSession.VotingSessionID);
-      }
+              }
+            : undefined,
+      });
+    },
+    [userId, onVotingComplete, refreshSession]
+  );
 
-      // Refresh the context to detect session completion
-      refreshSession();
-    }
-  });
-
-  // Use the polled session, fallback to initial prop
-  const updatedSession = polledSession || initialSession;
-  
-  // Debug logging for membership checks
-  console.log('=== VotingSessionCard Debug ===');
-  console.log('Current User ID:', userId);
-  console.log('User Data:', userData);
-  console.log('Session Group:', updatedSession.group);
-  console.log('Group CreatedBy:', updatedSession.group?.createdBy);
-  console.log('Group Members:', updatedSession.group?.members);
-  
-  // Proper ownership and membership checks (same as GroupInfoPage)
   const isGroupOwner = updatedSession.group?.createdBy === userId;
-  const isGroupAdmin = updatedSession.group?.members?.some(member => 
-    member.profile.id === userId && member.role === 'admin'
-  ) || false;
-  const isGroupMember = updatedSession.group?.members?.some(member => 
-    member.profile.id === userId
-  ) || false;
+  const isInitiator = updatedSession.initiatorId === userId;
+  const isGroupAdmin =
+    updatedSession.group?.members?.some(
+      (member) => member.profile.id === userId && member.role === 'admin'
+    ) || false;
+  const isGroupMember =
+    updatedSession.group?.members?.some((member) => member.profile.id === userId) || false;
   const canParticipate = isGroupOwner || isGroupAdmin || isGroupMember;
-  
-  console.log('Membership Checks Results:');
-  console.log('- Is Group Owner:', isGroupOwner);
-  console.log('- Is Group Admin:', isGroupAdmin);
-  console.log('- Is Group Member:', isGroupMember);
-  console.log('- Can Participate:', canParticipate);
-  console.log('================================');
-  
-  // Check if session is expired
+  const canAdvancePhase = isGroupOwner || isGroupAdmin || isInitiator;
+
   const isExpired = () => {
     const now = new Date();
     if (updatedSession.status === 'proposal_phase') {
@@ -145,43 +129,39 @@ export function VotingSessionCard({ session: initialSession, onVotingComplete, c
     }
     return false;
   };
-  
-  const hasUserVoted = (proposal: MealProposal) => 
-    proposal.votes?.some(vote => vote.voterId === userId && vote.isActive) || false;
-  const userVoteCount = updatedSession.proposals?.reduce((count, proposal) => 
-    count + (hasUserVoted(proposal) ? 1 : 0), 0
-  ) || 0;
 
-  // Check if current user has confirmed readiness for voting
-  const hasUserConfirmedReady = updatedSession.proposalConfirmations?.some(
-    confirmation => confirmation.userId === userId
-  ) || false;
+  const hasUserVoted = (proposal: MealProposal) =>
+    proposal.votes?.some((vote) => vote.voterId === userId && vote.isActive) || false;
+  const userVoteCount =
+    updatedSession.proposals?.reduce(
+      (count, proposal) => count + (hasUserVoted(proposal) ? 1 : 0),
+      0
+    ) || 0;
 
-  // Check if current user has confirmed their votes
-  const hasUserConfirmedVotes = updatedSession.voteConfirmations?.some(
-    confirmation => confirmation.userId === userId
-  ) || false;
+  const hasUserConfirmedReady =
+    updatedSession.proposalConfirmations?.some((confirmation) => confirmation.userId === userId) ||
+    false;
 
-  // Check for early completion opportunity
+  const hasUserConfirmedVotes =
+    updatedSession.voteConfirmations?.some((confirmation) => confirmation.userId === userId) ||
+    false;
+
   const shouldShowEarlyCompletion = useCallback(() => {
     if (updatedSession.status !== 'voting_phase') return false;
-    
+
     const totalMembers = updatedSession.group?.members?.length || 0;
     const totalVoters = new Set(
-      updatedSession.proposals?.flatMap(p => 
-        (p.votes || []).filter(v => v.isActive).map(v => v.voterId)
+      updatedSession.proposals?.flatMap((p) =>
+        (p.votes || []).filter((v) => v.isActive).map((v) => v.voterId)
       ) || []
     ).size;
-    
-    // Show early completion if 60% of members have voted
+
     const majorityThreshold = Math.ceil(totalMembers * 0.6);
     return totalVoters >= majorityThreshold && totalMembers > 1;
   }, [updatedSession.status, updatedSession.group?.members?.length, updatedSession.proposals]);
 
-  // Check if we should show early completion notification
   useEffect(() => {
     if (shouldShowEarlyCompletion() && !showEarlyCompletion) {
-      // Show early completion modal automatically after a short delay
       const timer = setTimeout(() => {
         setShowEarlyCompletion(true);
       }, 2000);
@@ -189,171 +169,152 @@ export function VotingSessionCard({ session: initialSession, onVotingComplete, c
     }
   }, [updatedSession.status, updatedSession.proposals, shouldShowEarlyCompletion, showEarlyCompletion]);
 
+  const ensureRandomPoolIfEmpty = useCallback(async () => {
+    if ((updatedSession.proposals?.length || 0) > 0 || !userId) return;
+
+    const groupId = updatedSession.groupId;
+    let pool: Array<{ MealID: number }> = [];
+    const allRes = await fetch(`${API_BASE_URL}/meals/all`);
+    if (allRes.ok) {
+      const allMeals = (await allRes.json()) as Array<{
+        MealID: number;
+        name?: string;
+        mealFoods?: Array<{
+          food?: {
+            name?: string;
+            dietaryRestrictions?: Array<{ DietaryRestrictionID?: number; name?: string } | number>;
+          };
+        }>;
+      }>;
+      pool = allMeals.filter((m) => isMealCompatibleWithRestrictions(m, groupRestrictions));
+    }
+
+    if (pool.length === 0) return;
+
+    const shuffled = [...pool];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    const picks = shuffled.slice(0, Math.min(5, shuffled.length));
+    for (const meal of picks) {
+      try {
+        await VotingService.proposeMeal(updatedSession.VotingSessionID, {
+          mealId: meal.MealID,
+          proposedById: userId,
+        });
+      } catch {
+        // Ignore duplicates if another member proposed simultaneously
+      }
+    }
+  }, [
+    updatedSession.proposals?.length,
+    updatedSession.groupId,
+    updatedSession.VotingSessionID,
+    userId,
+    groupRestrictions,
+  ]);
+
   const handleStartVoting = async () => {
-    if (!canParticipate || !(isGroupOwner || isGroupAdmin)) {
-      showError('Access Denied', 'Only group owners and admins can start voting.');
+    if (!canParticipate || !canAdvancePhase) {
+      showError('Access Denied', 'Only the host or group admins can advance the round early.');
       return;
     }
 
+    const hadZeroProposals = (updatedSession.proposals?.length || 0) === 0;
     setLoading(true);
     try {
-      // Optimistic update - immediately show the voting phase
-      updateSessionOptimistically({
-        status: 'voting_phase'
-      });
-      
+      setArenaMode('chooser');
+      if (hadZeroProposals) {
+        await ensureRandomPoolIfEmpty();
+      }
       await VotingService.startVotingPhase(updatedSession.VotingSessionID);
-      showSuccess('Voting Started!', 'The voting phase has begun. Members can now vote on proposed meals.');
-      
-      // Only refresh if we're online and the optimistic update might be wrong
+      await refreshSession();
+      showSuccess(
+        hadZeroProposals ? 'Random Pool Loaded!' : 'Pool Locked In!',
+        hadZeroProposals
+          ? 'Random compatible dishes are ready — pick Classic List or Meal Roulette!'
+          : 'Choose Classic List or Meal Roulette to cast your votes!'
+      );
       if (!isOffline) {
-        setTimeout(() => refreshSession(), 2000);
+        setTimeout(() => refreshSession(), 1500);
       }
     } catch (error) {
-      showError('Error Starting Voting', error instanceof Error ? error.message : 'Failed to start voting phase');
-      // Revert optimistic update on error
-      updateSessionOptimistically({
-        status: 'proposal_phase'
-      });
+      showError(
+        'Error Starting Arena',
+        error instanceof Error ? error.message : 'Failed to start voting round'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const finalizeVotingAndLog = async (early = false) => {
+    setLoading(true);
+    try {
+      const result = await VotingService.completeVotingSession(updatedSession.VotingSessionID);
+      const winnerName = result.winnerProposal?.meal?.name || 'Unknown meal';
+      const voteCount = result.winnerProposal?.voteCount || 0;
+
+      showSuccess(
+        early ? 'Voting Completed Early!' : 'Winner Crowned!',
+        `The winning meal is "${winnerName}" with ${voteCount} votes!`
+      );
+      if (early) setShowEarlyCompletion(false);
+
+      if (userId && result.session?.winnerMealId) {
+        try {
+          const consumption = (await VotingService.createConsumptionFromVote(
+            updatedSession.VotingSessionID,
+            {
+              profileId: userId,
+              name: winnerName,
+              description: `Group meal from voting session: ${updatedSession.title || 'Meal Vote'}`,
+              quantity: 1,
+            }
+          )) as { ConsumptionID?: number };
+
+          showLoggedMealToast(winnerName, consumption.ConsumptionID);
+          onVotingComplete?.();
+          notifyVotingCompleted(updatedSession.VotingSessionID);
+        } catch (consumptionError) {
+          console.error('Error creating consumption:', consumptionError);
+          const errorMessage =
+            consumptionError instanceof Error ? consumptionError.message : '';
+          if (!errorMessage.includes('already') && !errorMessage.includes('duplicate')) {
+            showError(
+              'Consumption Failed',
+              'Could not register the meal consumption automatically.'
+            );
+          }
+        }
+      }
+
+      setShowResultsModal(true);
+      await refreshSession();
+      onVotingComplete?.();
+      notifyVotingCompleted(updatedSession.VotingSessionID);
+    } catch (error) {
+      showError(
+        'Error Completing Voting',
+        error instanceof Error ? error.message : 'Failed to complete voting'
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const handleCompleteVoting = async () => {
-    if (!canParticipate || !(isGroupOwner || isGroupAdmin)) {
-      showError('Access Denied', 'Only group owners and admins can complete voting.');
+    if (!canParticipate || !canAdvancePhase) {
+      showError('Access Denied', 'Only the host or group admins can finalize voting.');
       return;
     }
-
-    setLoading(true);
-    try {
-      const result = await VotingService.completeVotingSession(updatedSession.VotingSessionID);
-      const winnerName = result.winnerProposal?.meal?.name || 'Unknown meal';
-      const voteCount = result.winnerProposal?.voteCount || 0;
-      
-      showSuccess('Voting Completed!', `The winning meal is "${winnerName}" with ${voteCount} votes!`);
-      
-      // Auto-create consumption
-      if (userId && result.session?.winnerMealId) {
-        try {
-          const consumption = await VotingService.createConsumptionFromVote(updatedSession.VotingSessionID, {
-            profileId: userId,
-            name: winnerName,
-            description: `Group meal from voting session: ${updatedSession.title || 'Meal Vote'}`,
-            quantity: 1
-          }) as { ConsumptionID?: number };
-
-          toast.success('Consumo registrado', {
-            description: `"${winnerName}" se añadió al historial del grupo.`,
-            action: consumption.ConsumptionID ? {
-              label: 'Deshacer',
-              onClick: () => {
-                fetch(`${API_BASE_URL}/consumptions/${consumption.ConsumptionID}`, {
-                  method: 'DELETE',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ profileId: userId }),
-                }).then((response) => {
-                  if (!response.ok) throw new Error('Could not undo consumption');
-                  toast.success('Consumo deshecho');
-                  onVotingComplete?.();
-                  refreshSession();
-                }).catch((error: unknown) => {
-                  toast.error(error instanceof Error ? error.message : 'No se pudo deshacer');
-                });
-              },
-            } : undefined,
-          });
-          // Trigger parent refresh and notify other listeners
-          onVotingComplete?.();
-          notifyVotingCompleted(updatedSession.VotingSessionID);
-        } catch (consumptionError) {
-          console.error('Error creating consumption:', consumptionError);
-          const errorMessage = consumptionError instanceof Error ? consumptionError.message : '';
-          if (!errorMessage.includes('already') && !errorMessage.includes('duplicate')) {
-            showError('Consumption Failed', 'Could not register the meal consumption automatically.');
-          }
-        }
-      }
-      
-      await refreshSession();
-      setShowResultsModal(true);
-      // Ensure history and activity update
-      onVotingComplete?.();
-      notifyVotingCompleted(updatedSession.VotingSessionID);
-    } catch (error) {
-      showError('Error Completing Voting', error instanceof Error ? error.message : 'Failed to complete voting');
-    } finally {
-      setLoading(false);
-    }
+    await finalizeVotingAndLog(false);
   };
 
   const handleEarlyCompleteVoting = async () => {
-    setLoading(true);
-    try {
-      const result = await VotingService.completeVotingSession(updatedSession.VotingSessionID);
-      const winnerName = result.winnerProposal?.meal?.name || 'Unknown meal';
-      const voteCount = result.winnerProposal?.voteCount || 0;
-      
-      showSuccess('Voting Completed Early!', `The winning meal is "${winnerName}" with ${voteCount} votes!`);
-      setShowEarlyCompletion(false);
-      
-      // Auto-create consumption
-      if (userId && result.session?.winnerMealId) {
-        try {
-          const consumption = await VotingService.createConsumptionFromVote(updatedSession.VotingSessionID, {
-            profileId: userId,
-            name: winnerName,
-            description: `Group meal from voting session: ${updatedSession.title || 'Meal Vote'}`,
-            quantity: 1
-          }) as { ConsumptionID?: number };
-
-          toast.success('Consumo registrado', {
-            description: `"${winnerName}" se añadió al historial del grupo.`,
-            action: consumption.ConsumptionID ? {
-              label: 'Deshacer',
-              onClick: () => {
-                fetch(`${API_BASE_URL}/consumptions/${consumption.ConsumptionID}`, {
-                  method: 'DELETE',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ profileId: userId }),
-                }).then((response) => {
-                  if (!response.ok) throw new Error('Could not undo consumption');
-                  toast.success('Consumo deshecho');
-                  onVotingComplete?.();
-                  refreshSession();
-                }).catch((error: unknown) => {
-                  toast.error(error instanceof Error ? error.message : 'No se pudo deshacer');
-                });
-              },
-            } : undefined,
-          });
-          // Trigger parent refresh and notify other listeners
-          onVotingComplete?.();
-          notifyVotingCompleted(updatedSession.VotingSessionID);
-        } catch (consumptionError) {
-          console.error('Error creating consumption:', consumptionError);
-          const errorMessage = consumptionError instanceof Error ? consumptionError.message : '';
-          if (!errorMessage.includes('already') && !errorMessage.includes('duplicate')) {
-            showError('Consumption Failed', 'Could not register the meal consumption automatically.');
-          }
-        }
-      }
-      
-      setShowResultsModal(true);
-      await refreshSession();
-      // Ensure history and activity update
-      onVotingComplete?.();
-      notifyVotingCompleted(updatedSession.VotingSessionID);
-    } catch (error) {
-      showError('Error Completing Voting', error instanceof Error ? error.message : 'Failed to complete voting');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleShowResults = () => {
-    setShowResultsModal(true);
+    await finalizeVotingAndLog(true);
   };
 
   const handleVote = async (proposalId: number) => {
@@ -364,8 +325,7 @@ export function VotingSessionCard({ session: initialSession, onVotingComplete, c
 
     setLoading(true);
     try {
-      // Optimistic update - immediately update the vote count and user's vote
-      const updatedProposals = updatedSession.proposals.map(proposal => {
+      const updatedProposals = updatedSession.proposals.map((proposal) => {
         if (proposal.MealProposalID === proposalId) {
           return {
             ...proposal,
@@ -373,7 +333,7 @@ export function VotingSessionCard({ session: initialSession, onVotingComplete, c
             votes: [
               ...proposal.votes,
               {
-                VoteID: Date.now(), // Temporary ID
+                VoteID: Date.now(),
                 votingSessionId: updatedSession.VotingSessionID,
                 mealProposalId: proposalId,
                 voterId: userId,
@@ -382,10 +342,10 @@ export function VotingSessionCard({ session: initialSession, onVotingComplete, c
                 isActive: true,
                 voter: {
                   id: userId,
-                  username: userData?.profile?.username || 'You'
-                }
-              }
-            ]
+                  username: userData?.profile?.username || 'You',
+                },
+              },
+            ],
           };
         }
         return proposal;
@@ -393,42 +353,65 @@ export function VotingSessionCard({ session: initialSession, onVotingComplete, c
 
       updateSessionOptimistically({
         proposals: updatedProposals,
-        totalVotes: updatedSession.totalVotes + 1
+        totalVotes: updatedSession.totalVotes + 1,
       });
 
       await VotingService.castVote(updatedSession.VotingSessionID, {
         mealProposalId: proposalId,
         voterId: userId,
-        voteType: 'up'
+        voteType: 'up',
       });
-      toast.success('Vote Cast!', {
-        description: 'Podés deshacerlo mientras la votación siga activa.',
+
+      toast.success('Vote cast!', {
+        description: 'You can undo it while the round stays open.',
         action: {
-          label: 'Deshacer',
+          label: 'Undo',
           onClick: () => {
-            fetch(`${API_BASE_URL}/voting/sessions/${updatedSession.VotingSessionID}/proposals/${proposalId}/vote`, {
-              method: 'DELETE',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ voterId: userId }),
-            }).then(async (response) => {
-              if (!response.ok) throw new Error((await response.json() as { error?: string }).error || 'Could not undo vote');
-              toast.success('Voto deshecho');
-              refreshSession();
-            }).catch((error: unknown) => {
-              toast.error(error instanceof Error ? error.message : 'No se pudo deshacer el voto');
-            });
+            void handleUndoVote(proposalId);
           },
         },
       });
-      
-      // Refresh after a short delay to get accurate server state
+
       if (!isOffline) {
-        setTimeout(() => refreshSession(), 1500);
+        setTimeout(() => refreshSession(), 1200);
       }
     } catch (error) {
       showError('Error Casting Vote', error instanceof Error ? error.message : 'Failed to cast vote');
-      // Revert optimistic update on error - just refresh to get correct state
       refreshSession();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUndoVote = async (proposalId: number) => {
+    if (!userId || !canParticipate) return;
+
+    setLoading(true);
+    try {
+      const updatedProposals = updatedSession.proposals.map((proposal) => {
+        if (proposal.MealProposalID === proposalId) {
+          return {
+            ...proposal,
+            voteCount: Math.max(0, proposal.voteCount - 1),
+            votes: (proposal.votes || []).filter(
+              (v) => !(v.voterId === userId && v.isActive)
+            ),
+          };
+        }
+        return proposal;
+      });
+
+      updateSessionOptimistically({
+        proposals: updatedProposals,
+        totalVotes: Math.max(0, updatedSession.totalVotes - 1),
+      });
+
+      await VotingService.undoVote(updatedSession.VotingSessionID, proposalId, userId);
+      toast.success('Vote removed');
+      await refreshSession();
+    } catch (error) {
+      showError('Could not remove vote', error instanceof Error ? error.message : 'Try again');
+      await refreshSession();
     } finally {
       setLoading(false);
     }
@@ -443,13 +426,16 @@ export function VotingSessionCard({ session: initialSession, onVotingComplete, c
     try {
       await VotingService.proposeMeal(updatedSession.VotingSessionID, {
         mealId,
-        proposedById: userId
+        proposedById: userId,
       });
-      showSuccess('Meal Proposed!', 'Your meal has been added to the voting pool.');
+      showSuccess('Dish Added to Pool!', 'Your dish is now in the game pool.');
       setShowProposeMeal(false);
       await refreshSession();
     } catch (error) {
-      showError('Error Proposing Meal', error instanceof Error ? error.message : 'Failed to propose meal');
+      showError(
+        'Error Adding Dish',
+        error instanceof Error ? error.message : 'Failed to propose meal'
+      );
     }
   };
 
@@ -461,19 +447,31 @@ export function VotingSessionCard({ session: initialSession, onVotingComplete, c
 
     setLoading(true);
     try {
-      const result = await VotingService.confirmReadyForVoting(updatedSession.VotingSessionID, userId);
-      showSuccess('Ready Confirmed!', 'You have confirmed that you are ready for voting.');
-      
-      // Check if voting started automatically
-      if (result.votingStarted) {
-        setTimeout(() => {
-          showSuccess('🗳️ Voting Started!', 'All members are ready! The voting phase has begun.');
-        }, 1000);
+      const totalMembers = updatedSession.group?.members?.length || 1;
+      const confirmedSoFar = updatedSession.proposalConfirmations?.length || 0;
+      if (confirmedSoFar + 1 >= totalMembers && (updatedSession.proposals?.length || 0) === 0) {
+        await ensureRandomPoolIfEmpty();
       }
-      
+
+      const result = await VotingService.confirmReadyForVoting(
+        updatedSession.VotingSessionID,
+        userId
+      );
+      showSuccess('Ready Confirmed!', 'Waiting for remaining players or host.');
+
+      if (result.votingStarted) {
+        setArenaMode('chooser');
+        setTimeout(() => {
+          showSuccess('Round 2 Unlocked!', 'Choose Classic List or Meal Roulette to play!');
+        }, 600);
+      }
+
       await refreshSession();
     } catch (error) {
-      showError('Error Confirming Readiness', error instanceof Error ? error.message : 'Failed to confirm readiness');
+      showError(
+        'Error Confirming Readiness',
+        error instanceof Error ? error.message : 'Failed to confirm readiness'
+      );
     } finally {
       setLoading(false);
     }
@@ -487,94 +485,71 @@ export function VotingSessionCard({ session: initialSession, onVotingComplete, c
 
     setLoading(true);
     try {
-      console.debug('[VotingSessionCard] handleConfirmVotes: confirming votes');
       const result = await VotingService.confirmVotes(updatedSession.VotingSessionID, userId);
-      console.debug('[VotingSessionCard] handleConfirmVotes: response', result);
-      
-      showSuccess('Votes Confirmed!', 'You have confirmed your votes are final.');
-      
-      // Immediately refresh to get latest session state after action
-      console.debug('[VotingSessionCard] handleConfirmVotes: calling refreshSession');
+      showSuccess('Votes Locked In!', 'Your final choices have been recorded.');
       await refreshSession();
-      console.debug('[VotingSessionCard] handleConfirmVotes: refreshSession complete');
-      
-      // Check if voting completed automatically
+
       if (result.votingCompleted && result.completionResult) {
-        console.debug('[VotingSessionCard] handleConfirmVotes: voting completed automatically');
         const winnerName = result.completionResult.winnerProposal?.meal?.name || 'Unknown meal';
         const voteCount = result.completionResult.winnerProposal?.voteCount || 0;
-        
-        // Show completion notification
+
         setTimeout(() => {
           showSuccess(
-            '🎉 Voting Complete!', 
-            `All votes confirmed! The winning meal is "${winnerName}" with ${voteCount} votes!`
+            'Winner Crowned!',
+            `All players locked in! "${winnerName}" won with ${voteCount} votes!`
           );
-        }, 1000);
+        }, 800);
 
-        // Auto-create consumption
         setTimeout(async () => {
           if (userId && result.completionResult?.session?.winnerMealId) {
             try {
-              const consumption = await VotingService.createConsumptionFromVote(updatedSession.VotingSessionID, {
-                profileId: userId,
-                name: winnerName,
-                description: `Group meal from voting session: ${updatedSession.title || 'Meal Vote'}`,
-                quantity: 1
-              }) as { ConsumptionID?: number };
+              const consumption = (await VotingService.createConsumptionFromVote(
+                updatedSession.VotingSessionID,
+                {
+                  profileId: userId,
+                  name: winnerName,
+                  description: `Group meal from voting session: ${updatedSession.title || 'Meal Vote'}`,
+                  quantity: 1,
+                }
+              )) as { ConsumptionID?: number };
 
-              toast.success('Consumo registrado', {
-                description: `"${winnerName}" se añadió al historial del grupo.`,
-                action: consumption.ConsumptionID ? {
-                  label: 'Deshacer',
-                  onClick: () => {
-                    fetch(`${API_BASE_URL}/consumptions/${consumption.ConsumptionID}`, {
-                      method: 'DELETE',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ profileId: userId }),
-                    }).then((response) => {
-                      if (!response.ok) throw new Error('Could not undo consumption');
-                      toast.success('Consumo deshecho');
-                      onVotingComplete?.();
-                      refreshSession();
-                    }).catch((error: unknown) => {
-                      toast.error(error instanceof Error ? error.message : 'No se pudo deshacer');
-                    });
-                  },
-                } : undefined,
-              });
+              showLoggedMealToast(winnerName, consumption.ConsumptionID);
             } catch (consumptionError) {
               console.error('Error creating consumption:', consumptionError);
-              const errorMessage = consumptionError instanceof Error ? consumptionError.message : '';
+              const errorMessage =
+                consumptionError instanceof Error ? consumptionError.message : '';
               if (!errorMessage.includes('already') && !errorMessage.includes('duplicate')) {
-                showError('Consumption Failed', 'Could not register the meal consumption automatically.');
+                showError(
+                  'Consumption Failed',
+                  'Could not register the meal consumption automatically.'
+                );
               }
             }
           }
-        }, 2000);
+        }, 1600);
 
-        // Show results modal
         setTimeout(() => {
-          console.debug('[VotingSessionCard] handleConfirmVotes: showing results modal');
           setShowResultsModal(true);
-        }, 3000);
-        // Also notify history/activity after a short delay so they can refresh
+        }, 2400);
+
         setTimeout(() => {
           onVotingComplete?.();
           notifyVotingCompleted(updatedSession.VotingSessionID);
-        }, 3200);
+        }, 2600);
       }
-      
+
       await refreshSession();
     } catch (error) {
-      console.error('[VotingSessionCard] handleConfirmVotes: error', error);
-      showError('Error Confirming Votes', error instanceof Error ? error.message : 'Failed to confirm votes');
+      console.error('Error confirming votes:', error);
+      showError(
+        'Error Confirming Votes',
+        error instanceof Error ? error.message : 'Failed to confirm votes'
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch group dietary restrictions
   useEffect(() => {
     const groupId = initialSession.groupId;
     if (!groupId) return;
@@ -582,7 +557,7 @@ export function VotingSessionCard({ session: initialSession, onVotingComplete, c
     fetch(`${API_BASE_URL}/groups/${groupId}/dietary-info`)
       .then(async (response) => {
         if (!response.ok) throw new Error('Failed to load group dietary information');
-        const data = await response.json() as { dietaryRestrictions?: DietaryRestriction[] };
+        const data = (await response.json()) as { dietaryRestrictions?: DietaryRestriction[] };
         setGroupRestrictions(data.dietaryRestrictions || []);
       })
       .catch((error: unknown) => {
@@ -593,11 +568,23 @@ export function VotingSessionCard({ session: initialSession, onVotingComplete, c
   const getStatusBadge = () => {
     switch (updatedSession.status) {
       case 'proposal_phase':
-        return <Badge variant="default" className="bg-blue-600">Proposing Meals</Badge>;
+        return (
+          <Badge className="border border-secondary/35 bg-secondary/15 text-secondary hover:bg-secondary/15">
+            Round 1 · Build Pool
+          </Badge>
+        );
       case 'voting_phase':
-        return <Badge variant="default" className="bg-amber-600">Voting</Badge>;
+        return (
+          <Badge className="border border-primary/35 bg-primary/15 text-primary hover:bg-primary/15">
+            Round 2 · {arenaMode === 'chooser' ? 'Pick Arena' : arenaMode === 'classic' ? 'Classic List' : 'Meal Roulette'}
+          </Badge>
+        );
       case 'completed':
-        return <Badge variant="default" className="bg-green-600">Completed</Badge>;
+        return (
+          <Badge className="border border-emerald-500/35 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/15">
+            Winner Crowned
+          </Badge>
+        );
       case 'cancelled':
         return <Badge variant="destructive">Cancelled</Badge>;
       default:
@@ -607,333 +594,518 @@ export function VotingSessionCard({ session: initialSession, onVotingComplete, c
 
   const getPhaseProgress = () => {
     const now = new Date().getTime();
-    
+
     if (updatedSession.status === 'proposal_phase') {
       const start = new Date(updatedSession.createdAt).getTime();
       const end = new Date(updatedSession.proposalEndsAt).getTime();
-      const elapsed = now - start;
-      const total = end - start;
-      return Math.min(100, Math.max(0, (elapsed / total) * 100));
+      return Math.min(100, Math.max(0, ((now - start) / (end - start)) * 100));
     }
-    
+
     if (updatedSession.status === 'voting_phase' && updatedSession.votingEndsAt) {
       const start = new Date(updatedSession.proposalEndsAt).getTime();
       const end = new Date(updatedSession.votingEndsAt).getTime();
-      const elapsed = now - start;
-      const total = end - start;
-      return Math.min(100, Math.max(0, (elapsed / total) * 100));
+      return Math.min(100, Math.max(0, ((now - start) / (end - start)) * 100));
     }
-    
+
     return 100;
   };
 
-  // Detect ties - multiple proposals with the highest vote count
-  const tiedProposals = (updatedSession.proposals || []).filter((proposal) =>
-    proposal.isActive && proposal.voteCount === Math.max(...(updatedSession.proposals || []).map((item) => item.voteCount), 0)
-  );
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const isTie = updatedSession.status === 'voting_phase' && tiedProposals.length > 1;
+  const activeStep =
+    updatedSession.status === 'proposal_phase'
+      ? 1
+      : updatedSession.status === 'voting_phase'
+        ? 2
+        : 3;
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleTieBreaker = async () => {
-    if (!isGroupOwner && !isGroupAdmin) {
-      showError('Access Denied', 'Only group admins can use the tie breaker.');
-      return;
-    }
+  if (isExpired() && updatedSession.status !== 'completed') {
+    return null;
+  }
 
-    const selected = tiedProposals[Math.floor(Math.random() * tiedProposals.length)];
-    if (!selected) return;
-
-    setLoading(true);
-    try {
-      const result = await VotingService.completeVotingSession(updatedSession.VotingSessionID);
-      showSuccess('Tie resolved!', `Random selection chose "${selected.meal.name}". The server finalized the session.`);
-      if (result.session?.winnerMealId || selected.meal.MealID) {
-        refreshSession();
-        onVotingComplete?.();
-      }
-    } catch (error) {
-      showError('Could not resolve tie', error instanceof Error ? error.message : 'Try again');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const proposalCount = updatedSession.proposals?.length || 0;
 
   return (
     <>
-      {/* Don't render expired sessions unless completed */}
-      {isExpired() && updatedSession.status !== 'completed' ? null : (
-        <Card className={`bg-gradient-to-br from-amber-800/30 to-amber-900/30 border-amber-700/50 ${className}`}>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2 text-amber-200">
-              <Vote className="w-5 h-5" />
-              {updatedSession.title || 'Group Meal Vote'}
-            </CardTitle>
-            <p className="text-gray-300 text-sm mt-1">
-              {updatedSession.description || `Started by ${updatedSession.initiator?.username || 'Unknown User'}`}
-            </p>
+      <Card className={`overflow-hidden rounded-3xl border-border bg-card shadow-sm ${className}`}>
+        {/* Game Stage Top HUD */}
+        <CardHeader className="space-y-4 border-b border-border/70 bg-muted/25 pb-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-lg font-bold text-foreground sm:text-xl">
+                <Gamepad2 className="h-5 w-5 text-secondary" />
+                {updatedSession.title || 'Group Meal Showdown'}
+              </CardTitle>
+              <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+                {updatedSession.description ||
+                  `Hosted by ${updatedSession.initiator?.username || 'Member'}`}
+              </p>
+            </div>
+            {getStatusBadge()}
           </div>
-          {getStatusBadge()}
-        </div>
 
-        {/* Progress Bar */}
-        <div className="space-y-2">
-          <Progress value={getPhaseProgress()} className="h-2" />
-          <div className="flex items-center justify-between text-xs text-gray-400">
-            <span className="flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              {updatedSession.status === 'proposal_phase' && (
-                <VotingTimer 
-                  endTime={updatedSession.proposalEndsAt} 
-                  label="Proposal ends in" 
-                />
-              )}
-              {updatedSession.status === 'voting_phase' && updatedSession.votingEndsAt && (
-                <VotingTimer 
-                  endTime={updatedSession.votingEndsAt} 
-                  label="Voting ends in" 
-                />
-              )}
-              {updatedSession.status === 'completed' && updatedSession.completedAt && (
-                <span>Completed {new Date(updatedSession.completedAt).toLocaleString()}</span>
-              )}
-            </span>
-            <span className="flex items-center gap-1">
-              <Users className="w-3 h-3" />
-              {updatedSession.group?.members?.length || 0} members
-            </span>
+          {/* 3-Round Stepper */}
+          <div className="grid grid-cols-3 gap-2 text-xs">
+            {[
+              { step: 1, label: '1. Swipe & Pool' },
+              { step: 2, label: '2. Play Mode' },
+              { step: 3, label: '3. Winner' },
+            ].map((item) => {
+              const isCurrent = activeStep === item.step;
+              const isDone = activeStep > item.step;
+              return (
+                <div
+                  key={item.step}
+                  className={`flex items-center justify-center gap-1.5 rounded-xl border px-2.5 py-1.5 font-semibold transition-colors ${
+                    isCurrent
+                      ? 'border-secondary/50 bg-secondary/10 text-secondary'
+                      : isDone
+                        ? 'border-primary/35 bg-primary/10 text-primary'
+                        : 'border-border/70 bg-background/50 text-muted-foreground'
+                  }`}
+                >
+                  {isDone && <CheckCircle className="h-3.5 w-3.5 shrink-0" />}
+                  <span>{item.label}</span>
+                </div>
+              );
+            })}
           </div>
-        </div>
-      </CardHeader>
 
-      <CardContent className="space-y-4">
-        {/* Phase-specific Actions */}
-        {updatedSession.status === 'proposal_phase' && (
+          {/* Countdown & Players */}
           <div className="space-y-2">
-            {userId ? (
-              canParticipate ? (
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    onClick={() => setShowProposeMeal(true)}
-                    size="sm"
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    <Plus className="w-4 h-4 mr-1" />
-                    Propose Meal
-                  </Button>
+            <Progress value={getPhaseProgress()} className="h-2" />
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5 text-secondary" />
+                {updatedSession.status === 'proposal_phase' && (
+                  <VotingTimer endTime={updatedSession.proposalEndsAt} label="Pool closes in" />
+                )}
+                {updatedSession.status === 'voting_phase' && updatedSession.votingEndsAt && (
+                  <VotingTimer endTime={updatedSession.votingEndsAt} label="Round ends in" />
+                )}
+                {updatedSession.status === 'completed' && updatedSession.completedAt && (
+                  <span>Completed {new Date(updatedSession.completedAt).toLocaleString()}</span>
+                )}
+              </span>
 
-                  <Button
-                    onClick={() => setShowSwipeMatch((prev) => !prev)}
-                    size="sm"
-                    variant={showSwipeMatch ? 'default' : 'outline'}
-                    className={
-                      showSwipeMatch
-                        ? 'bg-[#C85A32] hover:bg-[#B84F2B] text-white'
-                        : 'border-[#C85A32] text-[#C85A32] hover:bg-[#C85A32] hover:text-white'
-                    }
-                  >
-                    <Flame className="w-4 h-4 mr-1" />
-                    {showSwipeMatch ? 'Hide Swipe Match' : 'Swipe Match'}
-                  </Button>
-                  
-                  {/* Ready for Voting Button */}
-                  {!hasUserConfirmedReady && (updatedSession.proposals?.length || 0) > 0 && (
-                    <Button
-                      onClick={handleConfirmReadyForVoting}
-                      size="sm"
-                      variant="outline"
-                      disabled={loading}
-                      className="border-green-600 text-green-600 hover:bg-green-600 hover:text-white"
-                    >
-                      <CheckCircle className="w-4 h-4 mr-1" />
-                      {loading ? 'Confirming...' : 'Ready for Voting'}
-                    </Button>
-                  )}
+              <span className="inline-flex items-center gap-1.5">
+                <Users className="h-3.5 w-3.5 text-primary" />
+                {updatedSession.group?.members?.length || 0} players
+              </span>
+            </div>
+          </div>
+        </CardHeader>
 
-                  {hasUserConfirmedReady && (
-                    <Badge variant="default" className="bg-green-600">
-                      <CheckCircle className="w-3 h-3 mr-1" />
-                      Ready
-                    </Badge>
-                  )}
-                  
-                  {(updatedSession.proposals?.length || 0) > 0 && (isGroupOwner || isGroupAdmin) && (
-                    <Button
-                      onClick={handleStartVoting}
-                      size="sm"
-                      variant="outline"
-                      disabled={loading}
-                      className="border-amber-600 text-amber-600 hover:bg-amber-600 hover:text-white"
-                    >
-                      Start Voting ({updatedSession.proposals?.length || 0} proposals)
-                    </Button>
-                  )}
-                </div>
-              ) : (
-                <div className="text-center p-4 bg-red-900/20 border border-red-700/30 rounded-lg">
-                  <p className="text-red-200 text-sm">You must be a member of this group to propose meals and participate in voting</p>
-                </div>
-              )
-            ) : (
-              <div className="text-center p-4 bg-amber-900/20 border border-amber-700/30 rounded-lg">
-                <p className="text-amber-200 text-sm">Please log in to propose meals and participate in voting</p>
-              </div>
-            )}
-
-            {canParticipate && showSwipeMatch && (
-              <div className="pt-3">
+        <CardContent className="space-y-6 p-5 sm:p-6">
+          {/* ================================================================
+              ROUND 1: SWIPE PERSONAL MATCHES + MANUAL ADD + POOL TRAY
+             ================================================================ */}
+          {updatedSession.status === 'proposal_phase' && (
+            <div className="space-y-6">
+              {/* Personalized Swipe Stage */}
+              {canParticipate ? (
                 <GroupSwipeMatch
                   groupId={updatedSession.groupId}
                   session={updatedSession}
-                  onFinished={() => setShowSwipeMatch(false)}
+                  onOpenManualAdd={() => {
+                    setProposeModalTab('manual');
+                    setShowProposeMeal(true);
+                  }}
                 />
+              ) : (
+                <div className="rounded-2xl border border-border bg-muted/30 p-5 text-center text-sm text-muted-foreground">
+                  Join this group to swipe dishes and participate in the game.
+                </div>
+              )}
+
+              {/* Live Pool Tray + Advance Bar */}
+              <div className="rounded-2xl border border-border bg-muted/25 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-sm font-bold text-foreground">
+                        Current Game Pool ({proposalCount})
+                      </h4>
+                      {proposalCount === 0 && (
+                        <Badge variant="outline" className="text-[11px] text-muted-foreground">
+                          Random fallback ready
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {proposalCount > 0
+                        ? 'These dishes will load into Classic List and Meal Roulette.'
+                        : 'No dishes picked yet — if you continue now, random compatible dishes will load automatically!'}
+                    </p>
+                  </div>
+
+                  {canParticipate && (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setProposeModalTab('manual');
+                          setShowProposeMeal(true);
+                        }}
+                        className="rounded-xl bg-card text-xs"
+                      >
+                        <Plus className="mr-1 h-3.5 w-3.5 text-primary" />
+                        Add Manually
+                      </Button>
+
+                      {!hasUserConfirmedReady ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleConfirmReadyForVoting}
+                          disabled={loading}
+                          className="rounded-xl border-primary/40 bg-card text-xs text-primary hover:bg-primary/10"
+                        >
+                          <CheckCircle className="mr-1 h-3.5 w-3.5" />
+                          {loading ? 'Confirming...' : "I'm Ready"}
+                        </Button>
+                      ) : (
+                        <Badge className="border border-primary/30 bg-primary/15 text-primary hover:bg-primary/15">
+                          <CheckCircle className="mr-1 h-3 w-3" />
+                          Ready
+                        </Badge>
+                      )}
+
+                      {canAdvancePhase && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={handleStartVoting}
+                          disabled={loading}
+                          className="rounded-xl bg-secondary text-xs font-semibold text-secondary-foreground shadow-sm hover:bg-secondary/90"
+                        >
+                          {proposalCount > 0 ? (
+                            <>
+                              Choose Game Mode ({proposalCount})
+                              <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                            </>
+                          ) : (
+                            <>
+                              <Shuffle className="mr-1.5 h-3.5 w-3.5" />
+                              Play with Random Dishes
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Pool Dish Chips */}
+                {proposalCount > 0 && (
+                  <div className="mt-3.5 flex flex-wrap gap-2 border-t border-border/60 pt-3.5">
+                    {updatedSession.proposals.map((p) => (
+                      <div
+                        key={p.MealProposalID}
+                        className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-1.5 text-xs shadow-sm"
+                      >
+                        <Flame className="h-3.5 w-3.5 text-secondary" />
+                        <span className="font-semibold text-foreground">{p.meal.name}</span>
+                        <span className="text-muted-foreground">
+                          by {p.proposedBy?.username || 'Player'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        )}
-
-        {updatedSession.status === 'voting_phase' && canParticipate && (
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-300">
-                You have voted for {userVoteCount} of {updatedSession.proposals?.length || 0} meals
-              </span>
-              
-              {/* Vote Confirmation Button */}
-              {!hasUserConfirmedVotes && userVoteCount > 0 && (
-                <Button
-                  onClick={handleConfirmVotes}
-                  size="sm"
-                  variant="outline"
-                  disabled={loading}
-                  className="border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white"
-                >
-                  <CheckCircle className="w-4 h-4 mr-1" />
-                  {loading ? 'Confirming...' : 'Confirm My Votes'}
-                </Button>
-              )}
-
-              {hasUserConfirmedVotes && (
-                <Badge variant="default" className="bg-blue-600">
-                  <CheckCircle className="w-3 h-3 mr-1" />
-                  Votes Confirmed
-                </Badge>
-              )}
             </div>
-            
-            <div className="flex gap-2">
-              {shouldShowEarlyCompletion() && (isGroupOwner || isGroupAdmin) && (
-                <Button
-                  onClick={() => setShowEarlyCompletion(true)}
-                  size="sm"
-                  variant="outline"
-                  className="border-green-600 text-green-600 hover:bg-green-600 hover:text-white"
-                >
-                  End Voting Early
-                </Button>
-              )}
-              {(isGroupOwner || isGroupAdmin) && (
-                <Button
-                  onClick={handleCompleteVoting}
-                  size="sm"
-                  variant="outline"
-                  disabled={loading}
-                  className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
-                >
-                  <CheckCircle className="w-4 h-4 mr-1" />
-                  {loading ? 'Ending...' : 'Force End Voting'}
-                </Button>
-              )}
-            </div>
-          </div>
-        )}
+          )}
 
-        {/* Winner Display */}
-        {updatedSession.status === 'completed' && updatedSession.winnerMeal && (
-          <div className="p-4 bg-green-900/30 border border-green-700/50 rounded-lg">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-yellow-500" />
-                <span className="font-medium text-green-200">Winning Meal</span>
-              </div>
-              <Button
-                onClick={handleShowResults}
-                size="sm"
-                variant="outline"
-                className="border-green-600 text-green-600 hover:bg-green-600 hover:text-white"
-              >
-                View Full Results
-              </Button>
-            </div>
-            <h4 className="font-semibold text-white">{updatedSession.winnerMeal.name}</h4>
-            {updatedSession.winnerMeal.description && (
-              <p className="text-sm text-gray-300 mt-1">{updatedSession.winnerMeal.description}</p>
-            )}
-            <p className="text-xs text-gray-400 mt-2">
-              Total votes: {updatedSession.totalVotes}
-            </p>
-          </div>
-        )}
+          {/* ================================================================
+              ROUND 2: IMMERSIVE GAME MODE CHOOSER -> EXCLUSIVE ARENA
+             ================================================================ */}
+          {updatedSession.status === 'voting_phase' && (
+            <div className="space-y-5">
+              {/* Shared Round 2 Action HUD */}
+              {canParticipate && (
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-muted/30 p-3.5">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    {arenaMode !== 'chooser' && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setArenaMode('chooser')}
+                        className="rounded-xl bg-card text-xs"
+                      >
+                        <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
+                        Switch Game Mode
+                      </Button>
+                    )}
 
-        {/* Meal Proposals */}
-        {(updatedSession.proposals?.length || 0) > 0 && (
-          <div className="space-y-3">
-            <h4 className="font-medium text-amber-200">
-              Proposed Meals ({updatedSession.proposals?.length || 0})
-            </h4>
-            <div className="space-y-2">
-              {updatedSession.proposals?.map((proposal) => (
-                <MealProposalCard
-                  key={proposal.MealProposalID}
-                  proposal={proposal}
-                  canVote={updatedSession.status === 'voting_phase' && canParticipate}
-                  hasUserVoted={hasUserVoted(proposal)}
-                  onVote={() => handleVote(proposal.MealProposalID)}
-                  disabled={loading}
-                  groupRestrictions={groupRestrictions}
+                    <span className="text-xs font-medium text-foreground sm:text-sm">
+                      Voted on <span className="font-bold text-secondary">{userVoteCount}</span> of{' '}
+                      {proposalCount} dishes
+                    </span>
+
+                    {!hasUserConfirmedVotes && userVoteCount > 0 && (
+                      <Button
+                        onClick={handleConfirmVotes}
+                        size="sm"
+                        disabled={loading}
+                        className="rounded-xl bg-primary text-xs text-primary-foreground hover:bg-primary/90"
+                      >
+                        <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
+                        {loading ? 'Locking in...' : 'Lock In My Votes'}
+                      </Button>
+                    )}
+
+                    {hasUserConfirmedVotes && (
+                      <Badge className="border border-primary/30 bg-primary/15 text-primary hover:bg-primary/15">
+                        <CheckCircle className="mr-1 h-3 w-3" />
+                        Locked In
+                      </Badge>
+                    )}
+                  </div>
+
+                  {canAdvancePhase && (
+                    <div className="flex flex-wrap gap-2">
+                      {shouldShowEarlyCompletion() && (
+                        <Button
+                          onClick={() => setShowEarlyCompletion(true)}
+                          size="sm"
+                          variant="outline"
+                          className="rounded-xl border-primary/50 text-xs text-primary hover:bg-primary/10"
+                        >
+                          End Early
+                        </Button>
+                      )}
+                      <Button
+                        onClick={handleCompleteVoting}
+                        size="sm"
+                        variant="outline"
+                        disabled={loading}
+                        className="rounded-xl border-destructive/40 text-xs text-destructive hover:bg-destructive/10"
+                      >
+                        {loading ? 'Finishing...' : 'Crown Winner Now'}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* VIEW A: IMMERSIVE MODE CHOOSER (NOT SIDE-BY-SIDE WIDGETS) */}
+              {arenaMode === 'chooser' && (
+                <div className="space-y-5 rounded-3xl border border-border bg-gradient-to-b from-muted/35 via-card to-card p-6 sm:p-8">
+                  <div className="mx-auto max-w-lg text-center">
+                    <Badge className="border border-secondary/30 bg-secondary/10 text-secondary hover:bg-secondary/10">
+                      <Sparkles className="mr-1 h-3 w-3" />
+                      {proposalCount} {proposalCount === 1 ? 'Dish' : 'Dishes'} Ready in the Pool
+                    </Badge>
+                    <h3 className="mt-2.5 text-2xl font-bold tracking-tight text-foreground">
+                      Choose How You Want to Play!
+                    </h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Pick an immersive arena below — both are loaded with the exact same meal pool and sync votes live with the group.
+                    </p>
+                  </div>
+
+                  {/* Pool Dish Preview Strip */}
+                  {proposalCount > 0 && (
+                    <div className="flex flex-wrap items-center justify-center gap-1.5">
+                      {updatedSession.proposals.slice(0, 6).map((p) => (
+                        <span
+                          key={p.MealProposalID}
+                          className="rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-foreground shadow-sm"
+                        >
+                          {p.meal.name}
+                        </span>
+                      ))}
+                      {proposalCount > 6 && (
+                        <span className="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+                          +{proposalCount - 6} more
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Two Exclusive Game Portals */}
+                  <div className="grid grid-cols-1 gap-4 pt-2 md:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={() => setArenaMode('classic')}
+                      className="group relative flex flex-col justify-between overflow-hidden rounded-3xl border-2 border-border bg-card p-6 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-secondary hover:shadow-md"
+                    >
+                      <div
+                        aria-hidden="true"
+                        className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-secondary/10 transition-transform group-hover:scale-125"
+                      />
+                      <div>
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary/15 text-secondary">
+                          <ListChecks className="h-6 w-6" />
+                        </div>
+                        <h4 className="mt-4 text-xl font-bold text-foreground">
+                          Classic List Showdown
+                        </h4>
+                        <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                          Inspect every dish head-to-head, check calories &amp; ingredients, and tap 👍 to back your favorites.
+                        </p>
+                      </div>
+
+                      <div className="mt-6 inline-flex items-center gap-1.5 text-sm font-bold text-secondary">
+                        Enter Classic Arena
+                        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setArenaMode('roulette')}
+                      className="group relative flex flex-col justify-between overflow-hidden rounded-3xl border-2 border-border bg-card p-6 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-md"
+                    >
+                      <div
+                        aria-hidden="true"
+                        className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary/10 transition-transform group-hover:scale-125"
+                      />
+                      <div>
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 text-primary">
+                          <Dices className="h-6 w-6" />
+                        </div>
+                        <h4 className="mt-4 text-xl font-bold text-foreground">
+                          Meal Roulette Wheel
+                        </h4>
+                        <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                          Load the pool onto an interactive spinning wheel, test your luck, and lock in your vote where it stops!
+                        </p>
+                      </div>
+
+                      <div className="mt-6 inline-flex items-center gap-1.5 text-sm font-bold text-primary">
+                        Enter Roulette Arena
+                        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* VIEW B: EXCLUSIVE CLASSIC LIST ARENA */}
+              {arenaMode === 'classic' && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      Classic List Arena · {proposalCount} Dishes in Play
+                    </h4>
+                  </div>
+                  <div className="space-y-2.5">
+                    {updatedSession.proposals?.map((proposal) => (
+                      <MealProposalCard
+                        key={proposal.MealProposalID}
+                        proposal={proposal}
+                        canVote={canParticipate}
+                        isProposalPhase={false}
+                        hasUserVoted={hasUserVoted(proposal)}
+                        onVote={() => handleVote(proposal.MealProposalID)}
+                        onUndoVote={() => handleUndoVote(proposal.MealProposalID)}
+                        disabled={loading}
+                        groupRestrictions={groupRestrictions}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* VIEW C: EXCLUSIVE MEAL ROULETTE ARENA */}
+              {arenaMode === 'roulette' && (
+                <GroupMealRoulette
+                  groupId={updatedSession.groupId}
+                  session={updatedSession}
+                  onVoteProposal={handleVote}
+                  onUndoVoteProposal={handleUndoVote}
                 />
-              ))}
+              )}
             </div>
-          </div>
-        )}
+          )}
 
-        {(updatedSession.proposals?.length || 0) === 0 && updatedSession.status === 'proposal_phase' && (
-          <div className="text-center py-8 text-gray-400">
-            <Vote className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p>No meals proposed yet</p>
-            <p className="text-sm">Be the first to suggest a meal for the group!</p>
-          </div>
-        )}
-      </CardContent>
+          {/* ================================================================
+              ROUND 3: WINNER PODIUM & FINAL STANDINGS
+             ================================================================ */}
+          {updatedSession.status === 'completed' && (
+            <div className="space-y-5">
+              {updatedSession.winnerMeal && (
+                <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-5">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500 text-white shadow-sm">
+                        <Trophy className="h-5 w-5" />
+                      </span>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-amber-700 dark:text-amber-300">
+                          Winning Meal
+                        </p>
+                        <h4 className="text-lg font-bold text-foreground">
+                          {updatedSession.winnerMeal.name}
+                        </h4>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={() => setShowResultsModal(true)}
+                      size="sm"
+                      variant="outline"
+                      className="rounded-xl border-amber-600/40 bg-card text-foreground hover:bg-muted"
+                    >
+                      <Sparkles className="mr-1.5 h-3.5 w-3.5 text-amber-600" />
+                      Full Podium
+                    </Button>
+                  </div>
+                  {updatedSession.winnerMeal.description && (
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      {updatedSession.winnerMeal.description}
+                    </p>
+                  )}
+                  <p className="mt-2 text-xs font-medium text-muted-foreground">
+                    Total votes cast: {updatedSession.totalVotes}
+                  </p>
+                </div>
+              )}
 
-      {/* Propose Meal Modal */}
-      <ProposeMealModal
-        isOpen={showProposeMeal}
-        onClose={() => setShowProposeMeal(false)}
-        onPropose={handleProposeMeal}
-        groupId={updatedSession.groupId}
-      />
+              {proposalCount > 0 && (
+                <div className="space-y-2.5">
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Final Standings ({proposalCount})
+                  </h4>
+                  {updatedSession.proposals?.map((proposal) => (
+                    <MealProposalCard
+                      key={proposal.MealProposalID}
+                      proposal={proposal}
+                      canVote={false}
+                      isProposalPhase={false}
+                      hasUserVoted={hasUserVoted(proposal)}
+                      onVote={() => {}}
+                      disabled={true}
+                      groupRestrictions={groupRestrictions}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
 
-      {/* Early Completion Modal */}
-      <EarlyCompletionModal
-        isOpen={showEarlyCompletion}
-        onClose={() => setShowEarlyCompletion(false)}
-        onConfirm={handleEarlyCompleteVoting}
-        onContinue={() => setShowEarlyCompletion(false)}
-        session={updatedSession}
-        loading={loading}
-      />
+        <ProposeMealModal
+          isOpen={showProposeMeal}
+          onClose={() => setShowProposeMeal(false)}
+          onPropose={handleProposeMeal}
+          groupId={updatedSession.groupId}
+          session={updatedSession}
+          initialTab={proposeModalTab}
+        />
 
-      {/* Results Modal is now shown at GroupVotingSystem level to persist independently */}
-    </Card>
-      )}
+        <EarlyCompletionModal
+          isOpen={showEarlyCompletion}
+          onClose={() => setShowEarlyCompletion(false)}
+          onConfirm={handleEarlyCompleteVoting}
+          onContinue={() => setShowEarlyCompletion(false)}
+          session={updatedSession}
+          loading={loading}
+        />
+      </Card>
     </>
   );
-}
-
-interface DietaryRestriction {
-  DietaryRestrictionID: number;
-  name: string;
 }

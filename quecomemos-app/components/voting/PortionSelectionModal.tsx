@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 import { VotingService } from './VotingService';
 import { useGlobalNotification } from '@/lib/contexts/NotificationContext';
@@ -53,9 +55,10 @@ export function PortionSelectionModal({
         portionData.foodPortions
       );
 
-      const percentLabel = portionData.mode === 'percentage' 
-        ? `${(portionData.portionFraction * 100).toFixed(1)}%`
-        : 'Custom';
+      const percentLabel =
+        portionData.mode === 'percentage'
+          ? `${(portionData.portionFraction * 100).toFixed(0)}%`
+          : 'Custom';
 
       showSuccess(
         'Portion Selected',
@@ -63,9 +66,7 @@ export function PortionSelectionModal({
       );
 
       onClose();
-      if (onSuccess) {
-        onSuccess();
-      }
+      onSuccess?.();
     } catch (error) {
       console.error('Error selecting portion:', error);
       showError(
@@ -77,31 +78,41 @@ export function PortionSelectionModal({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === 'undefined') return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70">
-      <div className="relative w-full max-w-2xl bg-neutral-900 rounded-2xl shadow-2xl border border-amber-800/30 overflow-hidden max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <CardHeader className="p-6 bg-gradient-to-r from-amber-900/20 to-amber-800/20 border-b border-amber-800/30">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-2xl font-bold text-amber-200">
-              Select Your Portion
-            </CardTitle>
-            <button
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[105] flex items-center justify-center bg-black/40 p-4 backdrop-blur-[2px]"
+      onClick={() => {
+        if (!loading) onClose();
+      }}
+    >
+      <div
+        className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-border bg-card text-card-foreground shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <CardHeader className="border-b border-border/60 bg-card px-6 py-5">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <CardTitle className="text-xl font-bold text-foreground">
+                Select Your Portion
+              </CardTitle>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Choose how much of <span className="font-semibold text-foreground">{winnerMeal.name}</span> you had.
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={onClose}
-              className="text-neutral-400 hover:text-white transition-colors p-2"
               disabled={loading}
+              className="rounded-xl text-muted-foreground hover:text-foreground"
             >
-              <X className="w-6 h-6" />
-            </button>
+              <X className="h-5 w-5" />
+            </Button>
           </div>
-          <p className="text-neutral-300 mt-2">
-            Choose how much of <span className="font-semibold text-amber-200">{winnerMeal.name}</span> you consumed
-          </p>
         </CardHeader>
 
-        {/* Content */}
         <CardContent className="p-6">
           <MealPortionSelector
             meal={winnerMeal}
@@ -113,6 +124,7 @@ export function PortionSelectionModal({
           />
         </CardContent>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

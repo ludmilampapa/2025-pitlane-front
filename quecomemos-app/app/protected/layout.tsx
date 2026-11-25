@@ -13,6 +13,7 @@ export default function ProtectedLayout({
   const links = [
     { href: "/protected", label: "Home" },
     { href: "/protected/foods", label: "Foods" },
+    { href: "/protected/meals", label: "Meals" },
     { href: "/protected/groups", label: "Groups" },
     { href: "/protected/history", label: "History" },
   ];

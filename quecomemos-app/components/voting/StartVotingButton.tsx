@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Vote, Clock, Users, Play } from 'lucide-react';
+import { Vote, Clock, Users, Play, Sparkles } from 'lucide-react';
 import { useUser } from '@/lib/contexts/UserContext';
 import { useGlobalNotification } from '@/lib/contexts/NotificationContext';
 import { VotingService } from './VotingService';
@@ -16,13 +16,18 @@ interface StartVotingButtonProps {
   className?: string;
 }
 
-export function StartVotingButton({ group, onVotingStarted, disabled = false, className = '' }: StartVotingButtonProps) {
+export function StartVotingButton({
+  group,
+  onVotingStarted,
+  disabled = false,
+  className = '',
+}: StartVotingButtonProps) {
   const { userData } = useUser();
   const { showSuccess, showError } = useGlobalNotification();
   const [loading, setLoading] = useState(false);
 
   const userId = userData?.profile?.id;
-  const isGroupMember = group.members?.some(member => member.profile.id === userId) || false;
+  const isGroupMember = group.members?.some((member) => member.profile.id === userId) || false;
 
   const handleStartVoting = async () => {
     if (!userId || !isGroupMember) {
@@ -35,8 +40,8 @@ export function StartVotingButton({ group, onVotingStarted, disabled = false, cl
       await VotingService.startVotingSession({
         initiatorId: userId,
         groupId: group.GroupID,
-        title: `Meal Vote - ${new Date().toLocaleDateString()}`,
-        description: `Group meal voting session for ${group.name}`
+        title: `Meal Vote · ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+        description: `Group meal voting session for ${group.name}`,
       });
 
       showSuccess(
@@ -63,10 +68,10 @@ export function StartVotingButton({ group, onVotingStarted, disabled = false, cl
     <Button
       onClick={handleStartVoting}
       disabled={disabled || loading}
-      className={`bg-amber-600 hover:bg-amber-700 text-white ${className}`}
+      className={`rounded-xl bg-secondary text-secondary-foreground shadow-sm transition-all hover:bg-secondary/90 hover:shadow ${className}`}
     >
-      <Vote className="w-4 h-4 mr-2" />
-      {loading ? 'Starting...' : 'Start Group Vote'}
+      <Sparkles className="mr-2 h-4 w-4" />
+      {loading ? 'Starting game...' : 'Start Meal Game'}
     </Button>
   );
 }
@@ -76,71 +81,57 @@ interface VotingInfoCardProps {
 }
 
 export function VotingInfoCard({ className = '' }: VotingInfoCardProps) {
+  const steps = [
+    {
+      num: 1,
+      title: 'Swipe Your Cravings',
+      desc: 'Swipe dishes matched to your personal tastes & dietary restrictions.',
+      icon: Vote,
+    },
+    {
+      num: 2,
+      title: 'Build or Randomize',
+      desc: 'Add dishes by swipe/search — or skip to auto-load random meals.',
+      icon: Clock,
+    },
+    {
+      num: 3,
+      title: 'Pick Your Arena',
+      desc: 'Enter Classic List or Meal Roulette in one immersive game view.',
+      icon: Users,
+    },
+    {
+      num: 4,
+      title: 'Crown the Winner',
+      desc: 'Winning dish logs to group history with custom portions.',
+      icon: Play,
+    },
+  ];
+
   return (
     <Card className={`border-border bg-card shadow-sm ${className}`}>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-foreground">
-          <Vote className="w-5 h-5 text-amber-600" />
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
+          <Vote className="h-4 w-4 text-primary" />
           How Group Voting Works
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-3">
-          <div className="flex items-start gap-3">
-            <div className="flex items-center justify-center w-6 h-6 shrink-0 rounded-full bg-primary text-primary-foreground text-sm font-bold">
-              1
+      <CardContent>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {steps.map((step) => (
+            <div
+              key={step.num}
+              className="flex items-start gap-3 rounded-xl border border-border/70 bg-muted/35 p-3"
+            >
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                {step.num}
+              </span>
+              <div className="min-w-0">
+                <h4 className="text-sm font-semibold text-foreground">{step.title}</h4>
+                <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{step.desc}</p>
+              </div>
             </div>
-            <div>
-              <h4 className="font-medium text-foreground">Start Voting Session</h4>
-              <p className="text-sm text-muted-foreground">Any group member can initiate a meal voting session.</p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3">
-            <div className="flex items-center justify-center w-6 h-6 shrink-0 rounded-full bg-primary text-primary-foreground text-sm font-bold">
-              2
-            </div>
-            <div>
-              <h4 className="font-medium text-foreground flex items-center gap-1">
-                <Clock className="w-4 h-4 text-muted-foreground" />
-                Propose Meals (5 minutes)
-              </h4>
-              <p className="text-sm text-muted-foreground">Members can propose meals via the Classic List or Quick Swipe Match.</p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3">
-            <div className="flex items-center justify-center w-6 h-6 shrink-0 rounded-full bg-primary text-primary-foreground text-sm font-bold">
-              3
-            </div>
-            <div>
-              <h4 className="font-medium text-foreground flex items-center gap-1">
-                <Users className="w-4 h-4 text-muted-foreground" />
-                Vote on Proposals
-              </h4>
-              <p className="text-sm text-muted-foreground">Everyone votes on their preferred meals from the proposed options.</p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3">
-            <div className="flex items-center justify-center w-6 h-6 shrink-0 rounded-full bg-primary text-primary-foreground text-sm font-bold">
-              4
-            </div>
-            <div>
-              <h4 className="font-medium text-foreground flex items-center gap-1">
-                <Play className="w-4 h-4 text-muted-foreground" />
-                Winner Selection
-              </h4>
-              <p className="text-sm text-muted-foreground">The meal with the most votes becomes the group&apos;s meal choice.</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-3 bg-muted/50 border border-border rounded-lg">
-          <p className="text-xs text-muted-foreground">
-            <strong className="text-foreground">Pro tip:</strong> All proposed meals are filtered based on the group&apos;s dietary restrictions
-            to ensure everyone can enjoy the winning meal!
-          </p>
+          ))}
         </div>
       </CardContent>
     </Card>

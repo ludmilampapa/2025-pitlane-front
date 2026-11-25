@@ -1,24 +1,21 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, CalendarDays, Plus, Utensils, MessageSquare } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Leaf, Trophy, Vote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { API_BASE_URL } from '@/lib/config/api';
 import { useUser } from '@/lib/contexts/UserContext';
-import type { GroupData, WeeklyMenuEntry, MenuProposal } from '@/lib/types/groupChallenges';
+import { useWeeklyMenu, getGroupAdmin } from '@/lib/hooks/useWeeklyMenu';
+import {
+  isMealCompatibleWithRestrictions,
+  type RestrictionItem,
+} from '@/lib/utils/dietaryCompatibility';
+import { WeeklyMenuCalendar } from '@/components/groups/WeeklyMenuCalendar';
+import type { GroupData } from '@/lib/types/groupChallenges';
 import type { Meal } from '@/lib/contexts/MealsContext';
-
-const moments = ['breakfast', 'lunch', 'snack', 'dinner'];
-
-interface ProposalForm {
-  alternativeText: string;
-  reason: string;
-  proposedMealId: string;
-}
 
 export default function GroupMenuPage() {
   const params = useParams();
@@ -28,183 +25,158 @@ export default function GroupMenuPage() {
   const profileId = userData?.profile?.id;
 
   const [group, setGroup] = useState<GroupData | null>(null);
-  const [entries, setEntries] = useState<WeeklyMenuEntry[]>([]);
   const [meals, setMeals] = useState<Meal[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState(false);
-  const [proposalEntry, setProposalEntry] = useState<number | null>(null);
-  const [proposal, setProposal] = useState<ProposalForm>({ alternativeText: '', reason: '', proposedMealId: '' });
-  const [form, setForm] = useState({ date: '', moment: 'lunch', mealId: '', customMeal: '' });
+  const [groupRestrictions, setGroupRestrictions] = useState<RestrictionItem[]>([]);
+  const [catalogRestrictions, setCatalogRestrictions] = useState<RestrictionItem[]>([]);
+  const [groupError, setGroupError] = useState<string | null>(null);
 
-  const isAdmin = Boolean(group && profileId && (
-    group.createdBy === profileId ||
-    group.members?.some((member) => member.profile.id === profileId && member.role === 'admin')
-  ));
+  const menu = useWeeklyMenu(groupId, profileId);
+  const isAdmin = getGroupAdmin(group, profileId);
 
-  const fetchData = useCallback(async () => {
+  const fetchMeta = useCallback(async () => {
     if (!profileId) return;
-    setLoading(true);
-    setError(null);
+    setGroupError(null);
     try {
-      const [groupRes, menuRes, mealsRes] = await Promise.all([
+      const [groupRes, mealsRes, dietRes, catRes] = await Promise.all([
         fetch(`${API_BASE_URL}/groups/${groupId}`),
-        fetch(`${API_BASE_URL}/groups/${groupId}/menu?profileId=${profileId}`),
         fetch(`${API_BASE_URL}/meals/all`),
+        fetch(`${API_BASE_URL}/groups/${groupId}/dietary-info`).catch(() => null),
+        fetch(`${API_BASE_URL}/dietary-restrictions`).catch(() => null),
       ]);
-      if (!groupRes.ok || !menuRes.ok) throw new Error('Failed to load weekly menu');
-      setGroup(await groupRes.json());
-      setEntries(await menuRes.json());
-      if (mealsRes.ok) setMeals(await mealsRes.json());
+      if (!groupRes.ok) throw new Error('Could not load group details');
+      setGroup((await groupRes.json()) as GroupData);
+      if (mealsRes.ok) setMeals((await mealsRes.json()) as Meal[]);
+      if (catRes && catRes.ok) {
+        setCatalogRestrictions((await catRes.json()) as RestrictionItem[]);
+      }
+      if (dietRes && dietRes.ok) {
+        const dietData = (await dietRes.json()) as {
+          dietaryRestrictions?: RestrictionItem[];
+        };
+        setGroupRestrictions(
+          (dietData.dietaryRestrictions || []).filter(
+            (r) => r.DietaryRestrictionID !== 0 && !r.name.toLowerCase().includes('everyone')
+          )
+        );
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setLoading(false);
+      setGroupError(err instanceof Error ? err.message : 'Unknown error');
     }
   }, [groupId, profileId]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    void fetchMeta();
+  }, [fetchMeta]);
 
-  const createEntry = async (event: React.FormEvent) => {
-    event.preventDefault();
-    try {
-      const response = await fetch(`${API_BASE_URL}/groups/${groupId}/menu`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          profileId,
-          date: form.date,
-          moment: form.moment,
-          mealId: form.mealId ? Number(form.mealId) : null,
-          customMeal: form.customMeal,
-        }),
-      });
-      if (!response.ok) throw new Error((await response.json()).error || 'Failed to create menu entry');
-      setForm({ date: '', moment: 'lunch', mealId: '', customMeal: '' });
-      setShowForm(false);
-      await fetchData();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    }
-  };
-
-  const submitProposal = async (entryId: number) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/menu/${entryId}/proposals`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          profileId,
-          proposedMealId: proposal.proposedMealId ? Number(proposal.proposedMealId) : null,
-          alternativeText: proposal.alternativeText,
-          reason: proposal.reason,
-        }),
-      });
-      if (!response.ok) throw new Error((await response.json()).error || 'Failed to propose alternative');
-      setProposalEntry(null);
-      setProposal({ alternativeText: '', reason: '', proposedMealId: '' });
-      await fetchData();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    }
-  };
-
-  const respondProposal = async (proposalId: number, status: 'accepted' | 'rejected') => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/menu-proposals/${proposalId}/respond`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profileId, status }),
-      });
-      if (!response.ok) throw new Error((await response.json()).error || 'Failed to respond');
-      await fetchData();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    }
-  };
-
-  if (loading) return <div className="container mx-auto p-6">Loading weekly menu...</div>;
+  const compatibleMeals = useMemo(() => {
+    const reqMap = new Map<number, RestrictionItem>();
+    groupRestrictions.forEach((r) => reqMap.set(r.DietaryRestrictionID, r));
+    (userData?.preferences?.dietaryRestrictions || []).forEach((id) => {
+      if (id !== 0 && !reqMap.has(id)) {
+        const found = catalogRestrictions.find((c) => c.DietaryRestrictionID === id);
+        reqMap.set(id, { DietaryRestrictionID: id, name: found?.name || '' });
+      }
+    });
+    const requiredList = Array.from(reqMap.values());
+    return meals.filter((meal) => isMealCompatibleWithRestrictions(meal, requiredList));
+  }, [meals, groupRestrictions, catalogRestrictions, userData?.preferences?.dietaryRestrictions]);
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" onClick={() => router.back()}><ArrowLeft className="w-4 h-4" /></Button>
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold flex items-center gap-2"><CalendarDays className="w-7 h-7 text-secondary" /> Weekly Menu</h1>
-          <p className="text-muted-foreground">Coordinate meals for {group?.name}</p>
+    <div className="container mx-auto max-w-6xl space-y-6 p-4 sm:p-6">
+      {/* Editorial Header */}
+      <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-primary/10 blur-2xl"
+        />
+        <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-start gap-3.5">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => router.push(`/protected/groups/${groupId}`)}
+              aria-label="Back to group"
+              className="mt-0.5 h-9 w-9 shrink-0 rounded-xl border-border bg-background/80 hover:bg-muted"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-secondary">
+                <CalendarDays className="h-3.5 w-3.5" />
+                Weekly Planner
+              </span>
+              <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                {group?.name ? `${group.name} · Weekly Menu` : 'Weekly Menu'}
+              </h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Plan Breakfast, Lunch, and Dinner across the week from one single calendar.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push(`/protected/groups/${groupId}/voting`)}
+              className="rounded-xl border-border bg-background/80 text-xs hover:bg-muted"
+            >
+              <Vote className="mr-1.5 h-3.5 w-3.5 text-secondary" />
+              Meal Showdown
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push(`/protected/groups/${groupId}/challenges`)}
+              className="rounded-xl border-border bg-background/80 text-xs hover:bg-muted"
+            >
+              <Trophy className="mr-1.5 h-3.5 w-3.5 text-primary" />
+              Challenges
+            </Button>
+          </div>
         </div>
-        {isAdmin && <Button onClick={() => setShowForm((value) => !value)} className="bg-primary text-primary-foreground hover:bg-primary/90"><Plus className="w-4 h-4 mr-2" />Add menu item</Button>}
       </div>
 
-      {error && <Card><CardContent className="p-4 text-destructive">{error}</CardContent></Card>}
-
-      {showForm && isAdmin && (
-        <Card>
-          <CardHeader><CardTitle>Menu entry</CardTitle></CardHeader>
-          <CardContent>
-            <form onSubmit={createEntry} className="grid gap-4 md:grid-cols-2">
-              <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} required />
-              <select className="h-10 rounded border bg-background px-3" value={form.moment} onChange={(e) => setForm({ ...form, moment: e.target.value })}>
-                {moments.map((moment) => <option key={moment} value={moment}>{moment}</option>)}
-              </select>
-              <select className="h-10 rounded border bg-background px-3" value={form.mealId} onChange={(e) => setForm({ ...form, mealId: e.target.value, customMeal: '' })}>
-                <option value="">Use existing meal</option>
-                {meals.map((meal) => <option key={meal.MealID} value={meal.MealID}>{meal.name}</option>)}
-              </select>
-              <Input placeholder="Or enter a custom meal name" value={form.customMeal} onChange={(e) => setForm({ ...form, customMeal: e.target.value, mealId: '' })} />
-              <div className="md:col-span-2 flex justify-end"><Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90">Save entry</Button></div>
-            </form>
+      {(groupError || menu.error) && (
+        <Card className="border-destructive/30 bg-destructive/10">
+          <CardContent className="p-4 text-sm text-destructive">
+            {groupError || menu.error}
           </CardContent>
         </Card>
       )}
 
-      {entries.length === 0 ? (
-        <Card><CardContent className="p-10 text-center text-muted-foreground"><Utensils className="w-10 h-10 mx-auto mb-3" />No menu entries for this week</CardContent></Card>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {entries.map((entry) => (
-            <Card key={entry.MenuEntryID}>
-              <CardHeader><CardTitle className="text-lg">{new Date(entry.date).toLocaleDateString()} · {entry.moment}</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                <p className="font-medium text-secondary">{entry.meal?.name || entry.customMeal}</p>
-                <Button variant="outline" onClick={() => setProposalEntry(proposalEntry === entry.MenuEntryID ? null : entry.MenuEntryID)}>
-                  <MessageSquare className="w-4 h-4 mr-2" />Propose alternative
-                </Button>
-
-                {proposalEntry === entry.MenuEntryID && (
-                  <div className="space-y-3 border-t pt-4">
-                    <select className="w-full h-10 rounded border bg-background px-3" value={proposal.proposedMealId} onChange={(e) => setProposal({ ...proposal, proposedMealId: e.target.value, alternativeText: '' })}>
-                      <option value="">Choose existing meal</option>
-                      {meals.map((meal) => <option key={meal.MealID} value={meal.MealID}>{meal.name}</option>)}
-                    </select>
-                    <Input placeholder="Or alternative meal name" value={proposal.alternativeText} onChange={(e) => setProposal({ ...proposal, alternativeText: e.target.value, proposedMealId: '' })} />
-                    <Textarea placeholder="Reason" value={proposal.reason} onChange={(e) => setProposal({ ...proposal, reason: e.target.value })} />
-                    <Button onClick={() => submitProposal(entry.MenuEntryID)} className="bg-[#C85A32] text-white hover:bg-[#B84F2B]">Send proposal</Button>
-                  </div>
-                )}
-
-                {entry.proposals?.length > 0 && (
-                  <div className="space-y-2 border-t pt-4">
-                    <h4 className="font-semibold text-sm">Proposals</h4>
-                    {entry.proposals.map((item: MenuProposal) => (
-                      <div key={item.ProposalID} className="p-3 rounded border space-y-2">
-                        <p className="text-sm font-medium">{item.proposedMeal?.name || item.alternativeText}</p>
-                        {item.reason && <p className="text-xs text-muted-foreground">{item.reason}</p>}
-                        <p className="text-xs">Status: {item.status}</p>
-                        {isAdmin && item.status === 'pending' && (
-                          <div className="flex gap-2">
-                            <Button size="sm" onClick={() => respondProposal(item.ProposalID, 'accepted')} className="bg-primary text-primary-foreground hover:bg-primary/90">Accept</Button>
-                            <Button size="sm" variant="outline" onClick={() => respondProposal(item.ProposalID, 'rejected')}>Reject</Button>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+      {groupRestrictions.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-primary/25 bg-primary/10 px-4 py-3 text-xs">
+          <span className="inline-flex items-center gap-1.5 font-semibold text-primary">
+            <Leaf className="h-3.5 w-3.5" />
+            Active Group Dietary Restrictions ({compatibleMeals.length} compatible dishes):
+          </span>
+          {groupRestrictions.map((r) => (
+            <Badge
+              key={r.DietaryRestrictionID}
+              variant="secondary"
+              className="border border-border bg-card text-foreground"
+            >
+              {r.name}
+            </Badge>
           ))}
         </div>
+      )}
+
+      {profileId && (
+        <WeeklyMenuCalendar
+          groupId={groupId}
+          profileId={profileId}
+          isAdmin={isAdmin}
+          entries={menu.entries}
+          weekStart={menu.weekStart}
+          onChangeWeek={menu.setWeekStart}
+          onRefresh={menu.refresh}
+          meals={compatibleMeals}
+          groupRestrictions={groupRestrictions}
+          loading={menu.loading}
+          mode="manage"
+        />
       )}
     </div>
   );

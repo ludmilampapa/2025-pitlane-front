@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Trophy, Users, Clock, ChevronRight, Vote } from 'lucide-react';
+import { Trophy, Users, Clock, ChevronRight, History, Vote } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { VotingService } from './VotingService';
 import { VotingDetailsModal } from './VotingDetailsModal';
@@ -41,12 +41,10 @@ export function VotingHistorySection({ groupId, className = '' }: VotingHistoryS
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupId]);
 
-  // Listen for voting completion events from VotingContext
   useEffect(() => {
     const unsubscribe = onVotingCompleted(() => {
       loadHistory();
     });
-
     return unsubscribe;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupId]);
@@ -74,132 +72,93 @@ export function VotingHistorySection({ groupId, className = '' }: VotingHistoryS
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
-      year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
     });
   };
 
-  if (loading) {
-    return (
-      <Card className={`bg-gradient-to-br from-amber-800/30 to-amber-900/30 border-amber-700/50 ${className}`}>
-        <CardHeader>
-          <CardTitle className="flex items-center text-amber-200">
-            <Vote className="w-5 h-5 mr-2" /> Voting History
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500"></div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card className={`bg-gradient-to-br from-amber-800/30 to-amber-900/30 border-amber-700/50 ${className}`}>
-        <CardHeader>
-          <CardTitle className="flex items-center text-amber-200">
-            <Vote className="w-5 h-5 mr-2" /> Voting History
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-4">
-            <p className="text-sm text-red-400">{error}</p>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={loadHistory}
-              className="mt-3 border-red-500/50 text-red-400 hover:bg-red-900/30"
-            >
-              Retry
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <>
-      <Card className={`bg-gradient-to-br from-amber-800/30 to-amber-900/30 border-amber-700/50 ${className}`}>
-        <CardHeader>
-          <CardTitle className="flex items-center text-amber-200">
-            <Vote className="w-5 h-5 mr-2" /> Voting History
-          </CardTitle>
+      <Card className={`rounded-2xl border-border bg-card shadow-sm ${className}`}>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
+              <History className="h-4 w-4 text-primary" />
+              Past Decisions
+            </CardTitle>
+            {history.length > 0 && (
+              <Badge variant="secondary" className="rounded-full text-xs">
+                {history.length}
+              </Badge>
+            )}
+          </div>
         </CardHeader>
+
         <CardContent>
-          {history.length > 0 ? (
-            <div className="space-y-3">
-              {/* Scrollable container for voting history */}
-              <div className="max-h-80 overflow-y-auto pr-2 space-y-3">
-                {history.map((session) => (
-                  <div
-                    key={session.sessionId}
-                    className="border border-amber-700/30 rounded-lg p-4 bg-neutral-800/50 hover:bg-neutral-800/70 transition-all cursor-pointer"
-                    onClick={() => handleViewDetails(session.sessionId)}
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        {/* Winner meal */}
-                        <div className="flex items-center gap-2 mb-2">
-                          <Trophy className="h-4 w-4 text-yellow-400" />
-                          <h3 className="font-semibold text-neutral-100">
-                            {session.winnerMeal.name}
-                          </h3>
-                          <Badge variant="outline" className="text-xs border-yellow-600 text-yellow-400">
-                            Winner
-                          </Badge>
-                        </div>
+          {loading ? (
+            <div className="space-y-2.5 py-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-20 animate-pulse rounded-xl bg-muted/70" />
+              ))}
+            </div>
+          ) : error ? (
+            <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4">
+              <p className="text-xs text-destructive">{error}</p>
+              <Button variant="outline" size="sm" onClick={loadHistory} className="mt-2.5 h-7 text-xs">
+                Retry
+              </Button>
+            </div>
+          ) : history.length > 0 ? (
+            <div className="max-h-[460px] space-y-2.5 overflow-y-auto pr-1">
+              {history.map((session) => (
+                <button
+                  key={session.sessionId}
+                  type="button"
+                  onClick={() => handleViewDetails(session.sessionId)}
+                  className="group flex w-full items-start justify-between gap-3 rounded-xl border border-border bg-background/60 p-3.5 text-left transition-all hover:border-primary/40 hover:bg-muted/50"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                        <Trophy className="h-3.5 w-3.5" />
+                      </span>
+                      <h3 className="truncate text-sm font-semibold text-foreground">
+                        {session.winnerMeal.name}
+                      </h3>
+                    </div>
 
-                        {/* Session info */}
-                        <div className="flex flex-wrap items-center gap-3 text-sm text-neutral-400">
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            <span>{formatDate(session.completedAt || session.createdAt)}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Users className="h-3 w-3" />
-                            <span>{session.participantCount} participant{session.participantCount !== 1 ? 's' : ''}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Vote className="h-3 w-3" />
-                            <span>{session.totalVotes} total vote{session.totalVotes !== 1 ? 's' : ''}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* View details button */}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-amber-400 hover:text-amber-300 hover:bg-amber-900/20"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleViewDetails(session.sessionId);
-                        }}
-                      >
-                        Details
-                        <ChevronRight className="h-4 w-4 ml-1" />
-                      </Button>
+                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                      <span className="inline-flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {formatDate(session.completedAt || session.createdAt)}
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        {session.participantCount}
+                      </span>
+                      <span className="inline-flex items-center gap-1 font-medium text-foreground/80">
+                        <Vote className="h-3 w-3 text-secondary" />
+                        {session.totalVotes} {session.totalVotes === 1 ? 'vote' : 'votes'}
+                      </span>
                     </div>
                   </div>
-                ))}
-              </div>
+
+                  <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
+                </button>
+              ))}
             </div>
           ) : (
-            <div className="text-center py-8">
-              <Vote className="w-12 h-12 mx-auto text-amber-700 mb-4" />
-              <h3 className="text-lg font-medium mb-2 text-gray-300">No voting history</h3>
-              <p className="text-gray-400">Completed voting sessions will appear here</p>
+            <div className="rounded-xl border border-dashed border-border bg-muted/25 px-4 py-8 text-center">
+              <Trophy className="mx-auto mb-2.5 h-8 w-8 text-muted-foreground/60" />
+              <h3 className="text-sm font-semibold text-foreground">No voting history yet</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Completed group votes and portion choices will show up here.
+              </p>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Details Modal */}
       <VotingDetailsModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
