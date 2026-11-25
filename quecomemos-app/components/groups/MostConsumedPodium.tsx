@@ -12,12 +12,12 @@ export function MostConsumedPodium({ meals, loading = false }: MostConsumedPodiu
 
   return (
     <Card className="border-[#E8E2D9] bg-white shadow-sm">
-      <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base text-neutral-900"><Trophy className="h-5 w-5 text-[#C85A32]" /> Podio de comidas</CardTitle></CardHeader>
+      <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base text-neutral-900"><Trophy className="h-5 w-5 text-[#C85A32]" /> Meal Podium</CardTitle></CardHeader>
       <CardContent>
         {loading ? (
           <div className="grid grid-cols-3 gap-3">{[1, 2, 3].map((item) => <div key={item} className="h-28 animate-pulse rounded-2xl bg-[#F3EEE6]" />)}</div>
         ) : podium.length === 0 ? (
-          <p className="py-8 text-center text-sm text-neutral-500">Todavía no hay consumos registrados.</p>
+          <p className="py-8 text-center text-sm text-neutral-500">No consumptions logged yet.</p>
         ) : (
           <div className="grid grid-cols-3 items-end gap-3">
             {podium.map((meal, index) => {
@@ -28,7 +28,7 @@ export function MostConsumedPodium({ meals, loading = false }: MostConsumedPodiu
                   <div className={`${height} flex flex-col items-center justify-center rounded-2xl border border-[#E8E2D9] bg-[#FAF7F2] px-2`}>
                     <Icon className={`mb-2 h-5 w-5 ${index === 0 ? 'text-amber-500' : index === 1 ? 'text-slate-400' : 'text-orange-500'}`} />
                     <p className="line-clamp-2 text-xs font-bold text-neutral-900">{meal.name}</p>
-                    <p className="mt-1 text-xs text-neutral-500">{meal.count} veces</p>
+                    <p className="mt-1 text-xs text-neutral-500">{meal.count} {meal.count === 1 ? 'time' : 'times'}</p>
                   </div>
                   <p className="mt-2 text-xs font-medium text-neutral-500">#{index + 1}</p>
                 </div>

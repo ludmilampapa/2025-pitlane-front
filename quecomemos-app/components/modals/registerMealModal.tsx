@@ -9,6 +9,13 @@ import { MealSearchBar } from '../meal/MealSearchBar';
 import { MealComposition } from '../meal/MealComposition';
 import { MealPortionSelector, PortionPlateSvg, type PortionData } from '../meal/MealPortionSelector';
 import { fetchGroupDietaryInfo } from '@/lib/utils/groupService';
+import {
+  argentinaDateTimeToISO,
+  formatArgentinaHHMM,
+  formatArgentinaYMD,
+  isValidHHMM,
+  isValidYMD,
+} from '@/lib/utils/timezone';
 import { Group } from '../groups/index';
 
 interface GroupDietaryInfo {
@@ -46,8 +53,8 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
 
   // Form state
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
-  const [mealDate, setMealDate] = useState(() => new Date().toISOString().split('T')[0]);
-  const [mealTime, setMealTime] = useState(() => new Date().toTimeString().slice(0, 5));
+  const [mealDate, setMealDate] = useState(() => formatArgentinaYMD());
+  const [mealTime, setMealTime] = useState(() => formatArgentinaHHMM());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -104,8 +111,8 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
 
   const handleClose = useCallback(() => {
     setSelectedMeal(null);
-    setMealDate(new Date().toISOString().split('T')[0]);
-    setMealTime(new Date().toTimeString().slice(0, 5));
+    setMealDate(formatArgentinaYMD());
+    setMealTime(formatArgentinaHHMM());
     setError(null);
     setShowCreateMeal(false);
     setUseCurrentTime(true);
@@ -162,16 +169,23 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
       setError('Please select a meal first.');
       return;
     }
-    if (!useCurrentTime && (!mealDate || !mealTime)) {
-      setError('Please choose both a date and a time.');
-      return;
+    if (!useCurrentTime) {
+      if (!mealDate || !mealTime || !isValidYMD(mealDate) || !isValidHHMM(mealTime)) {
+        setError('Please enter a valid date and time.');
+        return;
+      }
+      const pickedIso = argentinaDateTimeToISO(mealDate, mealTime);
+      if (new Date(pickedIso).getTime() > Date.now() + 60_000) {
+        setError('You cannot log a meal in the future.');
+        return;
+      }
     }
 
     setIsSubmitting(true);
     try {
       const finalDateTime = useCurrentTime
         ? new Date().toISOString()
-        : new Date(`${mealDate}T${mealTime}`).toISOString();
+        : argentinaDateTimeToISO(mealDate, mealTime);
 
       await onSubmit({
         mealId: selectedMeal.MealID,
@@ -459,7 +473,7 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
                         id="mealDate"
                         value={mealDate}
                         onChange={(e) => setMealDate(e.target.value)}
-                        max={new Date().toISOString().split('T')[0]}
+                        max={formatArgentinaYMD()}
                         className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                         disabled={isSubmitting}
                       />

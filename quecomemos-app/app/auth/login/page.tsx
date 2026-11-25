@@ -14,7 +14,7 @@ export default function Page() {
             </div>
             <div className="text-center">
               <p className="text-sm text-muted-foreground mt-2">
-                El sabor de la democracia en cada comida
+                The taste of democracy in every meal
               </p>
             </div>
           </div>

@@ -20,6 +20,7 @@ import {
 } from '@/components/voting';
 import type { Group } from '@/components/groups/index';
 import type { VotingSession } from './types';
+import { formatArgentinaTime } from '@/lib/utils/timezone';
 
 export type VotingMode = 'classic' | 'roulette';
 
@@ -74,7 +75,7 @@ export function GroupVotingSystem({
 
   const formatTime = (date: Date | null) => {
     if (!date) return 'Just now';
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return formatArgentinaTime(date);
   };
 
   const SyncBar = () => {

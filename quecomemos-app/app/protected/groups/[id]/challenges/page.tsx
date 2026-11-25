@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { API_BASE_URL } from '@/lib/config/api';
 import { formatLocalYMD } from '@/lib/hooks/useWeeklyMenu';
+import { formatYMDDisplay, isValidYMD } from '@/lib/utils/timezone';
 import { useUser } from '@/lib/contexts/UserContext';
 import type { Challenge, ChallengeProgress, ChallengeRankingRow, GroupData } from '@/lib/types/groupChallenges';
 
@@ -80,11 +81,34 @@ export default function GroupChallengesPage() {
   const createChallenge = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!profileId) return;
+    setError(null);
+
+    const trimmedName = form.name.trim();
+    const trimmedRule = form.ruleText.trim();
+    if (!trimmedName || !trimmedRule) {
+      setError('Challenge name and rule are required.');
+      return;
+    }
+    if (!isValidYMD(form.startDate) || !isValidYMD(form.endDate)) {
+      setError('Please enter valid From and To calendar dates.');
+      return;
+    }
+    if (form.endDate < form.startDate) {
+      setError('The To date must be on or after the From date.');
+      return;
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}/groups/${groupId}/challenges`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, profileId }),
+        body: JSON.stringify({
+          ...form,
+          name: trimmedName,
+          ruleText: trimmedRule,
+          description: form.description.trim(),
+          profileId,
+        }),
       });
       if (!response.ok) throw new Error((await response.json()).error || 'Failed to create challenge');
       setForm({ name: '', description: '', ruleText: '', startDate: '', endDate: '' });
@@ -135,8 +159,31 @@ export default function GroupChallengesPage() {
               <Input placeholder="Challenge name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
               <Input placeholder="Rule, example: no soft drinks" value={form.ruleText} onChange={(e) => setForm({ ...form, ruleText: e.target.value })} required />
               <Textarea className="md:col-span-2" placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-              <Input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} required />
-              <Input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} required />
+              <div className="space-y-1.5">
+                <label htmlFor="challenge-start-date" className="text-sm font-medium text-foreground">
+                  From
+                </label>
+                <Input
+                  id="challenge-start-date"
+                  type="date"
+                  value={form.startDate}
+                  onChange={(e) => setForm({ ...form, startDate: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="challenge-end-date" className="text-sm font-medium text-foreground">
+                  To
+                </label>
+                <Input
+                  id="challenge-end-date"
+                  type="date"
+                  value={form.endDate}
+                  min={form.startDate || undefined}
+                  onChange={(e) => setForm({ ...form, endDate: e.target.value })}
+                  required
+                />
+              </div>
               <div className="md:col-span-2 flex justify-end"><Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90">Create</Button></div>
             </form>
           </CardContent>
@@ -155,7 +202,7 @@ export default function GroupChallengesPage() {
             </CardHeader>
             <CardContent className="space-y-5">
               <p className="text-sm text-muted-foreground">{challenge.description || challenge.ruleText}</p>
-              <div className="flex items-center gap-2 text-sm"><CalendarDays className="w-4 h-4" /> {new Date(challenge.startDate).toLocaleDateString()} - {new Date(challenge.endDate).toLocaleDateString()}</div>
+              <div className="flex items-center gap-2 text-sm"><CalendarDays className="w-4 h-4" /> {formatYMDDisplay(challenge.startDate.slice(0, 10))} – {formatYMDDisplay(challenge.endDate.slice(0, 10))}</div>
               <div className="h-3 bg-[#EFE7DB] rounded overflow-hidden"><div className="h-full bg-primary" style={{ width: `${userProgress?.percentage || 0}%` }} /></div>
               <p className="text-sm">You completed <strong>{userProgress?.completedDays || 0}</strong> of <strong>{userProgress?.totalDays || 0}</strong> days.</p>
               {userProgress?.todayCompleted ? (

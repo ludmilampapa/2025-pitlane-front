@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Activity, ChefHat, Calendar, Search, Filter, History, Target, Flame, Plus, Trophy } from 'lucide-react';
 import { useUser } from '@/lib/contexts/UserContext';
 import { API_BASE_URL } from '@/lib/config/api';
+import { formatArgentinaDate, formatArgentinaTime } from '@/lib/utils/timezone';
 import { useCalorieProgress } from '@/lib/hooks/useKcalProgress';
 import { CalorieGoalSettings } from '@/components/profile/calorie-goal';
 import { CalorieProgressDisplay } from '@/components/profile/CalorieProgressDisplay';
@@ -164,10 +165,7 @@ export default function UserHistoryPage() {
 
 
   const formatShortDate = (d?: string) =>
-    d ? new Date(d).toLocaleDateString('es-ES', { 
-      day: 'numeric', 
-      month: 'short'
-    }) : '';
+    d ? formatArgentinaDate(d, 'en-US', { day: 'numeric', month: 'short' }) : '';
 
   // Filter and sort consumptions
   const filteredAndSortedConsumptions = consumptions
@@ -447,11 +445,11 @@ export default function UserHistoryPage() {
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center text-lg">
                   <Calendar className="w-5 h-5 mr-2" />
-                  {new Date(date).toLocaleDateString('es-ES', { 
+                  {formatArgentinaDate(date, 'en-US', {
                     weekday: 'long',
-                    day: 'numeric', 
-                    month: 'long', 
-                    year: 'numeric' 
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
                   })}
                   <span className="ml-auto text-sm font-normal text-muted-foreground">
                     {dayConsumptions.length} meal{dayConsumptions.length !== 1 ? 's' : ''}
@@ -516,10 +514,7 @@ export default function UserHistoryPage() {
                             )}
                             <div className="flex items-center gap-4 mt-2 ml-6 text-xs text-muted-foreground">
                               <span>
-                                {new Date(consumption.consumedAt).toLocaleTimeString('es-ES', {
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
+                                {formatArgentinaTime(consumption.consumedAt)}
                               </span>
                             </div>
                           </div>

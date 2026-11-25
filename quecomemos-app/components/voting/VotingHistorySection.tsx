@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import { VotingService } from './VotingService';
 import { VotingDetailsModal } from './VotingDetailsModal';
 import { useVoting } from '@/lib/contexts/VotingContext';
+import { formatArgentinaDate } from '@/lib/utils/timezone';
 
 interface VotingHistoryItem {
   sessionId: number;
@@ -68,14 +69,8 @@ export function VotingHistorySection({ groupId, className = '' }: VotingHistoryS
     setIsModalOpen(true);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
+  const formatDate = (dateString: string) =>
+    formatArgentinaDate(dateString, 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
   return (
     <>

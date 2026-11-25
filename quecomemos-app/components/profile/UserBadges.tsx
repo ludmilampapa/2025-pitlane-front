@@ -154,7 +154,8 @@ export function UserBadges({ badges, loading = false }: UserBadgesProps) {
                     </Badge>
                     <div className="flex items-center gap-1 text-xs opacity-60">
                       <Calendar className="w-3 h-3" />
-                      {new Date(badge.earnedAt).toLocaleDateString('es-ES', {
+                      {new Date(badge.earnedAt).toLocaleDateString('en-US', {
+                      timeZone: 'America/Argentina/Buenos_Aires',
                         day: 'numeric',
                         month: 'short'
                       })}

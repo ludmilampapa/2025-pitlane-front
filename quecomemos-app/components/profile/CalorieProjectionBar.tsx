@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { API_BASE_URL } from '@/lib/config/api';
+import { formatArgentinaYMD } from '@/lib/utils/timezone';
 
 interface CalorieProjectionBarProps {
   profileId: string;
@@ -30,7 +31,7 @@ export function CalorieProjectionBar({ profileId, selectedCalories, date, classN
       try {
         const supabase = createClient();
         const { data: { session } } = await supabase.auth.getSession();
-        const dateParam = date ? `?date=${date.toISOString()}` : '';
+        const dateParam = date ? `?date=${formatArgentinaYMD(date)}` : '';
         const response = await fetch(`${API_BASE_URL}/profile/${profileId}/calorie-progress${dateParam}`, {
           headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
         });
@@ -63,8 +64,8 @@ export function CalorieProjectionBar({ profileId, selectedCalories, date, classN
     <div className={`rounded-2xl border border-[#E8E2D9] bg-[#FAF7F2] p-4 ${className}`}>
       <div className="mb-2 flex items-end justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#4A7C59]">Proyección diaria</p>
-          <p className="mt-1 text-sm text-neutral-600">{consumed} consumidas + {Math.round(selectedCalories)} seleccionadas</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#4A7C59]">Daily projection</p>
+          <p className="mt-1 text-sm text-neutral-600">{consumed} consumed + {Math.round(selectedCalories)} selected</p>
         </div>
         <p className={`text-sm font-bold ${overGoal ? 'text-[#C85A32]' : 'text-[#4A7C59]'}`}>
           {projected} / {goal} kcal
@@ -79,11 +80,11 @@ export function CalorieProjectionBar({ profileId, selectedCalories, date, classN
       </div>
 
       {loading ? (
-        <p className="mt-2 text-xs text-neutral-500">Cargando calorías actuales…</p>
+        <p className="mt-2 text-xs text-neutral-500">Loading current calories…</p>
       ) : overGoal ? (
-        <p className="mt-2 text-xs font-medium text-[#A84526]">Superás el objetivo por {projected - goal} kcal</p>
+        <p className="mt-2 text-xs font-medium text-[#A84526]">Over daily goal by {projected - goal} kcal</p>
       ) : (
-        <p className="mt-2 text-xs text-neutral-500">Quedan {goal - projected} kcal disponibles</p>
+        <p className="mt-2 text-xs text-neutral-500">{goal - projected} kcal remaining</p>
       )}
     </div>
   );

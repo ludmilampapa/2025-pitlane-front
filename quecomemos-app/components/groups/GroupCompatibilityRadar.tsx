@@ -38,7 +38,7 @@ export function GroupCompatibilityRadar({ members }: GroupCompatibilityRadarProp
     <Card className="border-[#E8E2D9] bg-white shadow-sm">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base text-neutral-900">
-          <ShieldCheck className="h-5 w-5 text-[#4A7C59]" /> Radar de compatibilidad grupal
+          <ShieldCheck className="h-5 w-5 text-[#4A7C59]" /> Group Compatibility Radar
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -49,11 +49,11 @@ export function GroupCompatibilityRadar({ members }: GroupCompatibilityRadarProp
           </div>
 
           <div>
-            <p className="text-sm font-medium text-neutral-800">Preferencias compartidas</p>
+            <p className="text-sm font-medium text-neutral-800">Shared preferences</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {preferenceNames.length > 0 ? preferenceNames.map((name) => (
                 <Badge key={name} className="border border-emerald-200 bg-emerald-50 text-emerald-700"><Leaf className="mr-1 h-3 w-3" />{name}</Badge>
-              )) : <span className="text-sm text-neutral-500">Sin preferencias registradas</span>}
+              )) : <span className="text-sm text-neutral-500">No preferences recorded</span>}
             </div>
           </div>
         </div>
@@ -61,7 +61,7 @@ export function GroupCompatibilityRadar({ members }: GroupCompatibilityRadarProp
         <div className="grid gap-3 md:grid-cols-2">
           {members.map((member) => (
             <div key={member.id} className="rounded-xl border border-[#E8E2D9] bg-[#FAF7F2] p-3">
-              <div className="flex items-center gap-2"><div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#EDF4EE] text-xs font-bold text-[#4A7C59]"><UserRound className="h-4 w-4" /></div><div><p className="text-sm font-semibold text-neutral-900">{member.username}</p><p className="text-xs text-neutral-500">{member.preferences.length} preferencias • {member.dietaryRestrictions.length} restricciones</p></div></div>
+              <div className="flex items-center gap-2"><div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#EDF4EE] text-xs font-bold text-[#4A7C59]"><UserRound className="h-4 w-4" /></div><div><p className="text-sm font-semibold text-neutral-900">{member.username}</p><p className="text-xs text-neutral-500">{member.preferences.length} preferences • {member.dietaryRestrictions.length} restrictions</p></div></div>
               <div className="mt-3 flex flex-wrap gap-1">
                 {member.dietaryRestrictions.map((restriction) => (
                   <Badge key={restriction.DietaryRestrictionID} className="border border-[#ECC2B3] bg-[#FFF3EE] text-[#A84526]">{restriction.name}</Badge>

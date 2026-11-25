@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Activity, ChefHat, Calendar, Search, Filter } from 'lucide-react';
 import { useUser } from '@/lib/contexts/UserContext';
 import { API_BASE_URL } from '@/lib/config/api';
+import { formatArgentinaDate, formatArgentinaTime } from '@/lib/utils/timezone';
 import { type TimelineSession } from '@/components/groups/VotingHistoryTimeline';
 
 interface Consumption {
@@ -79,10 +80,7 @@ export default function GroupHistoryPage() {
 
 
   const formatShortDate = (d?: string) =>
-    d ? new Date(d).toLocaleDateString('es-ES', { 
-      day: 'numeric', 
-      month: 'short'
-    }) : '';
+    d ? formatArgentinaDate(d, 'en-US', { day: 'numeric', month: 'short' }) : '';
 
   // Filter and sort consumptions
   const filteredAndSortedConsumptions = consumptions
@@ -255,11 +253,11 @@ function GroupHistorySkeleton() {
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center text-lg text-foreground">
                   <Calendar className="w-5 h-5 mr-2" />
-                  {new Date(date).toLocaleDateString('es-ES', { 
+                  {formatArgentinaDate(date, 'en-US', {
                     weekday: 'long',
-                    day: 'numeric', 
-                    month: 'long', 
-                    year: 'numeric' 
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
                   })}
                   <span className="ml-auto text-sm font-normal text-muted-foreground">
                     {dayConsumptions.length} meal{dayConsumptions.length !== 1 ? 's' : ''}
@@ -286,10 +284,7 @@ function GroupHistorySkeleton() {
                           )}
                           <div className="flex items-center gap-4 mt-2 ml-6 text-xs text-muted-foreground">
                             <span>
-                              {new Date(consumption.consumedAt).toLocaleTimeString('es-ES', {
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
+                              {formatArgentinaTime(consumption.consumedAt)}
                             </span>
                             {consumption.profile && (
                               <span>by {consumption.profile.username || 'Anonymous'}</span>

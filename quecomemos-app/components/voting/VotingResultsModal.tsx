@@ -113,7 +113,9 @@ export function VotingResultsModal({
               </span>
               <span className="inline-flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" />
-                {new Date(winnerProposal.proposedAt).toLocaleString()}
+                {new Date(winnerProposal.proposedAt).toLocaleString('en-US', {
+                  timeZone: 'America/Argentina/Buenos_Aires',
+                })}
               </span>
             </div>
           </div>

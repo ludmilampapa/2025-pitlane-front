@@ -13,8 +13,8 @@ type Props = {
 export function CustomCheckbox({ endpoint, selected, onChange, label }: Props) {
   const { data, loading, error } = useFetch<{ id: number; name: string }>(endpoint);
 
-  if (loading) return <p>Cargando {label}...</p>;
-  if (error) return <p>Error cargando {label}</p>;
+  if (loading) return <p>Loading {label}...</p>;
+  if (error) return <p>Error loading {label}</p>;
 
   const toggle = (id: number) => {
     if (selected.includes(id)) {

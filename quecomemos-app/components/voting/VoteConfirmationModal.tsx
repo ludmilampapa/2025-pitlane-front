@@ -111,7 +111,8 @@ export function VoteConfirmationModal({
               </span>
               <span className="inline-flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" />
-                {new Date(proposal.proposedAt).toLocaleTimeString([], {
+                {new Date(proposal.proposedAt).toLocaleTimeString('en-US', {
+                timeZone: 'America/Argentina/Buenos_Aires',
                   hour: '2-digit',
                   minute: '2-digit',
                 })}

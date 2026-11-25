@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { formatArgentinaDate } from '@/lib/utils/timezone';
 import {
   ArrowLeft,
   Users,
@@ -261,13 +262,8 @@ export default function GroupInfoPage() {
     if (group) void fetchTasteMaker();
   }, [group, fetchTasteMaker]);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-ES', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
-  };
+  const formatDate = (dateString: string) =>
+    formatArgentinaDate(dateString, 'en-US', { day: 'numeric', month: 'long', year: 'numeric' });
 
   const isUserAdmin = () => {
     if (!group || !currentUserId) return false;

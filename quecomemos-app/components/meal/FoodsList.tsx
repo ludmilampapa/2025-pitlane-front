@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Trash, Hexagon } from "lucide-react";
 import { FoodItem } from "./types";
 import { FoodIcon, KcalDisplay, FoodQuantityDisplay } from "./common/FoodDisplayComponents";
-import { COMMON_STYLES } from "./constants";
 import { useKorvenCheck } from "./hooks/useKorvenCheck";
 
 type Props = {

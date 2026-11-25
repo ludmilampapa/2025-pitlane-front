@@ -104,7 +104,8 @@ export function GroupInvitations({ userId, onInvitationAccepted }: GroupInvitati
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-ES', {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      timeZone: 'America/Argentina/Buenos_Aires',
       day: 'numeric',
       month: 'short',
       year: 'numeric'

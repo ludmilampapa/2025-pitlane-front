@@ -356,6 +356,7 @@ export function VotingDetailsModal({ isOpen, onClose, sessionId }: VotingDetails
                     <span className="inline-flex items-center gap-1.5">
                       <Clock className="h-3.5 w-3.5" />
                       {new Date(sessionDetails.createdAt).toLocaleDateString('en-US', {
+                      timeZone: 'America/Argentina/Buenos_Aires',
                         month: 'short',
                         day: 'numeric',
                         year: 'numeric',

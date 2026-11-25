@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Users, Activity, Calendar, ChefHat } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { formatArgentinaDate } from '@/lib/utils/timezone';
 
 interface GroupMember {
   profile: {
@@ -40,12 +41,8 @@ export function GroupCard({ group, showActivity = true, onRegisterMeal }: GroupC
     router.push(`/protected/groups/${group.GroupID}`);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      day: 'numeric',
-      month: 'short'
-    });
-  };
+  const formatDate = (dateString: string) =>
+    formatArgentinaDate(dateString, 'en-US', { day: 'numeric', month: 'short' });
 
   const getInitials = (name: string) => {
     if (!name) return '?';

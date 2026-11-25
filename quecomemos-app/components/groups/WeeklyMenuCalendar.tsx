@@ -27,6 +27,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { API_BASE_URL } from '@/lib/config/api';
 import { addDaysYMD, formatLocalYMD, getMondayYMD } from '@/lib/hooks/useWeeklyMenu';
+import { formatYMDDisplay } from '@/lib/utils/timezone';
 import { Leaf } from 'lucide-react';
 import type { RestrictionItem } from '@/lib/utils/dietaryCompatibility';
 import type { MenuProposal, WeeklyMenuEntry } from '@/lib/types/groupChallenges';
@@ -103,12 +104,11 @@ function getEntryCalories(entry: WeeklyMenuEntry | undefined): number {
 }
 
 function formatWeekRange(weekStartYMD: string): string {
-  const [y, m, d] = weekStartYMD.split('-').map(Number);
-  const start = new Date(y, (m || 1) - 1, d || 1);
-  const end = new Date(y, (m || 1) - 1, (d || 1) + 6);
-  const fmt = (dt: Date) =>
-    dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  return `${fmt(start)} – ${fmt(end)}, ${end.getFullYear()}`;
+  const endYMD = addDaysYMD(weekStartYMD, 6);
+  const startLabel = formatYMDDisplay(weekStartYMD, 'en-US', { month: 'short', day: 'numeric' });
+  const endLabel = formatYMDDisplay(endYMD, 'en-US', { month: 'short', day: 'numeric' });
+  const endYear = endYMD.slice(0, 4);
+  return `${startLabel} – ${endLabel}, ${endYear}`;
 }
 
 export function WeeklyMenuCalendar({
@@ -145,13 +145,12 @@ export function WeeklyMenuCalendar({
   const weekDays = useMemo(() => {
     return DAY_LABELS.map((shortName, index) => {
       const dateKey = addDaysYMD(weekStart, index);
-      const [y, m, d] = dateKey.split('-').map(Number);
-      const dateObj = new Date(y, (m || 1) - 1, d || 1);
+      const dayNumber = Number(dateKey.slice(8, 10));
       return {
         shortName,
-        dayNumber: dateObj.getDate(),
-        monthShort: dateObj.toLocaleDateString('en-US', { month: 'short' }),
-        fullDisplay: dateObj.toLocaleDateString('en-US', {
+        dayNumber,
+        monthShort: formatYMDDisplay(dateKey, 'en-US', { month: 'short' }),
+        fullDisplay: formatYMDDisplay(dateKey, 'en-US', {
           weekday: 'long',
           month: 'short',
           day: 'numeric',

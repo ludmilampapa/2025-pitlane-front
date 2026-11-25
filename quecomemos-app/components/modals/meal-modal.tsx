@@ -157,7 +157,7 @@ export function MealModal({ meal, isOpen, onClose, onEdit }: MealModalProps) {
               {meal.createdAt && (
                 <div className="flex items-center gap-1">
                   <ChefHat className="w-4 h-4" />
-                  <span>{new Date(meal.createdAt).toLocaleDateString()}</span>
+                  <span>{new Date(meal.createdAt).toLocaleDateString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' })}</span>
                 </div>
               )}
             </div>

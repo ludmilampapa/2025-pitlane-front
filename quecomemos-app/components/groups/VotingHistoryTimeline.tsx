@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { VotingService } from '@/components/voting/VotingService';
+import { formatArgentinaDate } from '@/lib/utils/timezone';
 
 export interface TimelineSession {
   sessionId: number;
@@ -39,7 +40,7 @@ export function VotingHistoryTimeline({ sessions, initiatorId, groupId, loadPart
         initiatorId,
         groupId,
         title: `Repeat: ${session.winnerMeal.name}`,
-        description: 'Nueva juntada creada desde el historial.',
+        description: 'New voting session created from history.',
       });
 
       await VotingService.proposeMeal(started.VotingSessionID, {
@@ -47,17 +48,17 @@ export function VotingHistoryTimeline({ sessions, initiatorId, groupId, loadPart
         proposedById: initiatorId,
       });
 
-      toast.success('Juntada creada', { description: `Se inició una nueva sesión con “${session.winnerMeal.name}”.` });
+      toast.success('Voting session created', { description: `Started a new session with "${session.winnerMeal.name}".` });
       onRepeated?.(started.VotingSessionID);
     } catch (error) {
-      toast.error('No se pudo repetir la juntada', { description: error instanceof Error ? error.message : 'Intentá nuevamente.' });
+      toast.error('Could not repeat session', { description: error instanceof Error ? error.message : 'Please try again.' });
     }
   };
 
   if (sessions.length === 0) {
     return (
       <Card className="border border-dashed border-[#E8E2D9] bg-[#FAF7F2]">
-        <CardContent className="py-12 text-center"><Calendar className="mx-auto h-10 w-10 text-[#A8B89F]" /><h3 className="mt-3 font-semibold text-neutral-900">Todavía no hay votaciones completadas</h3><p className="mt-1 text-sm text-muted-foreground">La línea de tiempo aparecerá después de la primera juntada.</p></CardContent>
+        <CardContent className="py-12 text-center"><Calendar className="mx-auto h-10 w-10 text-[#A8B89F]" /><h3 className="mt-3 font-semibold text-neutral-900">No completed voting sessions yet</h3><p className="mt-1 text-sm text-muted-foreground">The timeline will appear after your first group vote.</p></CardContent>
       </Card>
     );
   }
@@ -94,8 +95,8 @@ function SessionTimelineCard({ session, loadParticipants, onRepeat }: SessionTim
   }, [session.sessionId, loadParticipants]);
 
   const completedDate = session.completedAt
-    ? new Date(session.completedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
-    : 'Fecha no disponible';
+    ? formatArgentinaDate(session.completedAt, 'en-US', { day: 'numeric', month: 'long', year: 'numeric' })
+    : 'Date unavailable';
 
   return (
     <div className="relative">
@@ -104,12 +105,12 @@ function SessionTimelineCard({ session, loadParticipants, onRepeat }: SessionTim
         <CardContent className="p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#C85A32]">Juntada completada</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#C85A32]">Completed vote</p>
               <h3 className="mt-1 flex items-center gap-2 text-xl font-bold text-neutral-900"><ChefHat className="h-5 w-5 text-[#4A7C59]" />{session.winnerMeal.name}</h3>
-              <p className="mt-1 text-sm text-neutral-500">{completedDate} • {session.totalVotes} votos • {session.participantCount} participantes</p>
+              <p className="mt-1 text-sm text-neutral-500">{completedDate} • {session.totalVotes} votes • {session.participantCount} participants</p>
             </div>
             <Button variant="outline" onClick={onRepeat} className="border-[#E8E2D9] text-[#4A7C59] hover:bg-[#EDF4EE]">
-              <RotateCcw className="mr-2 h-4 w-4" />Repetir esta juntada
+              <RotateCcw className="mr-2 h-4 w-4" />Repeat this vote
             </Button>
           </div>
 
@@ -119,7 +120,7 @@ function SessionTimelineCard({ session, loadParticipants, onRepeat }: SessionTim
                 const fraction = participant.portionFraction;
                 const label = participant.defaultedToWhole
                   ? '1'
-                  : fraction === 0.25 ? '1/4' : fraction === 0.5 ? '1/2' : fraction === 0.75 ? '3/4' : fraction ? fraction.toString() : 'Sin porción';
+                  : fraction === 0.25 ? '1/4' : fraction === 0.5 ? '1/2' : fraction === 0.75 ? '3/4' : fraction ? fraction.toString() : 'No portion';
                 return (
                   <span key={participant.userId} className="rounded-full border border-[#D9E5DA] bg-[#EDF4EE] px-3 py-1 text-xs font-semibold text-[#4A7C59]">
                     {participant.userName}: {label}

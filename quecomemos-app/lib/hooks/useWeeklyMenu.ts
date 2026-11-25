@@ -1,28 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { API_BASE_URL } from '@/lib/config/api';
 import type { GroupData, WeeklyMenuEntry } from '@/lib/types/groupChallenges';
+import { getArgentinaMondayYMD } from '@/lib/utils/timezone';
 
-export function formatLocalYMD(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
-export function getMondayYMD(baseDate: Date = new Date()): string {
-  const copy = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
-  const day = copy.getDay();
-  const mondayOffset = day === 0 ? -6 : 1 - day;
-  copy.setDate(copy.getDate() + mondayOffset);
-  return formatLocalYMD(copy);
-}
-
-export function addDaysYMD(ymd: string, days: number): string {
-  const [y, m, d] = ymd.split('-').map(Number);
-  const dt = new Date(y, (m || 1) - 1, d || 1);
-  dt.setDate(dt.getDate() + days);
-  return formatLocalYMD(dt);
-}
+export {
+  addDaysYMD,
+  formatArgentinaYMD as formatLocalYMD,
+  getArgentinaMondayYMD as getMondayYMD,
+} from '@/lib/utils/timezone';
 
 interface UseWeeklyMenuResult {
   entries: WeeklyMenuEntry[];
@@ -38,7 +23,7 @@ export function useWeeklyMenu(
   profileId: string | undefined,
   initialWeekStart?: string
 ): UseWeeklyMenuResult {
-  const [weekStart, setWeekStart] = useState<string>(() => initialWeekStart || getMondayYMD());
+  const [weekStart, setWeekStart] = useState<string>(() => initialWeekStart || getArgentinaMondayYMD());
   const [entries, setEntries] = useState<WeeklyMenuEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

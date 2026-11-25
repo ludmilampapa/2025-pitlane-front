@@ -193,7 +193,7 @@ export function BadgeSelectionModal({
                             <p className="text-xs text-muted-foreground">{badge.description}</p>
                             {badge.earnedAt && (
                               <p className="mt-1 text-[11px] text-muted-foreground/80">
-                                Earned {new Date(badge.earnedAt).toLocaleDateString('en-US')}
+                                Earned {new Date(badge.earnedAt).toLocaleDateString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' })}
                               </p>
                             )}
                           </div>

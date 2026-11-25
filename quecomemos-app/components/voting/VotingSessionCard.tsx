@@ -23,6 +23,7 @@ import {
 import { useUser } from '@/lib/contexts/UserContext';
 import { useGlobalNotification } from '@/lib/contexts/NotificationContext';
 import { useVoting } from '@/lib/contexts/VotingContext';
+import { formatArgentinaDateTime } from '@/lib/utils/timezone';
 import { VotingService } from './VotingService';
 import { MealProposalCard } from './MealProposalCard';
 import { VotingTimer } from './VotingTimer';
@@ -174,7 +175,6 @@ export function VotingSessionCard({
   const ensureRandomPoolIfEmpty = useCallback(async () => {
     if ((updatedSession.proposals?.length || 0) > 0 || !userId) return;
 
-    const groupId = updatedSession.groupId;
     let pool: Array<{ MealID: number }> = [];
     const allRes = await fetch(`${API_BASE_URL}/meals/all`);
     if (allRes.ok) {
@@ -705,7 +705,7 @@ export function VotingSessionCard({
                   <VotingTimer endTime={updatedSession.votingEndsAt} label="Round ends in" />
                 )}
                 {updatedSession.status === 'completed' && updatedSession.completedAt && (
-                  <span>Completed {new Date(updatedSession.completedAt).toLocaleString()}</span>
+                  <span>Completed {formatArgentinaDateTime(updatedSession.completedAt)}</span>
                 )}
               </span>
 

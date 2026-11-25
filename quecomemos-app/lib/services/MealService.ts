@@ -1,6 +1,7 @@
 'use client';
 
 import { createClient } from '@/lib/supabase/client';
+import { formatArgentinaDateTime } from '@/lib/utils/timezone';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -53,17 +54,9 @@ export class MealService {
         };
       }
 
-      console.log('Registering meal:', {
-        mealId: mealData.mealId,
-        date: mealData.date,
-        portions: mealData.portions,
-        profileId: profileId,
-        mealName: mealName
-      });
-
       // Calculate quantity based on portions (default to 1 for full meal)
       const quantity = mealData.portions?.portionFraction || 1;
-      const description = `Consumption of ${mealName} at ${new Date(mealData.date).toLocaleString()}`;
+      const description = `Consumption of ${mealName} at ${formatArgentinaDateTime(mealData.date)}`;
 
       const response = await fetch(`${API_BASE_URL}/consumptions/individual`, {
         method: 'POST',
@@ -90,7 +83,6 @@ export class MealService {
       }
 
       const result = await response.json();
-      console.log('Meal registered successfully:', result);
 
       // Trigger calorie progress refresh if callback provided
       if (triggerCalorieRefresh) {
@@ -121,8 +113,6 @@ export class MealService {
     triggerCalorieRefresh?: () => void
   ): Promise<MealRegistrationResult> {
     try {
-      console.log('Attempting to register group meal:', mealData);
-
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -135,7 +125,7 @@ export class MealService {
 
       // Calculate quantity based on portions (default to 1 for full meal)
       const quantity = mealData.portions?.portionFraction || 1;
-      const description = `Group consumption of ${mealName} at ${new Date(mealData.date).toLocaleString()}`;
+      const description = `Group consumption of ${mealName} at ${formatArgentinaDateTime(mealData.date)}`;
 
       const response = await fetch(`${API_BASE_URL}/consumptions/group`, {
         method: 'POST',

@@ -7,6 +7,7 @@ import { Vote, Clock, Users, Play, Sparkles } from 'lucide-react';
 import { useUser } from '@/lib/contexts/UserContext';
 import { useGlobalNotification } from '@/lib/contexts/NotificationContext';
 import { VotingService } from './VotingService';
+import { formatArgentinaDate } from '@/lib/utils/timezone';
 import type { Group } from '../groups/index';
 import type { VotingSession } from './types';
 
@@ -41,7 +42,7 @@ export function StartVotingButton({
       const createdSession = await VotingService.startVotingSession({
         initiatorId: userId,
         groupId: group.GroupID,
-        title: `Meal Vote · ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+        title: `Meal Vote · ${formatArgentinaDate(new Date(), 'en-US', { month: 'short', day: 'numeric' })}`,
         description: `Group meal voting session for ${group.name}`,
       });
 

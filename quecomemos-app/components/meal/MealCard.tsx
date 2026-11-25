@@ -98,7 +98,7 @@ export function MealCard({
         <div className="flex items-center gap-4 text-xs text-gray-400 mb-3 flex-wrap">
           <div className="flex items-center">
             <Clock className="h-3 w-3 mr-1" />
-            <span>{new Date(meal.createdAt).toLocaleDateString()}</span>
+            <span>{new Date(meal.createdAt).toLocaleDateString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' })}</span>
           </div>
           <div className="flex items-center">
             <ChefHat className="h-3 w-3 mr-1" />
