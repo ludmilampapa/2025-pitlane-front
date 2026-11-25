@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { API_BASE_URL } from '@/lib/config/api';
+import { formatLocalYMD } from '@/lib/hooks/useWeeklyMenu';
 import { useUser } from '@/lib/contexts/UserContext';
 import type { Challenge, ChallengeProgress, ChallengeRankingRow, GroupData } from '@/lib/types/groupChallenges';
 
@@ -47,10 +48,16 @@ export default function GroupChallengesPage() {
       setGroup(groupData);
       setChallenges(challengeData);
 
+      const todayLocal = formatLocalYMD(new Date());
       for (const challenge of challengeData as Challenge[]) {
         const [progressRes, rankingRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/challenges/${challenge.ChallengeID}/progress/${profileId}`),
-          fetch(`${API_BASE_URL}/challenges/${challenge.ChallengeID}/ranking/${profileId}`),
+          fetch(
+            `${API_BASE_URL}/challenges/${challenge.ChallengeID}/progress/${profileId}?date=${encodeURIComponent(todayLocal)}`,
+            { cache: 'no-store' }
+          ),
+          fetch(`${API_BASE_URL}/challenges/${challenge.ChallengeID}/ranking/${profileId}`, {
+            cache: 'no-store',
+          }),
         ]);
         if (progressRes.ok) {
           const data = await progressRes.json();
@@ -89,8 +96,8 @@ export default function GroupChallengesPage() {
   };
 
   const toggleToday = async (challenge: Challenge) => {
-    if (!profileId) return;
-    const today = new Date().toISOString().slice(0, 10);
+    if (!profileId || progress[challenge.ChallengeID]?.todayCompleted) return;
+    const today = formatLocalYMD(new Date());
     // The server stores a date-specific completion; this simple toggle is a daily action.
     try {
       const response = await fetch(`${API_BASE_URL}/challenges/${challenge.ChallengeID}/completions`, {
@@ -151,7 +158,17 @@ export default function GroupChallengesPage() {
               <div className="flex items-center gap-2 text-sm"><CalendarDays className="w-4 h-4" /> {new Date(challenge.startDate).toLocaleDateString()} - {new Date(challenge.endDate).toLocaleDateString()}</div>
               <div className="h-3 bg-[#EFE7DB] rounded overflow-hidden"><div className="h-full bg-primary" style={{ width: `${userProgress?.percentage || 0}%` }} /></div>
               <p className="text-sm">You completed <strong>{userProgress?.completedDays || 0}</strong> of <strong>{userProgress?.totalDays || 0}</strong> days.</p>
-              <Button onClick={() => toggleToday(challenge)} className="bg-[#C85A32] text-white hover:bg-[#B84F2B]"><Check className="w-4 h-4 mr-2" />Mark today</Button>
+              {userProgress?.todayCompleted ? (
+                <Button disabled className="bg-primary/15 text-primary hover:bg-primary/15">
+                  <Check className="w-4 h-4 mr-2" />
+                  Completed today
+                </Button>
+              ) : (
+                <Button onClick={() => toggleToday(challenge)} className="bg-secondary text-secondary-foreground hover:bg-secondary/90">
+                  <Check className="w-4 h-4 mr-2" />
+                  Mark today
+                </Button>
+              )}
 
               <div>
                 <h3 className="font-semibold mb-2">Ranking</h3>

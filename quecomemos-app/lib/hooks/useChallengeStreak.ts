@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { API_BASE_URL } from '@/lib/config/api';
+import { formatLocalYMD } from '@/lib/hooks/useWeeklyMenu';
 import type { Challenge, ChallengeProgress, ChallengeRankingRow } from '@/lib/types/groupChallenges';
 
 interface UseChallengeStreakResult {
@@ -23,9 +24,15 @@ export function useChallengeStreak(
     if (!challenge || !profileId) return;
     setLoading(true);
     try {
+      const todayLocal = formatLocalYMD(new Date());
       const [progressResponse, rankingResponse] = await Promise.all([
-        fetch(`${API_BASE_URL}/challenges/${challenge.ChallengeID}/progress/${profileId}`),
-        fetch(`${API_BASE_URL}/challenges/${challenge.ChallengeID}/ranking/${profileId}`),
+        fetch(
+          `${API_BASE_URL}/challenges/${challenge.ChallengeID}/progress/${profileId}?date=${encodeURIComponent(todayLocal)}`,
+          { cache: 'no-store' }
+        ),
+        fetch(`${API_BASE_URL}/challenges/${challenge.ChallengeID}/ranking/${profileId}`, {
+          cache: 'no-store',
+        }),
       ]);
       if (!progressResponse.ok || !rankingResponse.ok) throw new Error('Failed to refresh challenge');
       setProgress(await progressResponse.json() as ChallengeProgress);
@@ -39,7 +46,7 @@ export function useChallengeStreak(
     if (!challenge || !profileId || progress?.todayCompleted) return;
 
     const previous = progress;
-    const optimisticToday = new Date().toISOString().slice(0, 10);
+    const optimisticToday = formatLocalYMD(new Date());
     setProgress(previous ? {
       ...previous,
       todayCompleted: true,

@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { API_BASE_URL } from '@/lib/config/api';
+import { addDaysYMD, formatLocalYMD, getMondayYMD } from '@/lib/hooks/useWeeklyMenu';
 import { useUserBadges } from '@/lib/hooks/useUserBadges';
 import { usePrimaryBadge } from '@/lib/hooks/usePrimaryBadge';
 import { useCalorieProgress } from '@/lib/hooks/useKcalProgress';
@@ -55,16 +56,12 @@ const LEVEL_TITLES = [
 ];
 
 function getWeekDays(): Array<{ iso: string; label: string; isToday: boolean }> {
-  const now = new Date();
-  const todayIso = now.toISOString().slice(0, 10);
-  const utcDay = now.getUTCDay(); // 0 = Sun, 1 = Mon
-  const mondayOffset = utcDay === 0 ? -6 : 1 - utcDay;
-  const monday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + mondayOffset));
+  const todayIso = formatLocalYMD(new Date());
+  const mondayIso = getMondayYMD(new Date());
   const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   return labels.map((label, idx) => {
-    const d = new Date(monday.getTime() + idx * 86400000);
-    const iso = d.toISOString().slice(0, 10);
+    const iso = addDaysYMD(mondayIso, idx);
     return { iso, label, isToday: iso === todayIso };
   });
 }
@@ -107,13 +104,15 @@ export function GamificationHub({
         return;
       }
 
-      const todayIso = new Date().toISOString().slice(0, 10);
+      const todayIso = formatLocalYMD(new Date());
       const collected: ActiveChallengeItem[] = [];
 
       await Promise.all(
         groups.slice(0, 5).map(async (group) => {
           try {
-            const chRes = await fetch(`${API_BASE_URL}/groups/${group.GroupID}/challenges`);
+            const chRes = await fetch(`${API_BASE_URL}/groups/${group.GroupID}/challenges`, {
+              cache: 'no-store',
+            });
             if (!chRes.ok) return;
             const challenges: Challenge[] = await chRes.json();
             if (!Array.isArray(challenges) || challenges.length === 0) return;
@@ -130,8 +129,13 @@ export function GamificationHub({
             if (!running) return;
 
             const [progRes, rankRes] = await Promise.all([
-              fetch(`${API_BASE_URL}/challenges/${running.ChallengeID}/progress/${profileId}`),
-              fetch(`${API_BASE_URL}/challenges/${running.ChallengeID}/ranking/${profileId}`),
+              fetch(
+                `${API_BASE_URL}/challenges/${running.ChallengeID}/progress/${profileId}?date=${encodeURIComponent(todayIso)}`,
+                { cache: 'no-store' }
+              ),
+              fetch(`${API_BASE_URL}/challenges/${running.ChallengeID}/ranking/${profileId}`, {
+                cache: 'no-store',
+              }),
             ]);
 
             const prog: ChallengeProgress | null = progRes.ok ? await progRes.json() : null;
@@ -168,7 +172,7 @@ export function GamificationHub({
 
   const handleCheckInToday = async () => {
     if (!currentItem || currentItem.progress?.todayCompleted || markingToday) return;
-    const todayIso = new Date().toISOString().slice(0, 10);
+    const todayIso = formatLocalYMD(new Date());
     setMarkingToday(true);
     try {
       const response = await fetch(
