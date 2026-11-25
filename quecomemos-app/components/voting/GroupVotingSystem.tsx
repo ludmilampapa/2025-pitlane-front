@@ -19,6 +19,7 @@ import {
   VotingResultsModal,
 } from '@/components/voting';
 import type { Group } from '@/components/groups/index';
+import type { VotingSession } from './types';
 
 export type VotingMode = 'classic' | 'roulette';
 
@@ -50,8 +51,8 @@ export function GroupVotingSystem({
   const userId = userData?.profile?.id;
   const isGroupMember = group.members?.some((member) => member.profile.id === userId) || false;
 
-  const handleVotingStarted = () => {
-    startSession();
+  const handleVotingStarted = (createdSession?: VotingSession) => {
+    void startSession(createdSession);
   };
 
   const handleCloseResults = () => {

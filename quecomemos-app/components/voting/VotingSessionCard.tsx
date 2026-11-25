@@ -58,6 +58,8 @@ export function VotingSessionCard({
   const {
     setShowResultsModal,
     refreshSession,
+    setSessionDirectly,
+    clearSession,
     notifyVotingCompleted,
     updateSessionOptimistically,
     isOffline,
@@ -229,17 +231,18 @@ export function VotingSessionCard({
       if (hadZeroProposals) {
         await ensureRandomPoolIfEmpty();
       }
-      await VotingService.startVotingPhase(updatedSession.VotingSessionID);
-      await refreshSession();
+      const nextSession = await VotingService.startVotingPhase(updatedSession.VotingSessionID);
+      if (nextSession && nextSession.VotingSessionID) {
+        setSessionDirectly(nextSession);
+      } else {
+        await refreshSession();
+      }
       showSuccess(
         hadZeroProposals ? 'Random Pool Loaded!' : 'Pool Locked In!',
         hadZeroProposals
           ? 'Random compatible dishes are ready — pick Classic List or Meal Roulette!'
           : 'Choose Classic List or Meal Roulette to cast your votes!'
       );
-      if (!isOffline) {
-        setTimeout(() => refreshSession(), 1500);
-      }
     } catch (error) {
       showError(
         'Error Starting Arena',
@@ -291,8 +294,17 @@ export function VotingSessionCard({
         }
       }
 
+      // Update UI immediately to Winner Podium without wiping the completed session
+      setSessionDirectly({
+        ...updatedSession,
+        status: 'completed',
+        completedAt: new Date().toISOString(),
+        winnerMealId: result.session?.winnerMealId ?? result.winnerProposal?.mealId,
+        winnerMeal: result.session?.winnerMeal ?? result.winnerProposal?.meal,
+        totalVotes: result.totalVotes ?? updatedSession.totalVotes,
+      });
+
       setShowResultsModal(true);
-      await refreshSession();
       onVotingComplete?.();
       notifyVotingCompleted(updatedSession.VotingSessionID);
     } catch (error) {
@@ -424,10 +436,20 @@ export function VotingSessionCard({
     }
 
     try {
-      await VotingService.proposeMeal(updatedSession.VotingSessionID, {
+      const createdProposal = await VotingService.proposeMeal(updatedSession.VotingSessionID, {
         mealId,
         proposedById: userId,
       });
+      if (createdProposal) {
+        const normalizedProposal: MealProposal = {
+          ...createdProposal,
+          voteCount: createdProposal.voteCount ?? 0,
+          votes: createdProposal.votes ?? [],
+        };
+        updateSessionOptimistically({
+          proposals: [...(updatedSession.proposals || []), normalizedProposal],
+        });
+      }
       showSuccess('Dish Added to Pool!', 'Your dish is now in the game pool.');
       setShowProposeMeal(false);
       await refreshSession();
@@ -461,12 +483,13 @@ export function VotingSessionCard({
 
       if (result.votingStarted) {
         setArenaMode('chooser');
-        setTimeout(() => {
-          showSuccess('Round 2 Unlocked!', 'Choose Classic List or Meal Roulette to play!');
-        }, 600);
+        if (result.transitionResult) {
+          setSessionDirectly(result.transitionResult);
+        }
+        showSuccess('Round 2 Unlocked!', 'Choose Classic List or Meal Roulette to play!');
+      } else {
+        await refreshSession();
       }
-
-      await refreshSession();
     } catch (error) {
       showError(
         'Error Confirming Readiness',
@@ -1044,15 +1067,24 @@ export function VotingSessionCard({
                         </h4>
                       </div>
                     </div>
-                    <Button
-                      onClick={() => setShowResultsModal(true)}
-                      size="sm"
-                      variant="outline"
-                      className="rounded-xl border-amber-600/40 bg-card text-foreground hover:bg-muted"
-                    >
-                      <Sparkles className="mr-1.5 h-3.5 w-3.5 text-amber-600" />
-                      Full Podium
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        onClick={() => setShowResultsModal(true)}
+                        size="sm"
+                        variant="outline"
+                        className="rounded-xl border-amber-600/40 bg-card text-foreground hover:bg-muted"
+                      >
+                        <Sparkles className="mr-1.5 h-3.5 w-3.5 text-amber-600" />
+                        Full Podium
+                      </Button>
+                      <Button
+                        onClick={clearSession}
+                        size="sm"
+                        className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90"
+                      >
+                        New Game
+                      </Button>
+                    </div>
                   </div>
                   {updatedSession.winnerMeal.description && (
                     <p className="mt-2 text-sm text-muted-foreground">

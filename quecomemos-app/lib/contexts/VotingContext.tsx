@@ -10,7 +10,8 @@ interface VotingContextType {
   error: string | null;
 
   refreshSession: () => Promise<void>;
-  startSession: () => Promise<void>;
+  startSession: (createdSession?: VotingSession) => Promise<void>;
+  setSessionDirectly: (session: VotingSession | null) => void;
   clearSession: () => void;
 
   showResultsModal: boolean;
@@ -187,10 +188,29 @@ export function VotingProvider({ children, groupId }: VotingProviderProps) {
     await fetchActiveSession(true);
   }, [fetchActiveSession, groupId]);
 
-  const startSession = useCallback(async () => {
-    if (typeof groupId !== 'number' || Number.isNaN(groupId)) return;
-    await fetchActiveSession(true);
-  }, [fetchActiveSession, groupId]);
+  const setSessionDirectly = useCallback((session: VotingSession | null) => {
+    setActiveSession(session);
+    setLastSyncTime(new Date());
+    setIsOffline(false);
+    setError(null);
+    setLoading(false);
+  }, []);
+
+  const startSession = useCallback(
+    async (createdSession?: VotingSession) => {
+      if (createdSession) {
+        setSessionDirectly(createdSession);
+        // Background silent sync to ensure full relation parity
+        if (typeof groupId === 'number' && !Number.isNaN(groupId)) {
+          void fetchActiveSession(false);
+        }
+        return;
+      }
+      if (typeof groupId !== 'number' || Number.isNaN(groupId)) return;
+      await fetchActiveSession(false);
+    },
+    [fetchActiveSession, groupId, setSessionDirectly]
+  );
 
   const clearSession = useCallback(() => {
     setActiveSession(null);
@@ -239,6 +259,8 @@ export function VotingProvider({ children, groupId }: VotingProviderProps) {
           setIsOffline(false);
 
           setActiveSession((prev) => {
+            // Keep completed session visible on screen until the user clears/starts a new game
+            if (prev?.status === 'completed' && !next) return prev;
             if (!hasSessionChanged(prev, next)) return prev;
             if (prev && next && prev.status !== 'completed' && next.status === 'completed') {
               setShowResultsModal(true);
@@ -248,7 +270,7 @@ export function VotingProvider({ children, groupId }: VotingProviderProps) {
         } catch (err) {
           console.error('[VotingContext] polling error:', err);
         }
-      }, 6000);
+      }, 3000);
     }
 
     return () => {
@@ -264,6 +286,7 @@ export function VotingProvider({ children, groupId }: VotingProviderProps) {
     error,
     refreshSession,
     startSession,
+    setSessionDirectly,
     clearSession,
     showResultsModal,
     setShowResultsModal,

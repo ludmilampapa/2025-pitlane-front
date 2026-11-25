@@ -68,7 +68,7 @@ export function GroupSwipeMatch({
   embedded = false,
 }: GroupSwipeMatchProps) {
   const { userData } = useUser();
-  const { refreshSession } = useVoting();
+  const { refreshSession, updateSessionOptimistically } = useVoting();
   const profileId = userData?.profile?.id;
   const userPreferenceIds = useMemo(
     () => new Set(userData?.preferences?.preferences || []),
@@ -297,12 +297,24 @@ export function GroupSwipeMatch({
     setSwipeExit('right');
 
     try {
-      await VotingService.proposeMeal(session.VotingSessionID, {
+      const createdProposal = await VotingService.proposeMeal(session.VotingSessionID, {
         mealId: currentMeal.MealID,
         proposedById: profileId,
       });
+      if (createdProposal) {
+        updateSessionOptimistically({
+          proposals: [
+            ...(session.proposals || []),
+            {
+              ...createdProposal,
+              voteCount: createdProposal.voteCount ?? 0,
+              votes: createdProposal.votes ?? [],
+            },
+          ],
+        });
+      }
       toast.success(`Added "${currentMeal.name}" to the pool!`);
-      await refreshSession();
+      void refreshSession();
       if (availableToSwipe.length <= 1) {
         onFinished?.();
       }

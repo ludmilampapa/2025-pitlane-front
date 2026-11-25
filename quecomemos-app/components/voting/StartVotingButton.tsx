@@ -8,10 +8,11 @@ import { useUser } from '@/lib/contexts/UserContext';
 import { useGlobalNotification } from '@/lib/contexts/NotificationContext';
 import { VotingService } from './VotingService';
 import type { Group } from '../groups/index';
+import type { VotingSession } from './types';
 
 interface StartVotingButtonProps {
   group: Group;
-  onVotingStarted?: () => void;
+  onVotingStarted?: (session?: VotingSession) => void;
   disabled?: boolean;
   className?: string;
 }
@@ -37,7 +38,7 @@ export function StartVotingButton({
 
     setLoading(true);
     try {
-      await VotingService.startVotingSession({
+      const createdSession = await VotingService.startVotingSession({
         initiatorId: userId,
         groupId: group.GroupID,
         title: `Meal Vote · ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
@@ -49,7 +50,7 @@ export function StartVotingButton({
         'Members can now propose meals for the next 5 minutes.'
       );
 
-      onVotingStarted?.();
+      onVotingStarted?.(createdSession);
     } catch (error) {
       showError(
         'Failed to Start Voting',

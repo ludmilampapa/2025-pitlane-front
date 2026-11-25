@@ -36,7 +36,9 @@ export class VotingService {
    * Get voting session details
    */
   static async getVotingSession(sessionId: number): Promise<VotingSession> {
-    const response = await fetch(`${VOTING_BASE_URL}/sessions/${sessionId}`);
+    const response = await fetch(`${VOTING_BASE_URL}/sessions/${sessionId}?_t=${Date.now()}`, {
+      cache: 'no-store',
+    });
 
     if (!response.ok) {
       const errorData = await response.json();
@@ -51,18 +53,19 @@ export class VotingService {
    */
   static async getActiveVotingSessions(groupId: number): Promise<VotingSession[]> {
     try {
-      // Add timeout and retry logic for production environment
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
-      
-      console.debug('[VotingService] getActiveVotingSessions: calling', `${VOTING_BASE_URL}/groups/${groupId}/active`);
-      
-      const response = await fetch(`${VOTING_BASE_URL}/groups/${groupId}/active`, {
-        signal: controller.signal,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+      const response = await fetch(
+        `${VOTING_BASE_URL}/groups/${groupId}/active?_t=${Date.now()}`,
+        {
+          signal: controller.signal,
+          cache: 'no-store',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
       
       clearTimeout(timeoutId);
 
@@ -367,7 +370,8 @@ export class VotingService {
   static async getGroupVotingHistory(groupId: number, limit = 10, offset = 0) {
     try {
       const response = await fetch(
-        `${VOTING_BASE_URL}/history/groups/${groupId}?limit=${limit}&offset=${offset}`
+        `${VOTING_BASE_URL}/history/groups/${groupId}?limit=${limit}&offset=${offset}&_t=${Date.now()}`,
+        { cache: 'no-store' }
       );
 
       if (!response.ok) {
