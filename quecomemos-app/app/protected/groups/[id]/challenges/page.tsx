@@ -44,6 +44,8 @@ export default function GroupChallengesPage() {
   const [pausedInput, setPausedInput] = useState('');
   const [catalogFoods, setCatalogFoods] = useState<Array<{ FoodID: number; name: string }>>([]);
   const [showCreateFoodModal, setShowCreateFoodModal] = useState(false);
+  const [submittingChallenge, setSubmittingChallenge] = useState(false);
+  const [markingChallengeId, setMarkingChallengeId] = useState<number | null>(null);
 
   const isAdmin = Boolean(group && profileId && (
     group.createdBy === profileId ||
@@ -172,6 +174,8 @@ export default function GroupChallengesPage() {
       return;
     }
 
+    if (submittingChallenge) return;
+    setSubmittingChallenge(true);
     try {
       await GroupChallengesService.createChallenge(groupId, {
         ...form,
@@ -186,18 +190,22 @@ export default function GroupChallengesPage() {
       await fetchData();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setSubmittingChallenge(false);
     }
   };
 
   const toggleToday = async (challenge: Challenge) => {
-    if (!profileId || progress[challenge.ChallengeID]?.todayCompleted) return;
+    if (!profileId || progress[challenge.ChallengeID]?.todayCompleted || markingChallengeId !== null) return;
     const today = formatLocalYMD(new Date());
-    // The server stores a date-specific completion; this simple toggle is a daily action.
+    setMarkingChallengeId(challenge.ChallengeID);
     try {
       await GroupChallengesService.markCompletion(challenge.ChallengeID, profileId, today, true);
       await fetchData();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setMarkingChallengeId(null);
     }
   };
 
@@ -343,7 +351,7 @@ export default function GroupChallengesPage() {
                   </div>
                 </div>
               </div>
-              <div className="md:col-span-2 flex justify-end"><Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90">Create</Button></div>
+              <div className="md:col-span-2 flex justify-end"><Button type="submit" disabled={submittingChallenge} className="bg-primary text-primary-foreground hover:bg-primary/90">{submittingChallenge ? 'Creating...' : 'Create'}</Button></div>
             </form>
           </CardContent>
         </Card>
@@ -384,6 +392,7 @@ export default function GroupChallengesPage() {
                 isAutoTracked={isAutoTrackedChallenge(challenge)}
                 todayCompleted={Boolean(userProgress?.todayCompleted)}
                 onCheckIn={() => toggleToday(challenge)}
+                loading={markingChallengeId === challenge.ChallengeID}
                 actionLabel="Mark today"
                 autoHint="Not completed today · Log a meal without paused foods"
               />

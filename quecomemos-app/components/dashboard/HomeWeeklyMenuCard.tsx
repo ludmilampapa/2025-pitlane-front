@@ -17,7 +17,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { addDaysYMD, formatLocalYMD, getMondayYMD, useWeeklyMenu } from '@/lib/hooks/useWeeklyMenu';
 import { formatYMDDisplay } from '@/lib/utils/timezone';
-import { DAY_LABELS, getEntryCalories, indexEntriesBySlot } from '@/lib/utils/weeklyMenu';
+import { DAY_LABELS, formatWeekRangeLabel, getEntryCalories, indexEntriesBySlot } from '@/lib/utils/weeklyMenu';
 import type { DashboardGroup } from '@/components/groups/DashboardGroupsSection';
 
 interface HomeWeeklyMenuCardProps {
@@ -77,12 +77,8 @@ export function HomeWeeklyMenuCard({
 
   const entryMap = useMemo(() => indexEntriesBySlot(menu.entries), [menu.entries]);
 
-  const weekRangeLabel = useMemo(() => {
-    const endYMD = addDaysYMD(menu.weekStart, 6);
-    const startLabel = formatYMDDisplay(menu.weekStart, 'en-US', { month: 'short', day: 'numeric' });
-    const endLabel = formatYMDDisplay(endYMD, 'en-US', { month: 'short', day: 'numeric' });
-    return `${startLabel} – ${endLabel}`;
-  }, [menu.weekStart]);
+  const weekRangeLabel = useMemo(() => formatWeekRangeLabel(menu.weekStart), [menu.weekStart]);
+  const isCurrentWeek = menu.weekStart === currentMondayYMD;
 
   const selectedDayDisplay = useMemo(
     () =>
@@ -126,9 +122,10 @@ export function HomeWeeklyMenuCard({
                     menu.setWeekStart(currentMondayYMD);
                     setSelectedDayYMD(todayYMD);
                   }}
+                  title={isCurrentWeek ? 'Current week' : 'Return to this week'}
                   className="px-2 py-0.5 text-[11px] font-semibold text-foreground hover:text-primary"
                 >
-                  Today
+                  {isCurrentWeek ? 'This Week' : weekRangeLabel}
                 </button>
                 <button
                   type="button"
@@ -157,11 +154,10 @@ export function HomeWeeklyMenuCard({
                 key={g.GroupID}
                 type="button"
                 onClick={() => setSelectedGroupId(g.GroupID)}
-                className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
-                  g.GroupID === activeGroupId
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground hover:text-foreground'
-                }`}
+                className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${g.GroupID === activeGroupId
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:text-foreground'
+                  }`}
               >
                 {g.name}
               </button>
@@ -201,13 +197,12 @@ export function HomeWeeklyMenuCard({
                     key={day.ymd}
                     type="button"
                     onClick={() => setSelectedDayYMD(day.ymd)}
-                    className={`flex flex-col items-center gap-1 rounded-lg py-1.5 text-center transition-all ${
-                      isSelected
-                        ? 'bg-primary text-primary-foreground shadow-sm'
-                        : day.isToday
-                          ? 'bg-secondary/15 text-foreground ring-1 ring-secondary/40'
-                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                    }`}
+                    className={`flex flex-col items-center gap-1 rounded-lg py-1.5 text-center transition-all ${isSelected
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : day.isToday
+                        ? 'bg-secondary/15 text-foreground ring-1 ring-secondary/40'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                      }`}
                   >
                     <span className="text-[10px] font-bold uppercase">{day.label}</span>
                     <span className="text-xs font-bold">{day.dayNum}</span>
@@ -215,15 +210,14 @@ export function HomeWeeklyMenuCard({
                       {[0, 1, 2].map((dot) => (
                         <span
                           key={dot}
-                          className={`h-1 w-1 rounded-full ${
-                            dot < count
-                              ? isSelected
-                                ? 'bg-primary-foreground'
-                                : 'bg-primary'
-                              : isSelected
-                                ? 'bg-primary-foreground/25'
-                                : 'bg-border'
-                          }`}
+                          className={`h-1 w-1 rounded-full ${dot < count
+                            ? isSelected
+                              ? 'bg-primary-foreground'
+                              : 'bg-primary'
+                            : isSelected
+                              ? 'bg-primary-foreground/25'
+                              : 'bg-border'
+                            }`}
                         />
                       ))}
                     </div>
@@ -267,9 +261,8 @@ export function HomeWeeklyMenuCard({
                               {label}
                             </p>
                             <p
-                              className={`truncate text-sm font-semibold ${
-                                dishName ? 'text-foreground' : 'text-muted-foreground/70 italic'
-                              }`}
+                              className={`truncate text-sm font-semibold ${dishName ? 'text-foreground' : 'text-muted-foreground/70 italic'
+                                }`}
                             >
                               {dishName || 'Not planned yet'}
                             </p>
@@ -299,20 +292,6 @@ export function HomeWeeklyMenuCard({
           </>
         )}
       </div>
-
-      {activeGroupId && (
-        <div className="mt-4 flex items-center justify-between border-t border-border pt-3 text-xs text-muted-foreground">
-          <span>
-            {menu.entries.length} {menu.entries.length === 1 ? 'meal' : 'meals'} planned this week
-          </span>
-          <Link
-            href={`/protected/groups/${activeGroupId}/menu`}
-            className="font-semibold text-primary hover:underline"
-          >
-            Edit weekly menu →
-          </Link>
-        </div>
-      )}
     </section>
   );
 }

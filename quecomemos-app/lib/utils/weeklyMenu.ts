@@ -1,6 +1,17 @@
 import type { WeeklyMenuEntry } from '@/lib/types/groupChallenges';
+import { addDaysYMD, formatYMDDisplay } from '@/lib/utils/timezone';
 
 export const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
+
+/**
+ * Formats a Monday-to-Sunday date range label (e.g. "Nov 23 – Nov 29" or "Nov 23 – Nov 29, 2026").
+ */
+export function formatWeekRangeLabel(weekStartYMD: string, includeYear = false): string {
+  const endYMD = addDaysYMD(weekStartYMD, 6);
+  const startLabel = formatYMDDisplay(weekStartYMD, 'en-US', { month: 'short', day: 'numeric' });
+  const endLabel = formatYMDDisplay(endYMD, 'en-US', { month: 'short', day: 'numeric' });
+  return includeYear ? `${startLabel} – ${endLabel}, ${endYMD.slice(0, 4)}` : `${startLabel} – ${endLabel}`;
+}
 
 /**
  * Computes total rounded calories for any meal-like object with mealFoods.

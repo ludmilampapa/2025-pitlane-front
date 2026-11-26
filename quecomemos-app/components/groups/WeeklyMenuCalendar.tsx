@@ -29,6 +29,7 @@ import { addDaysYMD, formatLocalYMD, getMondayYMD } from '@/lib/hooks/useWeeklyM
 import { formatYMDDisplay } from '@/lib/utils/timezone';
 import {
   DAY_LABELS,
+  formatWeekRangeLabel,
   getEntryCalories,
   getMealCalories,
   indexEntriesBySlot,
@@ -98,11 +99,7 @@ interface SelectedSlot {
 }
 
 function formatWeekRange(weekStartYMD: string): string {
-  const endYMD = addDaysYMD(weekStartYMD, 6);
-  const startLabel = formatYMDDisplay(weekStartYMD, 'en-US', { month: 'short', day: 'numeric' });
-  const endLabel = formatYMDDisplay(endYMD, 'en-US', { month: 'short', day: 'numeric' });
-  const endYear = endYMD.slice(0, 4);
-  return `${startLabel} – ${endLabel}, ${endYear}`;
+  return formatWeekRangeLabel(weekStartYMD, true);
 }
 
 export function WeeklyMenuCalendar({
@@ -461,9 +458,10 @@ export function WeeklyMenuCalendar({
                 <button
                   type="button"
                   onClick={() => onChangeWeek(currentMondayYMD)}
+                  title={weekStart === currentMondayYMD ? 'Current week' : 'Return to this week'}
                   className="px-2.5 py-1 text-xs font-semibold text-foreground hover:text-primary"
                 >
-                  This Week
+                  {weekStart === currentMondayYMD ? 'This Week' : formatWeekRangeLabel(weekStart)}
                 </button>
                 <Button
                   type="button"
@@ -731,10 +729,11 @@ export function WeeklyMenuCalendar({
                                     {mode === 'manage' && isAdmin && entry && (
                                       <button
                                         type="button"
+                                        disabled={isCellSaving}
                                         onClick={(e) => void quickClearCell(e, entry, cellKey)}
                                         title="Remove from slot"
                                         aria-label="Remove from slot"
-                                        className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/15 hover:text-destructive group-hover:opacity-100"
+                                        className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/15 hover:text-destructive disabled:opacity-40 group-hover:opacity-100"
                                       >
                                         <X className="h-3 w-3" />
                                       </button>
@@ -773,7 +772,7 @@ export function WeeklyMenuCalendar({
                                     Add
                                   </span>
                                 ) : (
-                                  <span className="text-[11px] text-muted-foreground/55">—</span>
+                                  <span className="text-[11px] text-muted-foreground">—</span>
                                 )}
                               </div>
                             )}
