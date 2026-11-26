@@ -10,7 +10,6 @@ import {
   Flame,
   MessageSquare,
   Moon,
-  Pencil,
   Plus,
   Settings2,
   Sun,
@@ -136,6 +135,13 @@ export function WeeklyMenuCalendar({
   const [slotCustomMeal, setSlotCustomMeal] = useState<string>('');
   const [mealFilter, setMealFilter] = useState<string>('');
 
+  // Visual interactive board state (drag & drop + 1-click paint)
+  const [paletteQuery, setPaletteQuery] = useState<string>('');
+  const [armedMeal, setArmedMeal] = useState<Meal | null>(null);
+  const [draggedMeal, setDraggedMeal] = useState<Meal | null>(null);
+  const [dragOverCell, setDragOverCell] = useState<string | null>(null);
+  const [savingCell, setSavingCell] = useState<string | null>(null);
+
   // Member proposal form state
   const [showProposalBox, setShowProposalBox] = useState(false);
   const [proposedMealId, setProposedMealId] = useState<string>('');
@@ -212,6 +218,82 @@ export function WeeklyMenuCalendar({
     setProposedMealId('');
     setAlternativeText('');
     setProposalReason('');
+  };
+
+  const paletteMeals = useMemo(() => {
+    const q = paletteQuery.trim().toLowerCase();
+    const list = q
+      ? meals.filter(
+          (m) =>
+            m.name.toLowerCase().includes(q) ||
+            (m.description || '').toLowerCase().includes(q)
+        )
+      : meals;
+    return list.slice(0, 20);
+  }, [meals, paletteQuery]);
+
+  const getMealCalories = (meal: Meal): number => {
+    if (!meal.mealFoods?.length) return 0;
+    return Math.round(
+      meal.mealFoods.reduce((sum, mf) => sum + (mf.quantity || 1) * (mf.food?.kCal || 0), 0)
+    );
+  };
+
+  const quickAssignMeal = async (
+    day: (typeof weekDays)[number],
+    momentMeta: (typeof CALENDAR_MOMENTS)[number],
+    meal: Meal
+  ) => {
+    if (!isAdmin || mode !== 'manage') return;
+    const cellKey = `${day.dateKey}_${momentMeta.key}`;
+    setSavingCell(cellKey);
+    try {
+      const response = await fetch(`${API_BASE_URL}/groups/${groupId}/menu`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          profileId,
+          date: day.dateKey,
+          moment: momentMeta.key,
+          mealId: meal.MealID,
+          customMeal: null,
+        }),
+      });
+      if (!response.ok) {
+        const data = (await response.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error || 'Could not assign meal');
+      }
+      toast.success(`${meal.name} set for ${day.shortName} ${momentMeta.label}`);
+      await onRefresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not assign meal');
+    } finally {
+      setSavingCell(null);
+    }
+  };
+
+  const quickClearCell = async (
+    e: React.MouseEvent,
+    entry: WeeklyMenuEntry,
+    cellKey: string
+  ) => {
+    e.stopPropagation();
+    setSavingCell(cellKey);
+    try {
+      const response = await fetch(`${API_BASE_URL}/menu/${entry.MenuEntryID}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        const data = (await response.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error || 'Could not clear slot');
+      }
+      toast.success('Slot cleared');
+      await onRefresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not clear slot');
+    } finally {
+      setSavingCell(null);
+    }
   };
 
   const closeSlotModal = () => {
@@ -453,6 +535,93 @@ export function WeeklyMenuCalendar({
         </CardHeader>
 
         <CardContent className="p-0">
+          {/* Interactive Visual Meal Palette for Drag & Drop / 1-Click Placement */}
+          {mode === 'manage' && isAdmin && meals.length > 0 && (
+            <div className="border-b border-border bg-muted/20 px-4 py-3.5 sm:px-5">
+              <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-primary">
+                    Visual Dish Dock
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    Drag a dish onto any day below, or click to select and tap slots.
+                  </span>
+                </div>
+                <Input
+                  value={paletteQuery}
+                  onChange={(e) => setPaletteQuery(e.target.value)}
+                  placeholder="Filter dishes..."
+                  className="h-8 w-full rounded-xl bg-card text-xs sm:w-52"
+                />
+              </div>
+
+              {armedMeal && (
+                <div className="mt-2.5 flex items-center justify-between gap-2 rounded-xl border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs">
+                  <span className="font-medium text-primary">
+                    Ready to place: <strong>{armedMeal.name}</strong> — click any day cell below
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setArmedMeal(null)}
+                    className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold text-primary hover:bg-primary/15"
+                  >
+                    <X className="h-3 w-3" />
+                    Done
+                  </button>
+                </div>
+              )}
+
+              <div className="mt-2.5 flex gap-2 overflow-x-auto pb-1">
+                {paletteMeals.map((meal) => {
+                  const kcal = getMealCalories(meal);
+                  const isArmed = armedMeal?.MealID === meal.MealID;
+                  return (
+                    <button
+                      key={meal.MealID}
+                      type="button"
+                      draggable
+                      onDragStart={() => {
+                        setDraggedMeal(meal);
+                        setArmedMeal(null);
+                      }}
+                      onDragEnd={() => {
+                        setDraggedMeal(null);
+                        setDragOverCell(null);
+                      }}
+                      onClick={() =>
+                        setArmedMeal((prev) => (prev?.MealID === meal.MealID ? null : meal))
+                      }
+                      className={`flex shrink-0 cursor-grab items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs transition-all active:cursor-grabbing ${
+                        isArmed
+                          ? 'border-primary bg-primary text-primary-foreground shadow-sm ring-2 ring-primary/30'
+                          : 'border-border bg-card text-foreground hover:border-primary/50 hover:bg-primary/5'
+                      }`}
+                    >
+                      <Utensils className="h-3.5 w-3.5 shrink-0 opacity-75" />
+                      <span className="max-w-[150px] truncate font-semibold">{meal.name}</span>
+                      {kcal > 0 && (
+                        <span
+                          className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${
+                            isArmed
+                              ? 'bg-primary-foreground/20 text-primary-foreground'
+                              : 'bg-primary/10 text-primary'
+                          }`}
+                        >
+                          {kcal} kcal
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+                {paletteMeals.length === 0 && (
+                  <p className="py-1.5 text-xs text-muted-foreground">
+                    No compatible dishes match &ldquo;{paletteQuery}&rdquo;.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
           {loading ? (
             <div className="grid grid-cols-7 gap-2 p-5">
               {DAY_LABELS.map((d) => (
@@ -529,33 +698,70 @@ export function WeeklyMenuCalendar({
 
                       {/* 7 Day Cells for this Meal Moment */}
                       {weekDays.map((day) => {
-                        const entry = entryMap.get(`${day.dateKey}_${momentMeta.key}`);
+                        const cellKey = `${day.dateKey}_${momentMeta.key}`;
+                        const entry = entryMap.get(cellKey);
                         const dishName = entry?.meal?.name || entry?.customMeal || null;
                         const kcal = getEntryCalories(entry);
                         const pendingCount =
                           entry?.proposals?.filter((p) => p.status === 'pending').length || 0;
                         const isInteractive =
                           mode === 'manage' && (isAdmin || Boolean(entry));
+                        const isDragOver = dragOverCell === cellKey;
+                        const isCellSaving = savingCell === cellKey;
 
                         return (
                           <div
-                            key={`${day.dateKey}_${momentMeta.key}`}
-                            onClick={() => openSlotModal(day, momentMeta)}
+                            key={cellKey}
+                            onClick={() => {
+                              if (mode === 'manage' && isAdmin && armedMeal) {
+                                void quickAssignMeal(day, momentMeta, armedMeal);
+                              } else {
+                                openSlotModal(day, momentMeta);
+                              }
+                            }}
+                            onDragOver={(e) => {
+                              if (mode === 'manage' && isAdmin && draggedMeal) {
+                                e.preventDefault();
+                                if (dragOverCell !== cellKey) setDragOverCell(cellKey);
+                              }
+                            }}
+                            onDragLeave={() => {
+                              if (dragOverCell === cellKey) setDragOverCell(null);
+                            }}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              setDragOverCell(null);
+                              if (mode === 'manage' && isAdmin && draggedMeal) {
+                                const mealToDrop = draggedMeal;
+                                setDraggedMeal(null);
+                                void quickAssignMeal(day, momentMeta, mealToDrop);
+                              }
+                            }}
                             role={isInteractive ? 'button' : undefined}
                             tabIndex={isInteractive ? 0 : undefined}
                             onKeyDown={(e) => {
                               if (isInteractive && (e.key === 'Enter' || e.key === ' ')) {
                                 e.preventDefault();
-                                openSlotModal(day, momentMeta);
+                                if (mode === 'manage' && isAdmin && armedMeal) {
+                                  void quickAssignMeal(day, momentMeta, armedMeal);
+                                } else {
+                                  openSlotModal(day, momentMeta);
+                                }
                               }
                             }}
-                            className={`group relative flex min-h-[102px] flex-col justify-between border-l border-border/70 p-2.5 transition-colors ${
-                              day.isToday ? 'bg-secondary/[0.04]' : 'bg-card'
+                            className={`group relative flex min-h-[102px] flex-col justify-between border-l border-border/70 p-2.5 transition-all ${
+                              isDragOver
+                                ? 'bg-primary/15 ring-2 ring-inset ring-primary'
+                                : day.isToday
+                                  ? 'bg-secondary/[0.04]'
+                                  : 'bg-card'
                             } ${
-                              isInteractive
-                                ? 'cursor-pointer hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40'
-                                : ''
-                            }`}
+                              armedMeal && mode === 'manage' && isAdmin
+                                ? 'cursor-crosshair hover:bg-primary/10 hover:ring-1 hover:ring-inset hover:ring-primary/50'
+                                : isInteractive
+                                  ? 'cursor-pointer hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40'
+                                  : ''
+                            } ${isCellSaving ? 'opacity-60' : ''}`}
                           >
                             {dishName ? (
                               <>
@@ -564,8 +770,16 @@ export function WeeklyMenuCalendar({
                                     <p className="line-clamp-2 text-xs font-semibold leading-snug text-foreground">
                                       {dishName}
                                     </p>
-                                    {mode === 'manage' && isAdmin && (
-                                      <Pencil className="h-3 w-3 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                                    {mode === 'manage' && isAdmin && entry && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => void quickClearCell(e, entry, cellKey)}
+                                        title="Remove from slot"
+                                        aria-label="Remove from slot"
+                                        className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/15 hover:text-destructive group-hover:opacity-100"
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </button>
                                     )}
                                   </div>
                                 </div>

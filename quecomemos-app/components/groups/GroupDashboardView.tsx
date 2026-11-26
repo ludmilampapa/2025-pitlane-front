@@ -12,6 +12,7 @@ import { WeeklyMenuCalendar } from '@/components/groups/WeeklyMenuCalendar';
 import { useChallengeStreak } from '@/lib/hooks/useChallengeStreak';
 import { useWeeklyMenu } from '@/lib/hooks/useWeeklyMenu';
 import type { Challenge, ChallengeRankingRow } from '@/lib/types/groupChallenges';
+import type { Meal } from '@/lib/contexts/MealsContext';
 
 interface GroupDashboardViewProps {
   groupId: number;
@@ -23,6 +24,7 @@ export function GroupDashboardView({ groupId, profileId, isAdmin }: GroupDashboa
   const router = useRouter();
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [ranking, setRanking] = useState<ChallengeRankingRow[]>([]);
+  const [meals, setMeals] = useState<Meal[]>([]);
   const [, setLoadingChallenges] = useState(true);
 
   const activeChallenge = challenges.find((challenge) => challenge.isActive) ?? null;
@@ -34,10 +36,17 @@ export function GroupDashboardView({ groupId, profileId, isAdmin }: GroupDashboa
     async function loadChallenges() {
       setLoadingChallenges(true);
       try {
-        const response = await fetch(`${API_BASE_URL}/groups/${groupId}/challenges`);
-        if (!response.ok) throw new Error('Failed to load challenges');
-        const data = (await response.json()) as Challenge[];
+        const [challengesRes, mealsRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/groups/${groupId}/challenges`),
+          fetch(`${API_BASE_URL}/meals/all`).catch(() => null),
+        ]);
+        if (!challengesRes.ok) throw new Error('Failed to load challenges');
+        const data = (await challengesRes.json()) as Challenge[];
         if (!cancelled) setChallenges(data);
+        if (mealsRes && mealsRes.ok) {
+          const mealsData = (await mealsRes.json()) as Meal[];
+          if (!cancelled && Array.isArray(mealsData)) setMeals(mealsData);
+        }
       } catch (error) {
         toast.error(error instanceof Error ? error.message : 'Could not load challenges');
       } finally {
@@ -123,16 +132,18 @@ export function GroupDashboardView({ groupId, profileId, isAdmin }: GroupDashboa
         </Card>
       </div>
 
-      {/* Read-Only Weekly Calendar Preview (Breakfast / Lunch / Dinner) + Single Link to Configure */}
+      {/* Interactive Visual Weekly Menu Board (Drag & Drop / 1-Click) */}
       <WeeklyMenuCalendar
         groupId={groupId}
         profileId={profileId}
         isAdmin={isAdmin}
         entries={menu.entries}
         weekStart={menu.weekStart}
+        onChangeWeek={menu.setWeekStart}
         onRefresh={menu.refresh}
+        meals={meals}
         loading={menu.loading}
-        mode="preview"
+        mode="manage"
         onOpenManagePage={() => router.push(`/protected/groups/${groupId}/menu`)}
       />
 
