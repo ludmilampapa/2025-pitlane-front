@@ -18,13 +18,23 @@ import {
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { API_BASE_URL } from '@/lib/config/api';
 import { addDaysYMD, formatLocalYMD, getMondayYMD } from '@/lib/hooks/useWeeklyMenu';
 import { useUserBadges } from '@/lib/hooks/useUserBadges';
 import { usePrimaryBadge } from '@/lib/hooks/usePrimaryBadge';
 import { useCalorieProgress } from '@/lib/hooks/useKcalProgress';
+import { useCalorieProgressRefresh } from '@/lib/contexts/CalorieProgressContext';
 import { PrimaryBadgeDisplay } from '@/components/profile/PrimaryBadgeDisplay';
 import { BadgeSelectionModal } from '@/components/profile/BadgeSelectionModal';
+import { ChallengeCheckInStatus } from '@/components/challenges/ChallengeCheckInStatus';
+import { isAutoTrackedChallenge } from '@/lib/utils/challengeRules';
 import type {
   Challenge,
   ChallengeProgress,
@@ -79,6 +89,7 @@ export function GamificationHub({
   const { progress: calorieProgress, loading: loadingCalories } = useCalorieProgress();
 
   const [isBadgeModalOpen, setIsBadgeModalOpen] = useState(false);
+  const [isQuestsModalOpen, setIsQuestsModalOpen] = useState(false);
 
   const [activeItems, setActiveItems] = useState<ActiveChallengeItem[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -168,6 +179,11 @@ export function GamificationHub({
   useEffect(() => {
     void loadActiveChallenges();
   }, [loadActiveChallenges]);
+
+  const handleMealLoggedRefresh = useCallback(() => {
+    void loadActiveChallenges();
+  }, [loadActiveChallenges]);
+  useCalorieProgressRefresh(handleMealLoggedRefresh);
 
   const currentItem = activeItems[selectedIndex] ?? null;
   const weekDays = useMemo(() => getWeekDays(), []);
@@ -329,12 +345,16 @@ export function GamificationHub({
             </span>
           </Link>
 
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-semibold text-foreground">
+          <button
+            type="button"
+            onClick={() => setIsQuestsModalOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-secondary/40 bg-secondary/10 px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-secondary hover:bg-secondary/20"
+          >
             <Sparkles className="h-4 w-4 text-secondary" />
             <span>
               {completedQuestsCount}/{quests.length} quests today
             </span>
-          </div>
+          </button>
         </div>
       </div>
 
@@ -446,26 +466,13 @@ export function GamificationHub({
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {todayCompleted ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-3 py-1.5 text-xs font-semibold text-primary">
-                      <Check className="h-3.5 w-3.5" />
-                      Completed today
-                    </span>
-                  ) : (
-                    <Button
-                      size="sm"
-                      onClick={() => void handleCheckInToday()}
-                      disabled={markingToday}
-                      className="bg-primary text-primary-foreground hover:bg-primary/90"
-                    >
-                      {markingToday ? (
-                        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Flame className="mr-1.5 h-3.5 w-3.5" />
-                      )}
-                      Check in today (+30 XP)
-                    </Button>
-                  )}
+                  <ChallengeCheckInStatus
+                    isAutoTracked={isAutoTrackedChallenge(currentItem.challenge)}
+                    todayCompleted={todayCompleted}
+                    onCheckIn={handleCheckInToday}
+                    loading={markingToday}
+                    actionLabel="Check in today (+30 XP)"
+                  />
                   <Button
                     asChild
                     variant="outline"
@@ -502,8 +509,9 @@ export function GamificationHub({
           )}
         </div>
 
-        {/* Right: Daily Quests */}
-        <div className={`flex flex-col justify-between rounded-xl border border-border bg-background p-4 sm:p-5 ${compact ? '' : 'lg:col-span-5'}`}>
+        {/* Right: Daily Quests (inline only when not compact; in compact mode opened via header pill) */}
+        {!compact && (
+        <div className="flex flex-col justify-between rounded-xl border border-border bg-background p-4 sm:p-5 lg:col-span-5">
           <div>
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">
@@ -638,7 +646,81 @@ export function GamificationHub({
             )}
           </div>
         </div>
+        )}
       </div>
+
+      {/* Daily Quests & Badges Modal (opened by clicking the "X/3 quests today" pill) */}
+      <Dialog open={isQuestsModalOpen} onOpenChange={setIsQuestsModalOpen}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto border-border bg-card text-foreground sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-foreground">
+              <Sparkles className="h-5 w-5 text-secondary" />
+              Daily Quests ({completedQuestsCount}/{quests.length} done)
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Complete daily quests to earn XP and level up your profile.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="mt-2 space-y-3">
+            {quests.map((quest) => {
+              const Icon = quest.icon;
+              const inner = (
+                <div className="rounded-xl border border-border bg-background p-3.5 transition-colors hover:border-primary/40">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <div
+                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+                          quest.done
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted text-muted-foreground'
+                        }`}
+                      >
+                        {quest.done ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+                      </div>
+                      <span className="truncate text-xs font-semibold text-foreground">
+                        {quest.title}
+                      </span>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-[#2B211A] dark:bg-amber-200">
+                      {quest.xp}
+                    </span>
+                  </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <Progress value={quest.progressPct} className="h-1.5 flex-1" />
+                    <span className="text-[11px] font-medium text-muted-foreground">
+                      {quest.statusText}
+                    </span>
+                  </div>
+                </div>
+              );
+
+              return quest.href ? (
+                <Link
+                  key={quest.id}
+                  href={quest.href}
+                  onClick={() => setIsQuestsModalOpen(false)}
+                  className="block"
+                >
+                  {inner}
+                </Link>
+              ) : (
+                <button
+                  key={quest.id}
+                  type="button"
+                  onClick={() => {
+                    setIsQuestsModalOpen(false);
+                    onOpenChallengePicker();
+                  }}
+                  className="block w-full text-left"
+                >
+                  {inner}
+                </button>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <BadgeSelectionModal
         profileId={profileId}

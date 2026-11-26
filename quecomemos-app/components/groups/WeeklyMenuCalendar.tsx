@@ -27,6 +27,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { API_BASE_URL } from '@/lib/config/api';
 import { addDaysYMD, formatLocalYMD, getMondayYMD } from '@/lib/hooks/useWeeklyMenu';
 import { formatYMDDisplay } from '@/lib/utils/timezone';
+import {
+  DAY_LABELS,
+  getEntryCalories,
+  getMealCalories,
+  indexEntriesBySlot,
+} from '@/lib/utils/weeklyMenu';
+import { GroupChallengesService } from '@/lib/services/GroupChallengesService';
 import { Leaf } from 'lucide-react';
 import type { RestrictionItem } from '@/lib/utils/dietaryCompatibility';
 import type { MenuProposal, WeeklyMenuEntry } from '@/lib/types/groupChallenges';
@@ -64,8 +71,6 @@ export const CALENDAR_MOMENTS: Array<{
   },
 ];
 
-const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
 interface WeeklyMenuCalendarProps {
   groupId: number | string;
   profileId: string;
@@ -90,16 +95,6 @@ interface SelectedSlot {
   dayDisplay: string;
   moment: CalendarMoment;
   momentLabel: string;
-}
-
-function getEntryCalories(entry: WeeklyMenuEntry | undefined): number {
-  if (!entry?.meal?.mealFoods?.length) return 0;
-  return Math.round(
-    entry.meal.mealFoods.reduce(
-      (sum, mf) => sum + (mf.quantity || 1) * (mf.food?.kCal || 0),
-      0
-    )
-  );
 }
 
 function formatWeekRange(weekStartYMD: string): string {
@@ -165,15 +160,7 @@ export function WeeklyMenuCalendar({
     });
   }, [weekStart, todayYMD]);
 
-  // Index entries by `${YYYY-MM-DD}_${moment}`
-  const entryMap = useMemo(() => {
-    const map = new Map<string, WeeklyMenuEntry>();
-    entries.forEach((entry) => {
-      const ymd = entry.date.slice(0, 10);
-      map.set(`${ymd}_${entry.moment}`, entry);
-    });
-    return map;
-  }, [entries]);
+  const entryMap = useMemo(() => indexEntriesBySlot(entries), [entries]);
 
   const activeEntry = useMemo(() => {
     if (!selectedSlot) return undefined;
@@ -228,13 +215,6 @@ export function WeeklyMenuCalendar({
     return list.slice(0, 20);
   }, [meals, paletteQuery]);
 
-  const getMealCalories = (meal: Meal): number => {
-    if (!meal.mealFoods?.length) return 0;
-    return Math.round(
-      meal.mealFoods.reduce((sum, mf) => sum + (mf.quantity || 1) * (mf.food?.kCal || 0), 0)
-    );
-  };
-
   const quickAssignMeal = async (
     day: (typeof weekDays)[number],
     momentMeta: (typeof CALENDAR_MOMENTS)[number],
@@ -244,21 +224,12 @@ export function WeeklyMenuCalendar({
     const cellKey = `${day.dateKey}_${momentMeta.key}`;
     setSavingCell(cellKey);
     try {
-      const response = await fetch(`${API_BASE_URL}/groups/${groupId}/menu`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          profileId,
-          date: day.dateKey,
-          moment: momentMeta.key,
-          mealId: meal.MealID,
-          customMeal: null,
-        }),
+      await GroupChallengesService.upsertMenuEntry(groupId, {
+        profileId,
+        date: day.dateKey,
+        moment: momentMeta.key,
+        mealId: meal.MealID,
       });
-      if (!response.ok) {
-        const data = (await response.json().catch(() => ({}))) as { error?: string };
-        throw new Error(data.error || 'Could not assign meal');
-      }
       toast.success(`${meal.name} set for ${day.shortName} ${momentMeta.label}`);
       await onRefresh();
     } catch (err) {
@@ -276,13 +247,7 @@ export function WeeklyMenuCalendar({
     e.stopPropagation();
     setSavingCell(cellKey);
     try {
-      const response = await fetch(`${API_BASE_URL}/menu/${entry.MenuEntryID}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) {
-        const data = (await response.json().catch(() => ({}))) as { error?: string };
-        throw new Error(data.error || 'Could not clear slot');
-      }
+      await GroupChallengesService.deleteMenuEntry(entry.MenuEntryID);
       toast.success('Slot cleared');
       await onRefresh();
     } catch (err) {

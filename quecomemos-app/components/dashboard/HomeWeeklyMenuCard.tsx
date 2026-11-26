@@ -17,8 +17,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { addDaysYMD, formatLocalYMD, getMondayYMD, useWeeklyMenu } from '@/lib/hooks/useWeeklyMenu';
 import { formatYMDDisplay } from '@/lib/utils/timezone';
+import { DAY_LABELS, getEntryCalories, indexEntriesBySlot } from '@/lib/utils/weeklyMenu';
 import type { DashboardGroup } from '@/components/groups/DashboardGroupsSection';
-import type { WeeklyMenuEntry } from '@/lib/types/groupChallenges';
 
 interface HomeWeeklyMenuCardProps {
   profileId: string;
@@ -26,20 +26,11 @@ interface HomeWeeklyMenuCardProps {
   loadingGroups?: boolean;
 }
 
-const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
-
 const MOMENTS = [
   { key: 'breakfast' as const, label: 'Breakfast', Icon: Coffee, accent: 'bg-amber-500/15 text-amber-700 dark:text-amber-300' },
   { key: 'lunch' as const, label: 'Lunch', Icon: Sun, accent: 'bg-primary/15 text-primary' },
   { key: 'dinner' as const, label: 'Dinner', Icon: Moon, accent: 'bg-secondary/15 text-secondary' },
 ];
-
-function getEntryCalories(entry: WeeklyMenuEntry | undefined): number {
-  if (!entry?.meal?.mealFoods?.length) return 0;
-  return Math.round(
-    entry.meal.mealFoods.reduce((sum, mf) => sum + (mf.quantity || 1) * (mf.food?.kCal || 0), 0)
-  );
-}
 
 export function HomeWeeklyMenuCard({
   profileId,
@@ -84,13 +75,7 @@ export function HomeWeeklyMenuCard({
     }
   }, [weekDays, selectedDayYMD, todayYMD]);
 
-  const entryMap = useMemo(() => {
-    const map = new Map<string, WeeklyMenuEntry>();
-    menu.entries.forEach((entry) => {
-      map.set(`${entry.date.slice(0, 10)}_${entry.moment}`, entry);
-    });
-    return map;
-  }, [menu.entries]);
+  const entryMap = useMemo(() => indexEntriesBySlot(menu.entries), [menu.entries]);
 
   const weekRangeLabel = useMemo(() => {
     const endYMD = addDaysYMD(menu.weekStart, 6);
@@ -291,12 +276,20 @@ export function HomeWeeklyMenuCard({
                           </div>
                         </div>
 
-                        {kcal > 0 && (
+                        {kcal > 0 ? (
                           <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
                             <Flame className="h-3 w-3" />
                             {kcal} kcal
                           </span>
-                        )}
+                        ) : !dishName && activeGroupId ? (
+                          <Link
+                            href={`/protected/groups/${activeGroupId}/menu`}
+                            className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                          >
+                            <Plus className="h-3 w-3" />
+                            {label}
+                          </Link>
+                        ) : null}
                       </div>
                     );
                   })}

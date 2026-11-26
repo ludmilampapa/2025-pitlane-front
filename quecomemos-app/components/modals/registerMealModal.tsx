@@ -4,7 +4,8 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { X, Plus, Clock, Calendar, SlidersHorizontal, Utensils, Check, ChevronDown, ChevronUp, HeartHandshake } from 'lucide-react';
 import { useUser } from '@/lib/contexts/UserContext';
 import { useMeals, Meal } from '@/lib/contexts/MealsContext';
-import { API_BASE_URL } from '@/lib/config/api';
+import { GroupChallengesService } from '@/lib/services/GroupChallengesService';
+import { matchPausedFoodsForMeal } from '@/lib/utils/challengeRules';
 import type { ActivePausedChallenge } from '@/lib/types/groupChallenges';
 import AddMealForm from '../meal/AddMealForm';
 import { MealSearchBar } from '../meal/MealSearchBar';
@@ -115,14 +116,10 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
   useEffect(() => {
     if (!isOpen || !profile?.id) return;
     let cancelled = false;
-    const todayYMD = formatArgentinaYMD();
-    fetch(`${API_BASE_URL}/challenges/active-paused?date=${encodeURIComponent(todayYMD)}`, {
-      cache: 'no-store',
-    })
-      .then((res) => (res.ok ? res.json() : []))
+    GroupChallengesService.getActivePausedChallenges(formatArgentinaYMD())
       .then((data) => {
         if (!cancelled && Array.isArray(data)) {
-          setActivePausedChallenges(data as ActivePausedChallenge[]);
+          setActivePausedChallenges(data);
         }
       })
       .catch(() => {
@@ -135,23 +132,13 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
 
   const mindfulChallengeMatches = useMemo(() => {
     if (!selectedMeal || activePausedChallenges.length === 0) return [];
-    const searchableTexts = [
-      selectedMeal.name || '',
-      selectedMeal.description || '',
-      ...selectedMeal.mealFoods.map((mf) => mf.food?.name || ''),
-    ]
-      .join(' ')
-      .toLowerCase();
-
     const relevantChallenges = group
       ? activePausedChallenges.filter((c) => c.groupId === group.GroupID)
       : activePausedChallenges;
 
     return relevantChallenges
       .map((challenge) => {
-        const matchedItems = challenge.pausedFoods.filter((paused) =>
-          searchableTexts.includes(paused.toLowerCase())
-        );
+        const matchedItems = matchPausedFoodsForMeal(selectedMeal, challenge.pausedFoods);
         return matchedItems.length > 0 ? { challenge, matchedItems } : null;
       })
       .filter((entry): entry is { challenge: ActivePausedChallenge; matchedItems: string[] } => Boolean(entry));

@@ -3,16 +3,20 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Trophy, Target, CalendarDays, Check, Plus, X, HeartHandshake } from 'lucide-react';
+import { ArrowLeft, Trophy, Target, CalendarDays, Plus, X, HeartHandshake } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { AddFoodForm } from '@/components/food/forms/add-food-form';
+import { ChallengeCheckInStatus } from '@/components/challenges/ChallengeCheckInStatus';
+import { isAutoTrackedChallenge } from '@/lib/utils/challengeRules';
+import { GroupChallengesService } from '@/lib/services/GroupChallengesService';
 import { API_BASE_URL } from '@/lib/config/api';
 import { formatLocalYMD } from '@/lib/hooks/useWeeklyMenu';
 import { formatYMDDisplay, isValidYMD } from '@/lib/utils/timezone';
 import { useUser } from '@/lib/contexts/UserContext';
+import { useCalorieProgressRefresh } from '@/lib/contexts/CalorieProgressContext';
 import type { Challenge, ChallengeProgress, ChallengeRankingRow, GroupData } from '@/lib/types/groupChallenges';
 
 export default function GroupChallengesPage() {
@@ -90,6 +94,11 @@ export default function GroupChallengesPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  const handleMealRefresh = useCallback(() => {
+    void fetchData();
+  }, [fetchData]);
+  useCalorieProgressRefresh(handleMealRefresh);
+
   const loadCatalogFoods = useCallback(async (autoSelectNew = false) => {
     try {
       const res = await fetch(`${API_BASE_URL}/foods`, { cache: 'no-store' });
@@ -164,18 +173,13 @@ export default function GroupChallengesPage() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/groups/${groupId}/challenges`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...form,
-          name: trimmedName,
-          ruleText: trimmedRule,
-          description: form.description.trim(),
-          profileId,
-        }),
+      await GroupChallengesService.createChallenge(groupId, {
+        ...form,
+        name: trimmedName,
+        ruleText: trimmedRule,
+        description: form.description.trim(),
+        profileId,
       });
-      if (!response.ok) throw new Error((await response.json()).error || 'Failed to create challenge');
       setForm({ name: '', description: '', ruleText: '', startDate: '', endDate: '', pausedFoods: [] });
       setPausedInput('');
       setShowForm(false);
@@ -190,12 +194,7 @@ export default function GroupChallengesPage() {
     const today = formatLocalYMD(new Date());
     // The server stores a date-specific completion; this simple toggle is a daily action.
     try {
-      const response = await fetch(`${API_BASE_URL}/challenges/${challenge.ChallengeID}/completions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profileId, date: today, completed: true }),
-      });
-      if (!response.ok) throw new Error((await response.json()).error || 'Failed to mark completion');
+      await GroupChallengesService.markCompletion(challenge.ChallengeID, profileId, today, true);
       await fetchData();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
@@ -381,29 +380,13 @@ export default function GroupChallengesPage() {
               <div className="flex items-center gap-2 text-sm"><CalendarDays className="w-4 h-4" /> {formatYMDDisplay(challenge.startDate.slice(0, 10))} – {formatYMDDisplay(challenge.endDate.slice(0, 10))}</div>
               <div className="h-3 bg-[#EFE7DB] rounded overflow-hidden"><div className="h-full bg-primary" style={{ width: `${userProgress?.percentage || 0}%` }} /></div>
               <p className="text-sm">You completed <strong>{userProgress?.completedDays || 0}</strong> of <strong>{userProgress?.totalDays || 0}</strong> days.</p>
-              {challenge.pausedFoods && challenge.pausedFoods.length > 0 ? (
-                userProgress?.todayCompleted ? (
-                  <div className="inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3.5 py-2 text-xs font-semibold text-primary">
-                    <Check className="h-4 w-4" />
-                    Completed today · Auto-tracked from your logged meals
-                  </div>
-                ) : (
-                  <div className="inline-flex items-center gap-2 rounded-xl border border-border bg-muted/40 px-3.5 py-2 text-xs text-muted-foreground">
-                    <HeartHandshake className="h-4 w-4 shrink-0 text-primary" />
-                    Auto-tracked · Log at least 1 meal today without paused foods to complete today
-                  </div>
-                )
-              ) : userProgress?.todayCompleted ? (
-                <Button disabled className="bg-primary/15 text-primary hover:bg-primary/15">
-                  <Check className="w-4 h-4 mr-2" />
-                  Completed today
-                </Button>
-              ) : (
-                <Button onClick={() => toggleToday(challenge)} className="bg-secondary text-secondary-foreground hover:bg-secondary/90">
-                  <Check className="w-4 h-4 mr-2" />
-                  Mark today
-                </Button>
-              )}
+              <ChallengeCheckInStatus
+                isAutoTracked={isAutoTrackedChallenge(challenge)}
+                todayCompleted={Boolean(userProgress?.todayCompleted)}
+                onCheckIn={() => toggleToday(challenge)}
+                actionLabel="Mark today"
+                autoHint="Auto-tracked · Log at least 1 meal today without paused foods to complete today"
+              />
 
               <div>
                 <h3 className="font-semibold mb-2">Ranking</h3>
