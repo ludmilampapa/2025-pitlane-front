@@ -138,11 +138,15 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
 
     return relevantChallenges
       .map((challenge) => {
-        const matchedItems = matchPausedFoodsForMeal(selectedMeal, challenge.pausedFoods);
+        const matchedItems = matchPausedFoodsForMeal(
+          selectedMeal,
+          challenge.pausedFoods,
+          selectedPortions
+        );
         return matchedItems.length > 0 ? { challenge, matchedItems } : null;
       })
       .filter((entry): entry is { challenge: ActivePausedChallenge; matchedItems: string[] } => Boolean(entry));
-  }, [selectedMeal, activePausedChallenges, group]);
+  }, [selectedMeal, activePausedChallenges, group, selectedPortions]);
 
   const handleClose = useCallback(() => {
     setSelectedMeal(null);

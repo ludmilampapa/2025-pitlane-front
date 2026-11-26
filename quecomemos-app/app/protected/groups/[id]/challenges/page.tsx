@@ -385,7 +385,7 @@ export default function GroupChallengesPage() {
                 todayCompleted={Boolean(userProgress?.todayCompleted)}
                 onCheckIn={() => toggleToday(challenge)}
                 actionLabel="Mark today"
-                autoHint="Auto-tracked · Log at least 1 meal today without paused foods to complete today"
+                autoHint="Not completed today · Log a meal without paused foods"
               />
 
               <div>

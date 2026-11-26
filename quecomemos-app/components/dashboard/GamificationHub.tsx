@@ -8,7 +8,6 @@ import {
   Check,
   Flame,
   Loader2,
-  Snowflake,
   Sparkles,
   Target,
   Trophy,
@@ -323,11 +322,10 @@ export function GamificationHub({
 
         <div className="flex flex-wrap items-center gap-2.5">
           <div
-            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold ${
-              todayCompleted
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold ${todayCompleted
                 ? 'border-primary/40 bg-primary/15 text-primary'
                 : 'border-border bg-background text-foreground'
-            }`}
+              }`}
           >
             <Flame className={`h-4 w-4 ${streak > 0 ? 'text-secondary' : 'text-muted-foreground'}`} />
             <span>
@@ -371,16 +369,48 @@ export function GamificationHub({
             <div className="space-y-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
-                  <div
-                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
-                      todayCompleted ? 'bg-primary/15 text-primary' : 'bg-secondary/15 text-secondary'
-                    }`}
-                  >
-                    {todayCompleted ? <Flame className="h-6 w-6" /> : <Snowflake className="h-6 w-6" />}
-                  </div>
+                  {(() => {
+                    const pct = Math.min(100, Math.max(0, currentItem.progress?.percentage ?? 0));
+                    const radius = 20;
+                    const circumference = 2 * Math.PI * radius;
+                    const dashOffset = circumference * (1 - pct / 100);
+                    return (
+                      <div
+                        title={`${currentItem.progress?.completedDays ?? 0} of ${currentItem.progress?.totalDays ?? 0} days completed`}
+                        className="relative flex h-12 w-12 shrink-0 items-center justify-center"
+                      >
+                        <svg className="h-12 w-12 -rotate-90" viewBox="0 0 48 48" aria-hidden="true">
+                          <circle
+                            cx="24"
+                            cy="24"
+                            r={radius}
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                            className="text-muted/60"
+                          />
+                          <circle
+                            cx="24"
+                            cy="24"
+                            r={radius}
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                            strokeLinecap="round"
+                            strokeDasharray={circumference}
+                            strokeDashoffset={dashOffset}
+                            className="text-primary transition-all duration-500"
+                          />
+                        </svg>
+                        <span className="absolute text-[11px] font-bold text-foreground">
+                          {pct}%
+                        </span>
+                      </div>
+                    );
+                  })()}
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      {todayCompleted ? 'Streak active' : 'Streak at risk'} · {currentItem.groupName}
+                      {currentItem.progress?.completedDays ?? 0}/{currentItem.progress?.totalDays ?? 0} days · {currentItem.groupName}
                     </p>
                     <h3 className="text-base font-bold text-foreground sm:text-lg">
                       {currentItem.challenge.name}
@@ -396,11 +426,10 @@ export function GamificationHub({
                         key={item.challenge.ChallengeID}
                         type="button"
                         onClick={() => setSelectedIndex(idx)}
-                        className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
-                          idx === selectedIndex
+                        className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${idx === selectedIndex
                             ? 'bg-primary text-primary-foreground'
                             : 'bg-muted text-muted-foreground hover:text-foreground'
-                        }`}
+                          }`}
                       >
                         {item.groupName}
                       </button>
@@ -416,21 +445,19 @@ export function GamificationHub({
                   return (
                     <div key={day.iso} className="flex flex-col items-center gap-1.5">
                       <span
-                        className={`text-[11px] font-semibold ${
-                          day.isToday ? 'text-primary' : 'text-muted-foreground'
-                        }`}
+                        className={`text-[11px] font-semibold ${day.isToday ? 'text-primary' : 'text-muted-foreground'
+                          }`}
                       >
                         {day.label}
                       </span>
                       <div
                         title={day.iso}
-                        className={`flex h-8 w-8 items-center justify-center rounded-full border text-xs font-bold transition-all ${
-                          done
+                        className={`flex h-8 w-8 items-center justify-center rounded-full border text-xs font-bold transition-all ${done
                             ? 'border-primary bg-primary text-primary-foreground'
                             : day.isToday
                               ? 'border-2 border-secondary bg-secondary/15 text-secondary'
                               : 'border-border bg-muted/60 text-muted-foreground'
-                        }`}
+                          }`}
                       >
                         {done ? (
                           <Check className="h-4 w-4" />
@@ -511,141 +538,139 @@ export function GamificationHub({
 
         {/* Right: Daily Quests (inline only when not compact; in compact mode opened via header pill) */}
         {!compact && (
-        <div className="flex flex-col justify-between rounded-xl border border-border bg-background p-4 sm:p-5 lg:col-span-5">
-          <div>
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">
-                Daily Quests
-              </h3>
-              <span className="text-xs font-medium text-muted-foreground">
-                {completedQuestsCount} of {quests.length} done
-              </span>
-            </div>
+          <div className="flex flex-col justify-between rounded-xl border border-border bg-background p-4 sm:p-5 lg:col-span-5">
+            <div>
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">
+                  Daily Quests
+                </h3>
+                <span className="text-xs font-medium text-muted-foreground">
+                  {completedQuestsCount} of {quests.length} done
+                </span>
+              </div>
 
-            <div className="space-y-3">
-              {quests.map((quest) => {
-                const Icon = quest.icon;
-                const inner = (
-                  <div className="rounded-lg border border-border bg-card p-3 transition-colors hover:border-primary/40">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex min-w-0 items-center gap-2">
-                        <div
-                          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
-                            quest.done
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted text-muted-foreground'
-                          }`}
-                        >
-                          {quest.done ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+              <div className="space-y-3">
+                {quests.map((quest) => {
+                  const Icon = quest.icon;
+                  const inner = (
+                    <div className="rounded-lg border border-border bg-card p-3 transition-colors hover:border-primary/40">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <div
+                            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${quest.done
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted text-muted-foreground'
+                              }`}
+                          >
+                            {quest.done ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+                          </div>
+                          <span className="truncate text-xs font-semibold text-foreground">
+                            {quest.title}
+                          </span>
                         </div>
-                        <span className="truncate text-xs font-semibold text-foreground">
-                          {quest.title}
+                        <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-[#2B211A] dark:bg-amber-200">
+                          {quest.xp}
                         </span>
                       </div>
-                      <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-[#2B211A] dark:bg-amber-200">
-                        {quest.xp}
-                      </span>
+                      <div className="mt-2 flex items-center gap-2">
+                        <Progress value={quest.progressPct} className="h-1.5 flex-1" />
+                        <span className="text-[11px] font-medium text-muted-foreground">
+                          {quest.statusText}
+                        </span>
+                      </div>
                     </div>
-                    <div className="mt-2 flex items-center gap-2">
-                      <Progress value={quest.progressPct} className="h-1.5 flex-1" />
-                      <span className="text-[11px] font-medium text-muted-foreground">
-                        {quest.statusText}
-                      </span>
-                    </div>
-                  </div>
-                );
+                  );
 
-                return quest.href ? (
-                  <Link key={quest.id} href={quest.href} className="block">
-                    {inner}
-                  </Link>
-                ) : (
-                  <button
-                    key={quest.id}
-                    type="button"
-                    onClick={onOpenChallengePicker}
-                    className="block w-full text-left"
-                  >
-                    {inner}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Badges preview footer */}
-          <div className="mt-4 border-t border-border pt-3">
-            <div className="mb-2 flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-                <Award className="h-4 w-4 text-primary" />
-                Your Badges ({badges.length})
-              </span>
-              <div className="flex items-center gap-3">
-                {badges.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setIsBadgeModalOpen(true)}
-                    className="text-xs font-semibold text-primary hover:underline"
-                  >
-                    {primaryBadge ? 'Change badge' : 'Equip badge'}
-                  </button>
-                )}
-                <Link
-                  href="/protected/history"
-                  className="text-xs font-medium text-muted-foreground hover:text-foreground hover:underline"
-                >
-                  View all
-                </Link>
-              </div>
-            </div>
-            {badges.length > 0 ? (
-              <div className="flex flex-wrap gap-1.5">
-                {badges.slice(0, 4).map((badge) => {
-                  const isEquipped = primaryBadge?.BadgeID === badge.BadgeID;
-                  return (
+                  return quest.href ? (
+                    <Link key={quest.id} href={quest.href} className="block">
+                      {inner}
+                    </Link>
+                  ) : (
                     <button
-                      key={badge.BadgeID}
+                      key={quest.id}
                       type="button"
-                      onClick={() => setIsBadgeModalOpen(true)}
-                      title={`${badge.description} — Click to equip on your profile`}
-                      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors ${
-                        isEquipped
-                          ? 'border-primary bg-primary text-primary-foreground'
-                          : 'border-primary/30 bg-primary/10 text-foreground hover:bg-primary/20'
-                      }`}
+                      onClick={onOpenChallengePicker}
+                      className="block w-full text-left"
                     >
-                      {badge.iconUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={badge.iconUrl}
-                          alt={badge.name}
-                          className="h-4 w-4 rounded-full bg-white/90 object-contain p-0.5"
-                        />
-                      ) : (
-                        <Award className={`h-3.5 w-3.5 ${isEquipped ? 'text-primary-foreground' : 'text-primary'}`} />
-                      )}
-                      {badge.name}
-                      {isEquipped && <Check className="h-3 w-3" />}
+                      {inner}
                     </button>
                   );
                 })}
-                {badges.length > 4 && (
-                  <button
-                    type="button"
-                    onClick={() => setIsBadgeModalOpen(true)}
-                    className="inline-flex items-center rounded-full bg-muted px-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground"
-                  >
-                    +{badges.length - 4} more
-                  </button>
-                )}
               </div>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                Create groups, log meals &amp; keep streaks to unlock badges.
-              </p>
-            )}
+            </div>
+
+            {/* Badges preview footer */}
+            <div className="mt-4 border-t border-border pt-3">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                  <Award className="h-4 w-4 text-primary" />
+                  Your Badges ({badges.length})
+                </span>
+                <div className="flex items-center gap-3">
+                  {badges.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setIsBadgeModalOpen(true)}
+                      className="text-xs font-semibold text-primary hover:underline"
+                    >
+                      {primaryBadge ? 'Change badge' : 'Equip badge'}
+                    </button>
+                  )}
+                  <Link
+                    href="/protected/history"
+                    className="text-xs font-medium text-muted-foreground hover:text-foreground hover:underline"
+                  >
+                    View all
+                  </Link>
+                </div>
+              </div>
+              {badges.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {badges.slice(0, 4).map((badge) => {
+                    const isEquipped = primaryBadge?.BadgeID === badge.BadgeID;
+                    return (
+                      <button
+                        key={badge.BadgeID}
+                        type="button"
+                        onClick={() => setIsBadgeModalOpen(true)}
+                        title={`${badge.description} — Click to equip on your profile`}
+                        className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors ${isEquipped
+                            ? 'border-primary bg-primary text-primary-foreground'
+                            : 'border-primary/30 bg-primary/10 text-foreground hover:bg-primary/20'
+                          }`}
+                      >
+                        {badge.iconUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={badge.iconUrl}
+                            alt={badge.name}
+                            className="h-4 w-4 rounded-full bg-white/90 object-contain p-0.5"
+                          />
+                        ) : (
+                          <Award className={`h-3.5 w-3.5 ${isEquipped ? 'text-primary-foreground' : 'text-primary'}`} />
+                        )}
+                        {badge.name}
+                        {isEquipped && <Check className="h-3 w-3" />}
+                      </button>
+                    );
+                  })}
+                  {badges.length > 4 && (
+                    <button
+                      type="button"
+                      onClick={() => setIsBadgeModalOpen(true)}
+                      className="inline-flex items-center rounded-full bg-muted px-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+                    >
+                      +{badges.length - 4} more
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Create groups, log meals &amp; keep streaks to unlock badges.
+                </p>
+              )}
+            </div>
           </div>
-        </div>
         )}
       </div>
 
@@ -670,11 +695,10 @@ export function GamificationHub({
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex min-w-0 items-center gap-2.5">
                       <div
-                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
-                          quest.done
+                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${quest.done
                             ? 'bg-primary text-primary-foreground'
                             : 'bg-muted text-muted-foreground'
-                        }`}
+                          }`}
                       >
                         {quest.done ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
                       </div>
