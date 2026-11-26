@@ -25,21 +25,27 @@ export function ChallengeCheckInStatus({
   onCheckIn,
   loading = false,
   actionLabel = 'Check in today',
-  autoHint = 'Auto-tracked · Log a meal today',
+  autoHint = 'Not completed today',
   fullWidth = false,
 }: ChallengeCheckInStatusProps) {
   if (isAutoTracked) {
     if (todayCompleted) {
       return (
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1.5 text-xs font-semibold text-primary">
+        <span
+          title="Auto-tracked from today's logged meals"
+          className="inline-flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1.5 text-xs font-semibold text-primary"
+        >
           <Check className="h-3.5 w-3.5 shrink-0" />
-          Completed today · Auto-tracked
+          Completed today
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/50 px-3 py-1.5 text-xs font-medium text-muted-foreground">
-        <Utensils className="h-3.5 w-3.5 shrink-0 text-primary" />
+      <span
+        title="Auto-tracked · Log at least 1 meal today without paused foods"
+        className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/35 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-800 dark:text-amber-200"
+      >
+        <Utensils className="h-3.5 w-3.5 shrink-0" />
         {autoHint}
       </span>
     );
