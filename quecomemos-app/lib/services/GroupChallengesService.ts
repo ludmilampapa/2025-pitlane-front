@@ -54,6 +54,36 @@ export const GroupChallengesService = {
     );
   },
 
+  updateChallenge(
+    challengeId: number,
+    payload: {
+      name: string;
+      ruleText: string;
+      description?: string;
+      startDate: string;
+      endDate: string;
+      pausedFoods?: string[];
+    }
+  ): Promise<Challenge> {
+    return requestJson<Challenge>(
+      `${API_BASE_URL}/challenges/${challengeId}`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      },
+      'Failed to update challenge'
+    );
+  },
+
+  deleteChallenge(challengeId: number): Promise<unknown> {
+    return requestJson(
+      `${API_BASE_URL}/challenges/${challengeId}`,
+      { method: 'DELETE' },
+      'Failed to delete challenge'
+    );
+  },
+
   getProgress(
     challengeId: number,
     profileId: string,

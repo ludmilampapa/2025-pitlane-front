@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Trophy, Target, CalendarDays, Plus, X, HeartHandshake } from 'lucide-react';
+import { ArrowLeft, Trophy, Target, CalendarDays, Plus, X, HeartHandshake, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -44,8 +44,10 @@ export default function GroupChallengesPage() {
   const [pausedInput, setPausedInput] = useState('');
   const [catalogFoods, setCatalogFoods] = useState<Array<{ FoodID: number; name: string }>>([]);
   const [showCreateFoodModal, setShowCreateFoodModal] = useState(false);
+  const [editingChallengeId, setEditingChallengeId] = useState<number | null>(null);
   const [submittingChallenge, setSubmittingChallenge] = useState(false);
   const [markingChallengeId, setMarkingChallengeId] = useState<number | null>(null);
+  const [deletingChallengeId, setDeletingChallengeId] = useState<number | null>(null);
 
   const isAdmin = Boolean(group && profileId && (
     group.createdBy === profileId ||
@@ -154,6 +156,48 @@ export default function GroupChallengesPage() {
     }));
   };
 
+  const resetChallengeForm = () => {
+    setForm({ name: '', description: '', ruleText: '', startDate: '', endDate: '', pausedFoods: [] });
+    setPausedInput('');
+    setEditingChallengeId(null);
+    setShowForm(false);
+  };
+
+  const startEditChallenge = (challenge: Challenge) => {
+    setError(null);
+    setEditingChallengeId(challenge.ChallengeID);
+    setForm({
+      name: challenge.name,
+      description: challenge.description || '',
+      ruleText: challenge.ruleText,
+      startDate: challenge.startDate.slice(0, 10),
+      endDate: challenge.endDate.slice(0, 10),
+      pausedFoods: challenge.pausedFoods ? [...challenge.pausedFoods] : [],
+    });
+    setPausedInput('');
+    setShowForm(true);
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleDeleteChallenge = async (challenge: Challenge) => {
+    if (deletingChallengeId !== null) return;
+    setError(null);
+    setDeletingChallengeId(challenge.ChallengeID);
+    try {
+      await GroupChallengesService.deleteChallenge(challenge.ChallengeID);
+      if (editingChallengeId === challenge.ChallengeID) {
+        resetChallengeForm();
+      }
+      await fetchData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setDeletingChallengeId(null);
+    }
+  };
+
   const createChallenge = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!profileId) return;
@@ -177,16 +221,25 @@ export default function GroupChallengesPage() {
     if (submittingChallenge) return;
     setSubmittingChallenge(true);
     try {
-      await GroupChallengesService.createChallenge(groupId, {
-        ...form,
-        name: trimmedName,
-        ruleText: trimmedRule,
-        description: form.description.trim(),
-        profileId,
-      });
-      setForm({ name: '', description: '', ruleText: '', startDate: '', endDate: '', pausedFoods: [] });
-      setPausedInput('');
-      setShowForm(false);
+      if (editingChallengeId !== null) {
+        await GroupChallengesService.updateChallenge(editingChallengeId, {
+          name: trimmedName,
+          ruleText: trimmedRule,
+          description: form.description.trim(),
+          startDate: form.startDate,
+          endDate: form.endDate,
+          pausedFoods: form.pausedFoods,
+        });
+      } else {
+        await GroupChallengesService.createChallenge(groupId, {
+          ...form,
+          name: trimmedName,
+          ruleText: trimmedRule,
+          description: form.description.trim(),
+          profileId,
+        });
+      }
+      resetChallengeForm();
       await fetchData();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
@@ -219,14 +272,28 @@ export default function GroupChallengesPage() {
           <h1 className="text-3xl font-bold flex items-center gap-2"><Trophy className="w-7 h-7 text-secondary" /> Group Challenges</h1>
           <p className="text-muted-foreground">Shared goals and daily progress for {group?.name}</p>
         </div>
-        {isAdmin && <Button onClick={() => setShowForm((value) => !value)} className="bg-primary text-primary-foreground hover:bg-primary/90">Create challenge</Button>}
+        {isAdmin && (
+          <Button
+            onClick={() => {
+              if (showForm && editingChallengeId !== null) {
+                resetChallengeForm();
+              } else {
+                setEditingChallengeId(null);
+                setShowForm((value) => !value);
+              }
+            }}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            {showForm ? 'Close form' : 'Create challenge'}
+          </Button>
+        )}
       </div>
 
       {error && <Card><CardContent className="p-4 text-destructive">{error}</CardContent></Card>}
 
       {showForm && isAdmin && (
         <Card>
-          <CardHeader><CardTitle>New challenge</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{editingChallengeId !== null ? 'Edit challenge' : 'New challenge'}</CardTitle></CardHeader>
           <CardContent>
             <form onSubmit={createChallenge} className="grid gap-4 md:grid-cols-2">
               <Input placeholder="Challenge name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
@@ -351,7 +418,16 @@ export default function GroupChallengesPage() {
                   </div>
                 </div>
               </div>
-              <div className="md:col-span-2 flex justify-end"><Button type="submit" disabled={submittingChallenge} className="bg-primary text-primary-foreground hover:bg-primary/90">{submittingChallenge ? 'Creating...' : 'Create'}</Button></div>
+              <div className="md:col-span-2 flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={resetChallengeForm} disabled={submittingChallenge}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={submittingChallenge} className="bg-primary text-primary-foreground hover:bg-primary/90">
+                  {submittingChallenge
+                    ? editingChallengeId !== null ? 'Saving...' : 'Creating...'
+                    : editingChallengeId !== null ? 'Save changes' : 'Create'}
+                </Button>
+              </div>
             </form>
           </CardContent>
         </Card>
@@ -365,7 +441,38 @@ export default function GroupChallengesPage() {
         return (
           <Card key={challenge.ChallengeID}>
             <CardHeader>
-              <CardTitle className="flex items-center justify-between"><span>{challenge.name}</span><span className="text-sm text-primary">{userProgress?.percentage || 0}%</span></CardTitle>
+              <CardTitle className="flex flex-wrap items-center justify-between gap-2">
+                <span>{challenge.name}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-primary">{userProgress?.percentage || 0}%</span>
+                  {isAdmin && (
+                    <>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => startEditChallenge(challenge)}
+                        disabled={deletingChallengeId !== null}
+                        className="h-8 px-2.5 text-xs"
+                      >
+                        <Pencil className="mr-1 h-3.5 w-3.5" />
+                        Edit
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void handleDeleteChallenge(challenge)}
+                        disabled={deletingChallengeId !== null}
+                        className="h-8 border-destructive/40 px-2.5 text-xs text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="mr-1 h-3.5 w-3.5" />
+                        {deletingChallengeId === challenge.ChallengeID ? 'Deleting...' : 'Delete'}
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-5">
               <p className="text-sm text-muted-foreground">{challenge.description || challenge.ruleText}</p>
