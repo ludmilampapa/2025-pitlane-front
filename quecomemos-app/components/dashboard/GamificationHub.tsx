@@ -44,6 +44,7 @@ interface GamificationHubProps {
   onOpenChallengePicker: () => void;
   sharedGroups?: Array<{ GroupID: number; name: string }>;
   sharedGroupsLoading?: boolean;
+  compact?: boolean;
 }
 
 const LEVEL_TITLES = [
@@ -71,6 +72,7 @@ export function GamificationHub({
   onOpenChallengePicker,
   sharedGroups,
   sharedGroupsLoading = false,
+  compact = false,
 }: GamificationHubProps) {
   const { badges, loading: loadingBadges } = useUserBadges(profileId);
   const { primaryBadge, refetch: refetchPrimaryBadge } = usePrimaryBadge(profileId);
@@ -336,10 +338,10 @@ export function GamificationHub({
         </div>
       </div>
 
-      {/* Main 2-column content: Streak + Daily Quests */}
-      <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-12">
+      {/* Main content: Streak + Daily Quests */}
+      <div className={`mt-5 grid grid-cols-1 gap-4 ${compact ? '' : 'lg:grid-cols-12'}`}>
         {/* Left: Active Streak & Weekly Strip */}
-        <div className="flex flex-col justify-between rounded-xl border border-border bg-background p-4 sm:p-5 lg:col-span-7">
+        <div className={`flex flex-col justify-between rounded-xl border border-border bg-background p-4 sm:p-5 ${compact ? '' : 'lg:col-span-7'}`}>
           {loadingChallenges ? (
             <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin text-primary" />
@@ -501,7 +503,7 @@ export function GamificationHub({
         </div>
 
         {/* Right: Daily Quests */}
-        <div className="flex flex-col justify-between rounded-xl border border-border bg-background p-4 sm:p-5 lg:col-span-5">
+        <div className={`flex flex-col justify-between rounded-xl border border-border bg-background p-4 sm:p-5 ${compact ? '' : 'lg:col-span-5'}`}>
           <div>
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">

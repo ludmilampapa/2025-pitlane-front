@@ -6,8 +6,6 @@ import { useRouter } from 'next/navigation';
 import {
   ArrowRight,
   CalendarDays,
-  ChevronDown,
-  ChevronUp,
   Compass,
   Loader2,
   Plus,
@@ -17,10 +15,10 @@ import {
   Vote,
 } from 'lucide-react';
 import { useUser } from '@/lib/contexts/UserContext';
-import { AllMeals } from './all-meals';
 import { PreferencesWarning } from '@/components/forms';
-import DashboardGroupsSection, { type DashboardGroup } from '@/components/groups/DashboardGroupsSection';
+import type { DashboardGroup } from '@/components/groups/DashboardGroupsSection';
 import { GamificationHub } from '@/components/dashboard/GamificationHub';
+import { HomeWeeklyMenuCard } from '@/components/dashboard/HomeWeeklyMenuCard';
 import { LiveActivityBanner } from '@/components/dashboard/LiveActivityBanner';
 import { Button } from '@/components/ui/button';
 import {
@@ -87,6 +85,7 @@ export function UserProfileSection() {
   }, [fetchUserGroups]);
 
   const openGroupPicker = useCallback((destination: GroupDestination) => {
+    setShowQuickGuide(false);
     setPickerDestination(destination);
   }, []);
 
@@ -99,29 +98,16 @@ export function UserProfileSection() {
 
   if (loading) {
     return (
-      <div className="flex-1 w-full flex flex-col gap-8">
-        <div className="rounded-2xl border border-border bg-card p-6 md:p-8 shadow-sm">
-          <div className="w-40 h-5 bg-muted rounded-full animate-pulse mb-4" />
-          <div className="w-2/3 h-9 bg-muted rounded animate-pulse mb-3" />
-          <div className="w-full max-w-2xl h-5 bg-muted/70 rounded animate-pulse mb-6" />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-28 bg-muted/70 rounded-xl animate-pulse" />
-            ))}
-          </div>
-        </div>
-        <div className="space-y-4">
-          <div className="w-48 h-6 bg-muted rounded animate-pulse" />
-          <div className="w-full h-32 bg-muted rounded-xl animate-pulse" />
-        </div>
+      <div className="grid w-full grid-cols-1 gap-5 lg:grid-cols-12">
+        <div className="h-[420px] animate-pulse rounded-2xl border border-border bg-card lg:col-span-6" />
+        <div className="h-[420px] animate-pulse rounded-2xl border border-border bg-card lg:col-span-6" />
       </div>
     );
   }
 
-  // Only show error when not loading and there's an actual error
   if (!loading && error) {
     return (
-      <div className="flex-1 w-full flex flex-col gap-12">
+      <div className="flex-1 w-full flex flex-col gap-6">
         <div className="rounded-xl border border-destructive/40 bg-card p-4 text-destructive">
           Error loading profile: {error}
         </div>
@@ -129,7 +115,6 @@ export function UserProfileSection() {
     );
   }
 
-  // If no profile but no error, just return null (user is signing out)
   if (!profile) {
     return null;
   }
@@ -149,7 +134,7 @@ export function UserProfileSection() {
       icon: Vote,
       title: 'Decide what to eat together',
       description:
-        'Start quick group votes with friends or family factoring in everyone’s preferences and dietary restrictions.',
+        'Start quick group votes factoring in everyone’s preferences and dietary restrictions.',
       cta: 'Open group voting',
       accent: 'bg-primary/15 text-primary',
     },
@@ -158,7 +143,7 @@ export function UserProfileSection() {
       icon: CalendarDays,
       title: 'Plan the weekly menu',
       description:
-        'Coordinate lunches and dinners on a shared weekly calendar and propose alternatives for any meal.',
+        'Coordinate Breakfast, Lunch, and Dinner on a shared visual weekly board.',
       cta: 'Open weekly menu',
       accent: 'bg-secondary/15 text-secondary',
     },
@@ -167,118 +152,115 @@ export function UserProfileSection() {
       icon: Trophy,
       title: 'Join group challenges',
       description:
-        'Take on shared healthy challenges like a soda-free week, check in daily, and follow the group ranking.',
+        'Take on shared healthy challenges linked to your daily meal log and track group progress.',
       cta: 'Explore challenges',
       accent: 'bg-primary/15 text-primary',
     },
   ];
 
   return (
-    <div className="flex-1 w-full flex flex-col gap-8">
+    <div className="flex-1 w-full flex flex-col gap-5 pb-14">
       {/* Live Group Alerts (Active Votes, Menu Change Proposals & Invitations) */}
       <LiveActivityBanner />
 
-      {/* Collapsible Quick Guide & Shortcuts */}
-      <section className="rounded-2xl border border-border bg-card shadow-sm">
-        <button
-          type="button"
-          onClick={() => setShowQuickGuide((prev) => !prev)}
-          aria-expanded={showQuickGuide}
-          className="flex w-full items-center justify-between gap-3 px-5 py-3.5 text-left transition-colors hover:bg-muted/40 rounded-2xl"
-        >
-          <div className="flex min-w-0 items-center gap-2.5">
-            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
-              <Sparkles className="h-4 w-4" />
-            </span>
-            <div className="min-w-0">
-              <span className="block truncate text-sm font-semibold text-foreground">
-                Quick guide &amp; shortcuts
-              </span>
-              <span className="block truncate text-xs text-muted-foreground">
-                How QueComemos works: voting, weekly menus, and group challenges
-              </span>
-            </div>
+      {/* Show preferences warning if user doesn't have preferences set */}
+      {(!userData.preferences || !userData.preferences.hasPreferences) && (
+        <PreferencesWarning />
+      )}
+
+      {/* Side-by-side compact Home dashboard: Weekly Challenge + Weekly Menu */}
+      <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-12">
+        <div className="lg:col-span-6">
+          <GamificationHub
+            profileId={profile.id}
+            onOpenChallengePicker={() => openGroupPicker('challenges')}
+            sharedGroups={userGroups}
+            sharedGroupsLoading={loadingGroups}
+            compact
+          />
+        </div>
+
+        <div className="lg:col-span-6">
+          <HomeWeeklyMenuCard
+            profileId={profile.id}
+            groups={userGroups}
+            loadingGroups={loadingGroups}
+          />
+        </div>
+      </div>
+
+      {/* Floating Quick Guide & Shortcuts Button */}
+      <button
+        type="button"
+        onClick={() => setShowQuickGuide(true)}
+        aria-label="Open Quick Guide"
+        className="fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg transition-transform hover:scale-[1.02] hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      >
+        <Sparkles className="h-4 w-4" />
+        <span>Quick guide</span>
+      </button>
+
+      {/* Quick Guide & Shortcuts Dialog */}
+      <Dialog open={showQuickGuide} onOpenChange={setShowQuickGuide}>
+        <DialogContent className="max-h-[88vh] overflow-y-auto border-border bg-card text-foreground sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl text-foreground">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Hey, {displayName}! Quick guide &amp; shortcuts
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              How QueComemos works: vote together, plan your weekly menu, and track shared challenges.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="mt-2 flex flex-wrap gap-2">
+            <Button asChild size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <Link href="/protected/groups/create" onClick={() => setShowQuickGuide(false)}>
+                <Plus className="mr-1.5 h-4 w-4" />
+                Create group
+              </Link>
+            </Button>
+            <Button asChild size="sm" variant="outline" className="border-border bg-background text-foreground hover:bg-muted">
+              <Link href="/protected/groups" onClick={() => setShowQuickGuide(false)}>
+                <Users className="mr-1.5 h-4 w-4" />
+                My groups
+              </Link>
+            </Button>
+            <Button asChild size="sm" variant="outline" className="border-border bg-background text-foreground hover:bg-muted">
+              <Link href="/protected/foods" onClick={() => setShowQuickGuide(false)}>
+                <Compass className="mr-1.5 h-4 w-4" />
+                Explore foods
+              </Link>
+            </Button>
           </div>
 
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-background px-3 py-1 text-xs font-semibold text-foreground">
-            {showQuickGuide ? (
-              <>
-                Hide
-                <ChevronUp className="h-3.5 w-3.5" />
-              </>
-            ) : (
-              <>
-                Open
-                <ChevronDown className="h-3.5 w-3.5" />
-              </>
-            )}
-          </span>
-        </button>
-
-        {showQuickGuide && (
-          <div className="border-t border-border p-5 md:p-6">
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-              <div className="max-w-2xl space-y-2.5">
-                <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
-                  Hey, {displayName}! Decide what to eat together without the hassle.
-                </h1>
-                <p className="text-sm leading-relaxed text-muted-foreground">
-                  <strong className="font-semibold text-foreground">QueComemos</strong> brings your group together to vote
-                  on meals that fit everyone&apos;s tastes and restrictions, plan the weekly menu, share healthy challenges,
-                  and discover new dishes.
-                </p>
-              </div>
-
-              <div className="flex flex-wrap gap-2.5 lg:shrink-0">
-                <Button asChild size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
-                  <Link href="/protected/groups/create">
-                    <Plus className="mr-1.5 h-4 w-4" />
-                    Create group
-                  </Link>
-                </Button>
-                <Button asChild size="sm" variant="outline" className="border-border bg-background text-foreground hover:bg-muted">
-                  <Link href="/protected/groups">
-                    <Users className="mr-1.5 h-4 w-4" />
-                    My groups
-                  </Link>
-                </Button>
-                <Button asChild size="sm" variant="outline" className="border-border bg-background text-foreground hover:bg-muted">
-                  <Link href="/protected/foods">
-                    <Compass className="mr-1.5 h-4 w-4" />
-                    Explore foods
-                  </Link>
-                </Button>
-              </div>
-            </div>
-
-            <div className="mt-5 grid grid-cols-1 gap-4 border-t border-border pt-5 md:grid-cols-3">
-              {pillars.map((pillar) => {
-                const Icon = pillar.icon;
-                return (
-                  <button
-                    key={pillar.destination}
-                    type="button"
-                    onClick={() => openGroupPicker(pillar.destination)}
-                    className="group flex flex-col justify-between rounded-xl border border-border bg-background p-4 text-left transition-colors hover:border-primary/50 hover:bg-muted/40"
-                  >
-                    <div className="space-y-2">
-                      <div className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${pillar.accent}`}>
-                        <Icon className="h-5 w-5" />
-                      </div>
-                      <h2 className="text-base font-semibold text-foreground">{pillar.title}</h2>
-                      <p className="text-sm leading-snug text-muted-foreground">{pillar.description}</p>
+          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+            {pillars.map((pillar) => {
+              const Icon = pillar.icon;
+              return (
+                <button
+                  key={pillar.destination}
+                  type="button"
+                  onClick={() => openGroupPicker(pillar.destination)}
+                  className="group flex flex-col justify-between rounded-xl border border-border bg-background p-4 text-left transition-colors hover:border-primary/50 hover:bg-muted/40"
+                >
+                  <div className="space-y-2">
+                    <div className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${pillar.accent}`}>
+                      <Icon className="h-5 w-5" />
                     </div>
-                    <span className="mt-3 inline-flex items-center text-xs font-semibold text-primary group-hover:underline">
-                      {pillar.cta}
-                      <ArrowRight className="ml-1 h-3.5 w-3.5" />
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+                    <h3 className="text-sm font-semibold text-foreground">{pillar.title}</h3>
+                    <p className="text-xs leading-snug text-muted-foreground">{pillar.description}</p>
+                  </div>
+                  <span className="mt-3 inline-flex items-center text-xs font-semibold text-primary group-hover:underline">
+                    {pillar.cta}
+                    <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                  </span>
+                </button>
+              );
+            })}
           </div>
-        )}
-      </section>
+        </DialogContent>
+      </Dialog>
 
       {/* Group selector dialog for Voting / Weekly Menu / Challenges */}
       <Dialog open={pickerDestination !== null} onOpenChange={(open) => !open && setPickerDestination(null)}>
@@ -358,36 +340,6 @@ export function UserProfileSection() {
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Duolingo-style Gamification Hub (Streak, XP, Daily Quests, Mini Leaderboard) */}
-      <GamificationHub
-        profileId={profile.id}
-        onOpenChallengePicker={() => openGroupPicker('challenges')}
-        sharedGroups={userGroups}
-        sharedGroupsLoading={loadingGroups}
-      />
-
-      {/* Show preferences warning if user doesn't have preferences set */}
-      {(!userData.preferences || !userData.preferences.hasPreferences) && (
-        <PreferencesWarning />
-      )}
-
-      {/* Dashboard with groups and meals */}
-      <div className="flex flex-col gap-10">
-        <div>
-          <DashboardGroupsSection
-            userId={profile.id}
-            sharedGroups={userGroups}
-            sharedLoading={loadingGroups}
-            sharedError={groupsError}
-            onRefresh={() => void fetchUserGroups()}
-          />
-        </div>
-
-        <div>
-          <AllMeals />
-        </div>
-      </div>
     </div>
   );
 }

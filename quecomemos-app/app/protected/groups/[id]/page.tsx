@@ -118,7 +118,7 @@ export default function GroupDetailPage() {
     return (
       <div className="container mx-auto p-6">
         <div className="flex items-center space-x-4 mb-6">
-          <Button variant="ghost" size="sm" onClick={() => router.back()} className="p-2">
+          <Button variant="ghost" size="sm" onClick={() => router.push('/protected/groups')} className="p-2" aria-label="Back to groups">
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <h1 className="text-2xl font-bold">Error</h1>
@@ -127,7 +127,7 @@ export default function GroupDetailPage() {
           <CardContent>
             <p className="text-destructive">{error}</p>
             <div className="mt-4 flex gap-2">
-              <Button variant="outline" onClick={() => router.back()}>
+              <Button variant="outline" onClick={() => router.push('/protected/groups')}>
                 Back
               </Button>
               <Button onClick={fetchGroup}>Retry</Button>
@@ -141,7 +141,7 @@ export default function GroupDetailPage() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:items-center sm:space-x-4">
-        <Button variant="ghost" size="sm" onClick={() => router.back()} className="p-2 self-start">
+        <Button variant="ghost" size="sm" onClick={() => router.push('/protected/groups')} className="p-2 self-start" aria-label="Back to groups">
           <ArrowLeft className="w-4 h-4" />
         </Button>
 

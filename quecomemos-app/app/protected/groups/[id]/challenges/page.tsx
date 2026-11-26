@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Trophy, Target, CalendarDays, Check, Plus, X, HeartHandshake } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { AddFoodForm } from '@/components/food/forms/add-food-form';
 import { API_BASE_URL } from '@/lib/config/api';
 import { formatLocalYMD } from '@/lib/hooks/useWeeklyMenu';
 import { formatYMDDisplay, isValidYMD } from '@/lib/utils/timezone';
@@ -37,11 +39,12 @@ export default function GroupChallengesPage() {
   });
   const [pausedInput, setPausedInput] = useState('');
   const [catalogFoods, setCatalogFoods] = useState<Array<{ FoodID: number; name: string }>>([]);
+  const [showCreateFoodModal, setShowCreateFoodModal] = useState(false);
 
   const isAdmin = Boolean(group && profileId && (
     group.createdBy === profileId ||
     group.members?.some((member) => member.profile.id === profileId && member.role === 'admin')
- ));
+  ));
 
   const fetchData = useCallback(async () => {
     if (!profileId) return;
@@ -87,17 +90,40 @@ export default function GroupChallengesPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  const loadCatalogFoods = useCallback(async (autoSelectNew = false) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/foods`, { cache: 'no-store' });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!Array.isArray(data)) return;
+      const mapped = data.map((f: { FoodID: number; name: string }) => ({ FoodID: f.FoodID, name: f.name }));
+      setCatalogFoods((prev) => {
+        if (autoSelectNew && prev.length > 0) {
+          const prevIds = new Set(prev.map((p) => p.FoodID));
+          const newest = mapped.filter((m) => !prevIds.has(m.FoodID));
+          if (newest.length > 0) {
+            setForm((current) => {
+              const next = [...current.pausedFoods];
+              for (const item of newest) {
+                if (!next.some((x) => x.toLowerCase() === item.name.toLowerCase()) && next.length < 20) {
+                  next.push(item.name);
+                }
+              }
+              return { ...current, pausedFoods: next };
+            });
+          }
+        }
+        return mapped;
+      });
+    } catch {
+      // ignore catalog load failure
+    }
+  }, []);
+
   useEffect(() => {
     if (!showForm || catalogFoods.length > 0) return;
-    fetch(`${API_BASE_URL}/foods`)
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setCatalogFoods(data.slice(0, 24).map((f: { FoodID: number; name: string }) => ({ FoodID: f.FoodID, name: f.name })));
-        }
-      })
-      .catch(() => {});
-  }, [showForm, catalogFoods.length]);
+    void loadCatalogFoods(false);
+  }, [showForm, catalogFoods.length, loadCatalogFoods]);
 
   const addPausedFood = (raw: string) => {
     const item = raw.trim();
@@ -181,7 +207,7 @@ export default function GroupChallengesPage() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" onClick={() => router.back()}><ArrowLeft className="w-4 h-4" /></Button>
+        <Button variant="ghost" size="sm" onClick={() => router.push(`/protected/groups/${groupId}`)} aria-label="Back to group"><ArrowLeft className="w-4 h-4" /></Button>
         <div className="flex-1">
           <h1 className="text-3xl font-bold flex items-center gap-2"><Trophy className="w-7 h-7 text-secondary" /> Group Challenges</h1>
           <p className="text-muted-foreground">Shared goals and daily progress for {group?.name}</p>
@@ -241,24 +267,18 @@ export default function GroupChallengesPage() {
                 <div className="flex gap-2">
                   <Input
                     id="challenge-paused-food"
-                    placeholder="Type a food or keyword (e.g. Soda, Fried, Candy)..."
+                    placeholder="Filter foods from catalog..."
                     value={pausedInput}
                     onChange={(e) => setPausedInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        addPausedFood(pausedInput);
-                      }
-                    }}
                   />
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => addPausedFood(pausedInput)}
-                    disabled={!pausedInput.trim()}
+                    onClick={() => setShowCreateFoodModal(true)}
+                    className="shrink-0"
                   >
                     <Plus className="mr-1 h-4 w-4" />
-                    Add
+                    Create food
                   </Button>
                 </div>
 
@@ -283,13 +303,18 @@ export default function GroupChallengesPage() {
                   </div>
                 )}
 
-                {catalogFoods.length > 0 && (
-                  <div className="space-y-1">
-                    <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                      Quick-pick from foods
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {catalogFoods.slice(0, 12).map((food) => {
+                <div className="space-y-1.5">
+                  <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                    Choose from catalog foods
+                  </p>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {catalogFoods
+                      .filter((food) =>
+                        !pausedInput.trim() ||
+                        food.name.toLowerCase().includes(pausedInput.trim().toLowerCase())
+                      )
+                      .slice(0, 18)
+                      .map((food) => {
                         const isSelected = form.pausedFoods.some(
                           (item) => item.toLowerCase() === food.name.toLowerCase()
                         );
@@ -298,20 +323,26 @@ export default function GroupChallengesPage() {
                             key={food.FoodID}
                             type="button"
                             onClick={() => (isSelected ? removePausedFood(food.name) : addPausedFood(food.name))}
-                            className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors ${
-                              isSelected
+                            className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors ${isSelected
                                 ? 'border-amber-500/40 bg-amber-500/15 font-medium text-amber-800 dark:text-amber-200'
                                 : 'border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground'
-                            }`}
+                              }`}
                           >
                             {isSelected ? '✓ ' : '+ '}
                             {food.name}
                           </button>
                         );
                       })}
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowCreateFoodModal(true)}
+                      className="inline-flex items-center gap-1 rounded-full border border-dashed border-primary/50 bg-primary/5 px-2.5 py-0.5 text-xs font-medium text-primary transition-colors hover:bg-primary/15"
+                    >
+                      <Plus className="h-3 w-3" />
+                      Create food
+                    </button>
                   </div>
-                )}
+                </div>
               </div>
               <div className="md:col-span-2 flex justify-end"><Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90">Create</Button></div>
             </form>
@@ -350,7 +381,19 @@ export default function GroupChallengesPage() {
               <div className="flex items-center gap-2 text-sm"><CalendarDays className="w-4 h-4" /> {formatYMDDisplay(challenge.startDate.slice(0, 10))} – {formatYMDDisplay(challenge.endDate.slice(0, 10))}</div>
               <div className="h-3 bg-[#EFE7DB] rounded overflow-hidden"><div className="h-full bg-primary" style={{ width: `${userProgress?.percentage || 0}%` }} /></div>
               <p className="text-sm">You completed <strong>{userProgress?.completedDays || 0}</strong> of <strong>{userProgress?.totalDays || 0}</strong> days.</p>
-              {userProgress?.todayCompleted ? (
+              {challenge.pausedFoods && challenge.pausedFoods.length > 0 ? (
+                userProgress?.todayCompleted ? (
+                  <div className="inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3.5 py-2 text-xs font-semibold text-primary">
+                    <Check className="h-4 w-4" />
+                    Completed today · Auto-tracked from your logged meals
+                  </div>
+                ) : (
+                  <div className="inline-flex items-center gap-2 rounded-xl border border-border bg-muted/40 px-3.5 py-2 text-xs text-muted-foreground">
+                    <HeartHandshake className="h-4 w-4 shrink-0 text-primary" />
+                    Auto-tracked · Log at least 1 meal today without paused foods to complete today
+                  </div>
+                )
+              ) : userProgress?.todayCompleted ? (
                 <Button disabled className="bg-primary/15 text-primary hover:bg-primary/15">
                   <Check className="w-4 h-4 mr-2" />
                   Completed today
@@ -377,6 +420,36 @@ export default function GroupChallengesPage() {
           </Card>
         );
       })}
+
+      {showCreateFoodModal &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+            onClick={() => setShowCreateFoodModal(false)}
+          >
+            <div
+              className="relative max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-border bg-card p-2 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={() => setShowCreateFoodModal(false)}
+                aria-label="Close create food modal"
+                className="absolute right-4 top-4 z-10 rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <AddFoodForm
+                onSuccess={() => {
+                  setShowCreateFoodModal(false);
+                  void loadCatalogFoods(true);
+                }}
+              />
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

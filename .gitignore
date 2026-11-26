@@ -21,7 +21,8 @@ SqueakDebug.log
 /github-cache
 github-*.zip
 
-# Ignore markdown docs except root README.md
+# Ignore markdown and text docs except root README.md
 *.md
+*.txt
 !/README.md
 

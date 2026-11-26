@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { AuthButton } from "@/components/auth";
 import { Logo } from "@/components/common";
 import { NavLinks } from "@/components/common/nav-links";
 import { NavbarBadgeButton } from "@/components/common/navbar-badge-button";
 import { NavbarNotificationsBell } from "@/components/common/navbar-notifications-bell";
+import { NavbarRegisterMealButton } from "@/components/common/navbar-register-meal-button";
 
 export default function ProtectedLayout({
   children,
@@ -29,12 +29,7 @@ export default function ProtectedLayout({
           </div>
 
           <div className="flex shrink-0 items-center gap-3">
-            <Link
-              href="/protected/history"
-              className="hidden rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 sm:inline-flex"
-            >
-              Register a meal
-            </Link>
+            <NavbarRegisterMealButton />
             <NavbarNotificationsBell />
             <AuthButton />
           </div>

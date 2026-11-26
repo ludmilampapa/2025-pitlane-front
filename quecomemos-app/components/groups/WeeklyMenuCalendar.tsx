@@ -132,7 +132,6 @@ export function WeeklyMenuCalendar({
 
   // Admin slot assignment form state
   const [slotMealId, setSlotMealId] = useState<string>('');
-  const [slotCustomMeal, setSlotCustomMeal] = useState<string>('');
   const [mealFilter, setMealFilter] = useState<string>('');
 
   // Visual interactive board state (drag & drop + 1-click paint)
@@ -145,7 +144,6 @@ export function WeeklyMenuCalendar({
   // Member proposal form state
   const [showProposalBox, setShowProposalBox] = useState(false);
   const [proposedMealId, setProposedMealId] = useState<string>('');
-  const [alternativeText, setAlternativeText] = useState<string>('');
   const [proposalReason, setProposalReason] = useState<string>('');
 
   const weekDays = useMemo(() => {
@@ -212,11 +210,9 @@ export function WeeklyMenuCalendar({
       momentLabel: momentMeta.label,
     });
     setSlotMealId(existing?.mealId ? String(existing.mealId) : '');
-    setSlotCustomMeal(existing?.customMeal || '');
     setMealFilter('');
     setShowProposalBox(false);
     setProposedMealId('');
-    setAlternativeText('');
     setProposalReason('');
   };
 
@@ -305,8 +301,8 @@ export function WeeklyMenuCalendar({
     e.preventDefault();
     if (!selectedSlot) return;
 
-    if (!slotMealId && !slotCustomMeal.trim()) {
-      toast.error('Select a catalog dish or enter a custom meal name.');
+    if (!slotMealId) {
+      toast.error('Select a meal from the catalog.');
       return;
     }
 
@@ -319,8 +315,7 @@ export function WeeklyMenuCalendar({
           profileId,
           date: selectedSlot.dateKey,
           moment: selectedSlot.moment,
-          mealId: slotMealId ? Number(slotMealId) : null,
-          customMeal: slotMealId ? null : slotCustomMeal.trim(),
+          mealId: Number(slotMealId),
         }),
       });
       if (!response.ok) {
@@ -360,8 +355,8 @@ export function WeeklyMenuCalendar({
 
   const handleSendProposal = async () => {
     if (!activeEntry) return;
-    if (!proposedMealId && !alternativeText.trim()) {
-      toast.error('Choose an alternative meal or write a suggestion.');
+    if (!proposedMealId) {
+      toast.error('Choose an alternative meal from the catalog.');
       return;
     }
 
@@ -374,8 +369,7 @@ export function WeeklyMenuCalendar({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             profileId,
-            proposedMealId: proposedMealId ? Number(proposedMealId) : null,
-            alternativeText: proposedMealId ? null : alternativeText.trim(),
+            proposedMealId: Number(proposedMealId),
             reason: proposalReason.trim() || null,
           }),
         }
@@ -387,7 +381,6 @@ export function WeeklyMenuCalendar({
       toast.success('Alternative proposed to group admins!');
       setShowProposalBox(false);
       setProposedMealId('');
-      setAlternativeText('');
       setProposalReason('');
       await onRefresh();
     } catch (err) {
@@ -951,27 +944,15 @@ export function WeeklyMenuCalendar({
                     <select
                       className="h-10 w-full rounded-xl border border-border bg-card px-3 text-sm text-foreground"
                       value={proposedMealId}
-                      onChange={(e) => {
-                        setProposedMealId(e.target.value);
-                        if (e.target.value) setAlternativeText('');
-                      }}
+                      onChange={(e) => setProposedMealId(e.target.value)}
                     >
-                      <option value="">Choose from catalog...</option>
+                      <option value="">Choose a meal from catalog...</option>
                       {meals.map((m) => (
                         <option key={m.MealID} value={m.MealID}>
                           {m.name}
                         </option>
                       ))}
                     </select>
-                    <Input
-                      placeholder="Or write a custom dish suggestion..."
-                      value={alternativeText}
-                      onChange={(e) => {
-                        setAlternativeText(e.target.value);
-                        if (e.target.value) setProposedMealId('');
-                      }}
-                      className="rounded-xl bg-card"
-                    />
                     <Textarea
                       placeholder="Reason or note (optional)"
                       value={proposalReason}
@@ -1009,12 +990,9 @@ export function WeeklyMenuCalendar({
                       <select
                         className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground"
                         value={slotMealId}
-                        onChange={(e) => {
-                          setSlotMealId(e.target.value);
-                          if (e.target.value) setSlotCustomMeal('');
-                        }}
+                        onChange={(e) => setSlotMealId(e.target.value)}
                       >
-                        <option value="">— Select a catalog dish —</option>
+                        <option value="">— Select a catalog meal —</option>
                         {filteredMeals.map((meal) => (
                           <option key={meal.MealID} value={meal.MealID}>
                             {meal.name}
@@ -1022,24 +1000,6 @@ export function WeeklyMenuCalendar({
                         ))}
                       </select>
                     </div>
-
-                    <div className="relative flex items-center py-1">
-                      <div className="flex-grow border-t border-border" />
-                      <span className="mx-3 shrink text-[11px] uppercase text-muted-foreground">
-                        or custom text
-                      </span>
-                      <div className="flex-grow border-t border-border" />
-                    </div>
-
-                    <Input
-                      placeholder="e.g., Homemade Avocado Toast"
-                      value={slotCustomMeal}
-                      onChange={(e) => {
-                        setSlotCustomMeal(e.target.value);
-                        if (e.target.value) setSlotMealId('');
-                      }}
-                      className="rounded-xl"
-                    />
 
                     <div className="flex items-center justify-between gap-2 pt-2">
                       {activeEntry ? (
