@@ -159,7 +159,7 @@ export function UserProfileSection() {
   ];
 
   return (
-    <div className="flex-1 w-full flex flex-col gap-5 pb-14">
+    <div className="flex-1 w-full flex flex-col gap-4 pb-4">
       {/* Live Group Alerts (Active Votes, Menu Change Proposals & Invitations) */}
       <LiveActivityBanner />
 
@@ -169,7 +169,7 @@ export function UserProfileSection() {
       )}
 
       {/* Side-by-side compact Home dashboard: Weekly Challenge + Weekly Menu */}
-      <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-12">
+      <div className="grid grid-cols-1 items-stretch gap-5 lg:grid-cols-12">
         <div className="lg:col-span-6">
           <GamificationHub
             profileId={profile.id}

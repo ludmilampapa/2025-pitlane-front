@@ -2,16 +2,22 @@
 
 import { Flame, Snowflake, Check } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { ChallengeCheckInStatus } from '@/components/challenges/ChallengeCheckInStatus';
 import type { ChallengeProgress } from '@/lib/types/groupChallenges';
 
 interface StreakFeedbackCardProps {
   progress: ChallengeProgress | null;
   challengeName: string;
   onMarkToday: () => Promise<void>;
+  isAutoTracked?: boolean;
 }
 
-export function StreakFeedbackCard({ progress, challengeName, onMarkToday }: StreakFeedbackCardProps) {
+export function StreakFeedbackCard({
+  progress,
+  challengeName,
+  onMarkToday,
+  isAutoTracked = false,
+}: StreakFeedbackCardProps) {
   const completedToday = progress?.todayCompleted ?? false;
   const streak = progress?.streak ?? 0;
 
@@ -51,15 +57,16 @@ export function StreakFeedbackCard({ progress, challengeName, onMarkToday }: Str
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-secondary">Streak at risk</p>
             <h3 className="mt-1 text-lg font-bold text-foreground">Don&apos;t lose your streak!</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Check in before midnight to keep your streak alive.
-            </p>
-            <Button
-              onClick={() => void onMarkToday()}
-              className="mt-4 w-full bg-primary text-primary-foreground hover:bg-primary/90"
-            >
-              Complete today
-            </Button>
+            <div className="mt-3">
+              <ChallengeCheckInStatus
+                isAutoTracked={isAutoTracked}
+                todayCompleted={false}
+                onCheckIn={onMarkToday}
+                actionLabel="Complete today"
+                autoHint="Auto-tracked · Log at least 1 meal today without paused foods"
+                fullWidth
+              />
+            </div>
           </div>
         </div>
       </CardContent>

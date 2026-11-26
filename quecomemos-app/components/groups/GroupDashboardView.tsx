@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Flame, Target, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { API_BASE_URL } from '@/lib/config/api';
+import { useCalorieProgressRefresh } from '@/lib/contexts/CalorieProgressContext';
 import { StreakFeedbackCard } from '@/components/challenges/StreakFeedbackCard';
 import { ChallengeRanking } from '@/components/challenges/ChallengeRanking';
 import { WeeklyMenuCalendar } from '@/components/groups/WeeklyMenuCalendar';
@@ -62,6 +63,11 @@ export function GroupDashboardView({ groupId, profileId, isAdmin }: GroupDashboa
   useEffect(() => {
     void streakHook.refresh();
   }, [streakHook.refresh]);
+
+  const handleMealRefresh = useCallback(() => {
+    void streakHook.refresh();
+  }, [streakHook.refresh]);
+  useCalorieProgressRefresh(handleMealRefresh);
 
   useEffect(() => {
     setRanking(streakHook.ranking);
@@ -154,6 +160,7 @@ export function GroupDashboardView({ groupId, profileId, isAdmin }: GroupDashboa
             progress={streakHook.progress}
             challengeName={activeChallenge.name}
             onMarkToday={streakHook.markToday}
+            isAutoTracked={Boolean(activeChallenge.pausedFoods?.length)}
           />
         ) : (
           <Card className="rounded-2xl border-border bg-card shadow-sm">
