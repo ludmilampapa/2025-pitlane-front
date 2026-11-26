@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Trophy, Target, CalendarDays, Check } from 'lucide-react';
+import { ArrowLeft, Trophy, Target, CalendarDays, Check, Plus, X, HeartHandshake } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -27,7 +27,16 @@ export default function GroupChallengesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: '', description: '', ruleText: '', startDate: '', endDate: '' });
+  const [form, setForm] = useState({
+    name: '',
+    description: '',
+    ruleText: '',
+    startDate: '',
+    endDate: '',
+    pausedFoods: [] as string[],
+  });
+  const [pausedInput, setPausedInput] = useState('');
+  const [catalogFoods, setCatalogFoods] = useState<Array<{ FoodID: number; name: string }>>([]);
 
   const isAdmin = Boolean(group && profileId && (
     group.createdBy === profileId ||
@@ -78,6 +87,36 @@ export default function GroupChallengesPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  useEffect(() => {
+    if (!showForm || catalogFoods.length > 0) return;
+    fetch(`${API_BASE_URL}/foods`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setCatalogFoods(data.slice(0, 24).map((f: { FoodID: number; name: string }) => ({ FoodID: f.FoodID, name: f.name })));
+        }
+      })
+      .catch(() => {});
+  }, [showForm, catalogFoods.length]);
+
+  const addPausedFood = (raw: string) => {
+    const item = raw.trim();
+    if (!item || item.length > 60) return;
+    setForm((prev) => {
+      if (prev.pausedFoods.some((existing) => existing.toLowerCase() === item.toLowerCase())) return prev;
+      if (prev.pausedFoods.length >= 20) return prev;
+      return { ...prev, pausedFoods: [...prev.pausedFoods, item] };
+    });
+    setPausedInput('');
+  };
+
+  const removePausedFood = (itemToRemove: string) => {
+    setForm((prev) => ({
+      ...prev,
+      pausedFoods: prev.pausedFoods.filter((item) => item !== itemToRemove),
+    }));
+  };
+
   const createChallenge = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!profileId) return;
@@ -111,7 +150,8 @@ export default function GroupChallengesPage() {
         }),
       });
       if (!response.ok) throw new Error((await response.json()).error || 'Failed to create challenge');
-      setForm({ name: '', description: '', ruleText: '', startDate: '', endDate: '' });
+      setForm({ name: '', description: '', ruleText: '', startDate: '', endDate: '', pausedFoods: [] });
+      setPausedInput('');
       setShowForm(false);
       await fetchData();
     } catch (err) {
@@ -184,6 +224,95 @@ export default function GroupChallengesPage() {
                   required
                 />
               </div>
+
+              <div className="md:col-span-2 space-y-2.5 rounded-xl border border-border bg-muted/30 p-4">
+                <div className="flex items-start gap-2">
+                  <HeartHandshake className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  <div>
+                    <label htmlFor="challenge-paused-food" className="text-sm font-medium text-foreground">
+                      Foods to take a break from (optional)
+                    </label>
+                    <p className="text-xs text-muted-foreground">
+                      Linked to meal logging as a gentle mindful reminder — never blocks or shames members.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Input
+                    id="challenge-paused-food"
+                    placeholder="Type a food or keyword (e.g. Soda, Fried, Candy)..."
+                    value={pausedInput}
+                    onChange={(e) => setPausedInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addPausedFood(pausedInput);
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => addPausedFood(pausedInput)}
+                    disabled={!pausedInput.trim()}
+                  >
+                    <Plus className="mr-1 h-4 w-4" />
+                    Add
+                  </Button>
+                </div>
+
+                {form.pausedFoods.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {form.pausedFoods.map((item) => (
+                      <span
+                        key={item}
+                        className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-800 dark:text-amber-200"
+                      >
+                        {item}
+                        <button
+                          type="button"
+                          onClick={() => removePausedFood(item)}
+                          className="rounded-full p-0.5 hover:bg-amber-500/20"
+                          aria-label={`Remove ${item}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {catalogFoods.length > 0 && (
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                      Quick-pick from foods
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {catalogFoods.slice(0, 12).map((food) => {
+                        const isSelected = form.pausedFoods.some(
+                          (item) => item.toLowerCase() === food.name.toLowerCase()
+                        );
+                        return (
+                          <button
+                            key={food.FoodID}
+                            type="button"
+                            onClick={() => (isSelected ? removePausedFood(food.name) : addPausedFood(food.name))}
+                            className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors ${
+                              isSelected
+                                ? 'border-amber-500/40 bg-amber-500/15 font-medium text-amber-800 dark:text-amber-200'
+                                : 'border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground'
+                            }`}
+                          >
+                            {isSelected ? '✓ ' : '+ '}
+                            {food.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
               <div className="md:col-span-2 flex justify-end"><Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90">Create</Button></div>
             </form>
           </CardContent>
@@ -202,6 +331,22 @@ export default function GroupChallengesPage() {
             </CardHeader>
             <CardContent className="space-y-5">
               <p className="text-sm text-muted-foreground">{challenge.description || challenge.ruleText}</p>
+              {challenge.pausedFoods && challenge.pausedFoods.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                  <span className="inline-flex items-center gap-1 font-medium text-muted-foreground">
+                    <HeartHandshake className="h-3.5 w-3.5 text-primary" />
+                    Taking a break from:
+                  </span>
+                  {challenge.pausedFoods.map((item) => (
+                    <span
+                      key={item}
+                      className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 font-medium text-amber-800 dark:text-amber-200"
+                    >
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              )}
               <div className="flex items-center gap-2 text-sm"><CalendarDays className="w-4 h-4" /> {formatYMDDisplay(challenge.startDate.slice(0, 10))} – {formatYMDDisplay(challenge.endDate.slice(0, 10))}</div>
               <div className="h-3 bg-[#EFE7DB] rounded overflow-hidden"><div className="h-full bg-primary" style={{ width: `${userProgress?.percentage || 0}%` }} /></div>
               <p className="text-sm">You completed <strong>{userProgress?.completedDays || 0}</strong> of <strong>{userProgress?.totalDays || 0}</strong> days.</p>

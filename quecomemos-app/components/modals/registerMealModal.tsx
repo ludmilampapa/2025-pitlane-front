@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { X, Plus, Clock, Calendar, SlidersHorizontal, Utensils, Check, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, Plus, Clock, Calendar, SlidersHorizontal, Utensils, Check, ChevronDown, ChevronUp, HeartHandshake } from 'lucide-react';
 import { useUser } from '@/lib/contexts/UserContext';
 import { useMeals, Meal } from '@/lib/contexts/MealsContext';
+import { API_BASE_URL } from '@/lib/config/api';
+import type { ActivePausedChallenge } from '@/lib/types/groupChallenges';
 import AddMealForm from '../meal/AddMealForm';
 import { MealSearchBar } from '../meal/MealSearchBar';
 import { MealComposition } from '../meal/MealComposition';
@@ -60,6 +62,7 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
 
   // Group restrictions state
   const [groupDietaryInfo, setGroupDietaryInfo] = useState<GroupDietaryInfo | null>(null);
+  const [activePausedChallenges, setActivePausedChallenges] = useState<ActivePausedChallenge[]>([]);
 
   // Mode: choose existing vs create new
   const [showCreateMeal, setShowCreateMeal] = useState(false);
@@ -108,6 +111,51 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
     };
     fetchGroupInfo();
   }, [group, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !profile?.id) return;
+    let cancelled = false;
+    const todayYMD = formatArgentinaYMD();
+    fetch(`${API_BASE_URL}/challenges/active-paused?date=${encodeURIComponent(todayYMD)}`, {
+      cache: 'no-store',
+    })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (!cancelled && Array.isArray(data)) {
+          setActivePausedChallenges(data as ActivePausedChallenge[]);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setActivePausedChallenges([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, profile?.id]);
+
+  const mindfulChallengeMatches = useMemo(() => {
+    if (!selectedMeal || activePausedChallenges.length === 0) return [];
+    const searchableTexts = [
+      selectedMeal.name || '',
+      selectedMeal.description || '',
+      ...selectedMeal.mealFoods.map((mf) => mf.food?.name || ''),
+    ]
+      .join(' ')
+      .toLowerCase();
+
+    const relevantChallenges = group
+      ? activePausedChallenges.filter((c) => c.groupId === group.GroupID)
+      : activePausedChallenges;
+
+    return relevantChallenges
+      .map((challenge) => {
+        const matchedItems = challenge.pausedFoods.filter((paused) =>
+          searchableTexts.includes(paused.toLowerCase())
+        );
+        return matchedItems.length > 0 ? { challenge, matchedItems } : null;
+      })
+      .filter((entry): entry is { challenge: ActivePausedChallenge; matchedItems: string[] } => Boolean(entry));
+  }, [selectedMeal, activePausedChallenges, group]);
 
   const handleClose = useCallback(() => {
     setSelectedMeal(null);
@@ -330,6 +378,36 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
                           {meal.name}
                         </button>
                       ))}
+                    </div>
+                  </div>
+                )}
+
+                {selectedMeal && mindfulChallengeMatches.length > 0 && (
+                  <div
+                    role="status"
+                    className="rounded-xl border border-amber-500/35 bg-amber-500/10 p-3.5 text-xs text-foreground"
+                  >
+                    <div className="flex items-start gap-2.5">
+                      <HeartHandshake className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-300" />
+                      <div className="space-y-1">
+                        <p className="font-semibold text-amber-900 dark:text-amber-200">
+                          Mindful check-in · Active challenge
+                        </p>
+                        {mindfulChallengeMatches.map(({ challenge, matchedItems }) => (
+                          <p key={challenge.ChallengeID} className="text-muted-foreground">
+                            This meal includes{' '}
+                            <span className="font-semibold text-foreground">
+                              {matchedItems.join(', ')}
+                            </span>
+                            , which you&apos;re taking a break from in{' '}
+                            <span className="font-semibold text-foreground">{challenge.name}</span>{' '}
+                            ({challenge.groupName}).
+                          </p>
+                        ))}
+                        <p className="pt-0.5 text-[11px] text-muted-foreground">
+                          Logging honestly always counts — no guilt and no lockouts. You can still log this meal or pick another option.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 )}

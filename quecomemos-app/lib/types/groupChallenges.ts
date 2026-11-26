@@ -4,9 +4,19 @@ export interface Challenge {
   name: string;
   description: string | null;
   ruleText: string;
+  pausedFoods?: string[];
   startDate: string;
   endDate: string;
   isActive: boolean;
+}
+
+export interface ActivePausedChallenge {
+  ChallengeID: number;
+  name: string;
+  ruleText: string;
+  pausedFoods: string[];
+  groupId: number;
+  groupName: string;
 }
 
 export interface ChallengeProgress {
