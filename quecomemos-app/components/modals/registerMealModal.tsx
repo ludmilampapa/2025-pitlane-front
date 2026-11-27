@@ -497,7 +497,7 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
                     />
                   </div>
 
-                  {activeFraction === null && selectedPortions && (
+                  {customBaseRatios && selectedPortions && (
                     <p className="flex items-center gap-1 text-xs font-medium text-primary">
                       <Check className="h-3.5 w-3.5" />
                       Custom ingredient breakdown active ({Math.round(selectedPortions.portionFraction * 100)}% ·{' '}
@@ -639,15 +639,19 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
                   totalCalories: fullMealCalories,
                 }}
                 initialPortions={selectedPortions}
+                initialMealFraction={activeFraction ?? 1}
+                initialBaseRatios={customBaseRatios}
                 confirmLabel="Save"
                 onConfirm={(portionData) => {
+                  const chosenFraction = portionData.selectedMealFraction ?? activeFraction ?? 1;
                   setSelectedPortions(portionData);
-                  setCustomBaseRatios(
-                    Object.fromEntries(
-                      portionData.foodPortions.map((fp) => [fp.foodId, fp.portionFraction])
-                    )
-                  );
-                  setActiveFraction(null);
+                  setActiveFraction(chosenFraction);
+                  if (portionData.baseIngredientRatios) {
+                    const hasCustom = Object.values(portionData.baseIngredientRatios).some(
+                      (r) => Math.abs(r - 1) > 0.01
+                    );
+                    setCustomBaseRatios(hasCustom ? portionData.baseIngredientRatios : null);
+                  }
                   setShowPortionSelector(false);
                 }}
                 onCancel={() => setShowPortionSelector(false)}
