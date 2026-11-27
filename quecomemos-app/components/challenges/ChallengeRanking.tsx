@@ -36,7 +36,14 @@ export function ChallengeRanking({ ranking }: ChallengeRankingProps) {
                   </span>
                 </div>
                 <span className="text-xs font-semibold text-muted-foreground">
-                  {row.completedDays}/{row.totalDays}
+                  {row.percentage}%
+                  {row.outcome === 'completed'
+                    ? ' · Completed'
+                    : row.outcome === 'goal_reached'
+                      ? ' · Goal reached'
+                      : row.outcome === 'not_completed'
+                        ? ' · Not completed'
+                        : ''}
                 </span>
               </div>
               <Progress value={row.percentage} className="h-2" />

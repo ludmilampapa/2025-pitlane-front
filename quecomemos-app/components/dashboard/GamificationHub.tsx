@@ -376,7 +376,7 @@ export function GamificationHub({
                     const dashOffset = circumference * (1 - pct / 100);
                     return (
                       <div
-                        title={`${currentItem.progress?.completedDays ?? 0} of ${currentItem.progress?.totalDays ?? 0} days completed`}
+                        title={`${pct}% progress · Goal: ${currentItem.progress?.targetPercentage ?? currentItem.challenge.targetPercentage ?? 100}%`}
                         className="relative flex h-12 w-12 shrink-0 items-center justify-center"
                       >
                         <svg className="h-12 w-12 -rotate-90" viewBox="0 0 48 48" aria-hidden="true">
@@ -410,7 +410,7 @@ export function GamificationHub({
                   })()}
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      {currentItem.progress?.completedDays ?? 0}/{currentItem.progress?.totalDays ?? 0} days · {currentItem.groupName}
+                      Goal: {currentItem.progress?.targetPercentage ?? currentItem.challenge.targetPercentage ?? 100}% · {currentItem.groupName}
                     </p>
                     <h3 className="text-base font-bold text-foreground sm:text-lg">
                       {currentItem.challenge.name}
@@ -481,13 +481,13 @@ export function GamificationHub({
                       Ranked <strong className="text-foreground">#{myRank}</strong> of{' '}
                       {currentItem.ranking.length}
                       {myRank > 1 && leader
-                        ? ` · ${Math.max(1, leader.completedDays - (currentItem.progress?.completedDays ?? 0))} day(s) behind ${leader.username}`
+                        ? ` · ${Math.max(1, leader.percentage - (currentItem.progress?.percentage ?? 0))}% behind ${leader.username}`
                         : ' · Leading the group!'}
                     </span>
                   ) : (
                     <span>
-                      {currentItem.progress?.completedDays ?? 0} / {currentItem.progress?.totalDays ?? 7}{' '}
-                      days completed
+                      {currentItem.progress?.percentage ?? 0}% achieved · Goal:{' '}
+                      {currentItem.progress?.targetPercentage ?? currentItem.challenge.targetPercentage ?? 100}%
                     </span>
                   )}
                 </div>
