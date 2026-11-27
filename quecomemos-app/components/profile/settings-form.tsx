@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/forms/password';
@@ -10,7 +11,7 @@ import { useUser } from '@/lib/contexts/UserContext';
 import { createClient } from '@/lib/supabase/client';
 import { AddUserDataForm } from '@/components/forms';
 import { validatePasswordWithBreachCheck } from '@/lib/utils/password-validation';
-import { User, Mail, Lock, Shield, Settings, ChevronDown, ChevronUp, Award } from 'lucide-react';
+import { User, Mail, Lock, Shield, Settings, ChevronDown, ChevronUp, Award, Trash2 } from 'lucide-react';
 import { useGlobalNotification } from '@/lib/contexts/NotificationContext';
 import { API_BASE_URL } from '@/lib/config/api';
 import { UserBadges } from './UserBadges';
@@ -41,8 +42,11 @@ export function SettingsForm({ initialProfile }: SettingsFormProps) {
   const [isPasswordBreached, setIsPasswordBreached] = useState(false);
   
   // Collapsible sections state (only preferences is collapsible, starts collapsed)
+  const router = useRouter();
   const [preferencesCollapsed, setPreferencesCollapsed] = useState(true);
   const [badgeModalOpen, setBadgeModalOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   
   const supabase = createClient();
 
@@ -477,6 +481,69 @@ export function SettingsForm({ initialProfile }: SettingsFormProps) {
             <h4 className="font-medium mb-3">Your Achievement History</h4>
             <UserBadges badges={badges} loading={badgesLoading} />
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Danger Zone: Delete Account */}
+      <Card className="border-destructive/40 bg-card transition-all duration-200">
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-2 text-destructive">
+            <Trash2 className="h-5 w-5" />
+            <CardTitle className="text-lg">Delete Account</CardTitle>
+          </div>
+          <CardDescription>
+            Permanently delete your profile and all associated meal logs, custom foods, and group memberships. This action cannot be undone.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="delete-account-confirm" className="text-xs font-medium text-muted-foreground">
+              Type <strong className="text-foreground">DELETE</strong> to confirm
+            </Label>
+            <Input
+              id="delete-account-confirm"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder="DELETE"
+              disabled={isDeletingAccount}
+            />
+          </div>
+          <Button
+            type="button"
+            variant="destructive"
+            disabled={deleteConfirmText !== 'DELETE' || isDeletingAccount}
+            onClick={async () => {
+              if (deleteConfirmText !== 'DELETE' || isDeletingAccount) return;
+              setIsDeletingAccount(true);
+              try {
+                const { data: { session } } = await supabase.auth.getSession();
+                const res = await fetch(`${API_BASE_URL}/profile/${initialProfile.id}`, {
+                  method: 'DELETE',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+                  },
+                });
+                if (!res.ok) {
+                  const body = (await res.json().catch(() => ({}))) as { error?: string };
+                  throw new Error(body.error || 'Failed to delete account');
+                }
+                await supabase.auth.signOut();
+                router.push('/auth/login');
+              } catch (err) {
+                showError(
+                  'Could Not Delete Account',
+                  err instanceof Error ? err.message : 'Please try again.'
+                );
+              } finally {
+                setIsDeletingAccount(false);
+              }
+            }}
+            className="w-full sm:w-auto"
+          >
+            <Trash2 className="mr-1.5 h-4 w-4" />
+            {isDeletingAccount ? 'Deleting account...' : 'Delete my account'}
+          </Button>
         </CardContent>
       </Card>
 

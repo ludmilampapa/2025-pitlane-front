@@ -20,6 +20,7 @@ import type { DashboardGroup } from '@/components/groups/DashboardGroupsSection'
 import { GamificationHub } from '@/components/dashboard/GamificationHub';
 import { HomeWeeklyMenuCard } from '@/components/dashboard/HomeWeeklyMenuCard';
 import { LiveActivityBanner } from '@/components/dashboard/LiveActivityBanner';
+import { GameLauncherHero } from '@/components/dashboard/GameLauncherHero';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -159,7 +160,10 @@ export function UserProfileSection() {
   ];
 
   return (
-    <div className="flex-1 w-full flex flex-col gap-4 pb-4">
+    <div className="flex-1 w-full flex flex-col gap-5 pb-4">
+      {/* Primary Focus: Meal Showdown Party Game Launcher */}
+      <GameLauncherHero groups={userGroups} loadingGroups={loadingGroups} />
+
       {/* Live Group Alerts (Active Votes, Menu Change Proposals & Invitations) */}
       <LiveActivityBanner />
 

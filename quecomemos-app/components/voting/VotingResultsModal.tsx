@@ -1,12 +1,14 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Trophy, Users, TrendingUp, Clock, ChefHat, Flame, X } from 'lucide-react';
+import { Trophy, Users, TrendingUp, Clock, ChefHat, Flame, X, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { ConfettiBurst } from './ConfettiBurst';
+import { playGameSfx } from '@/lib/utils/gameSfx';
 import type { VotingSession, MealProposal } from './types';
 
 interface VotingResultsModalProps {
@@ -24,6 +26,12 @@ export function VotingResultsModal({
   session,
   winnerProposal,
 }: VotingResultsModalProps) {
+  useEffect(() => {
+    if (isOpen && winnerProposal) {
+      playGameSfx('winner');
+    }
+  }, [isOpen, winnerProposal]);
+
   if (!isOpen || !winnerProposal || typeof document === 'undefined') {
     return null;
   }
@@ -31,6 +39,8 @@ export function VotingResultsModal({
   const sortedProposals = [...(session.proposals || [])].sort(
     (a, b) => b.voteCount - a.voteCount
   );
+  const podiumTop3 = sortedProposals.slice(0, 3);
+  const winnerImage = (winnerProposal.meal as { svgLink?: string | null }).svgLink || null;
   const totalVotes = sortedProposals.reduce((sum, p) => sum + p.voteCount, 0);
   const maxVotes = Math.max(...sortedProposals.map((p) => p.voteCount), 0);
 
@@ -46,9 +56,10 @@ export function VotingResultsModal({
       onClick={onClose}
     >
       <Card
-        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-border bg-card text-card-foreground shadow-2xl"
+        className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-border bg-card text-card-foreground shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
+        <ConfettiBurst active={isOpen} />
         <CardHeader className="border-b border-border/60 bg-card pb-4">
           <div className="flex items-start justify-between gap-2">
             <div>
@@ -72,8 +83,24 @@ export function VotingResultsModal({
         </CardHeader>
 
         <CardContent className="space-y-6 pt-6">
-          {/* Winner Banner */}
-          <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-5">
+          {/* Winner Banner with Dish Photo */}
+          <div className="overflow-hidden rounded-2xl border border-amber-500/40 bg-amber-500/10">
+            {winnerImage && (
+              <div className="relative h-44 w-full overflow-hidden border-b border-amber-500/30">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={winnerImage}
+                  alt={winnerProposal.meal.name}
+                  className="h-full w-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                <span className="absolute left-4 top-3 inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-white shadow-md">
+                  <Crown className="h-3.5 w-3.5" />
+                  Champion Dish
+                </span>
+              </div>
+            )}
+            <div className="p-5">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500 text-white shadow-sm">
@@ -118,7 +145,37 @@ export function VotingResultsModal({
                 })}
               </span>
             </div>
+            </div>
           </div>
+
+          {/* Arcade Top-3 Podium */}
+          {podiumTop3.length >= 2 && (
+            <div className="grid grid-cols-3 items-end gap-3 rounded-2xl border border-border bg-muted/25 p-4 pt-6 text-center">
+              {[
+                { item: podiumTop3[1], rank: '2nd', height: 'h-20', bg: 'bg-slate-400/20 border-slate-400/40' },
+                { item: podiumTop3[0], rank: '1st', height: 'h-28', bg: 'bg-amber-500/20 border-amber-500/50' },
+                { item: podiumTop3[2], rank: '3rd', height: 'h-16', bg: 'bg-secondary/15 border-secondary/35' },
+              ].map(({ item, rank, height, bg }) =>
+                item ? (
+                  <div key={item.MealProposalID} className="flex flex-col items-center gap-1.5">
+                    <p className="line-clamp-1 text-xs font-bold text-foreground">
+                      {item.meal.name}
+                    </p>
+                    <div
+                      className={`flex w-full flex-col items-center justify-center rounded-t-xl border ${bg} ${height} px-2`}
+                    >
+                      <span className="text-sm font-extrabold text-foreground">{rank}</span>
+                      <span className="text-[11px] font-medium text-muted-foreground">
+                        {item.voteCount} {item.voteCount === 1 ? 'vote' : 'votes'}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div key={rank} />
+                )
+              )}
+            </div>
+          )}
 
           {/* Stats Strip */}
           <div className="rounded-2xl border border-border bg-muted/30 p-4">

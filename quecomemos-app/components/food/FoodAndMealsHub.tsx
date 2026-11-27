@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { ChefHat, Utensils } from 'lucide-react';
-import { UserMeals, AllMeals } from '@/components/profile';
+import { UserMeals, AllMeals, UserPreferenceCards } from '@/components/profile';
 import { UserFoodsPage } from './user-foods-page';
 
 interface FoodAndMealsHubProps {
@@ -77,6 +77,9 @@ export function FoodAndMealsHub({ initialTab = 'meals' }: FoodAndMealsHubProps) 
           </div>
         </div>
       </div>
+
+      {/* Preferences & Dietary Restrictions Banner (always visible for both Meals and Foods) */}
+      <UserPreferenceCards />
 
       {/* Tab Content */}
       {activeTab === 'meals' ? (

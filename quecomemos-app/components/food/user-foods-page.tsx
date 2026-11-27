@@ -16,7 +16,7 @@ export function UserFoodsPage({ embedded = false }: { embedded?: boolean } = {})
   const { userData, loading, error } = useUser();
   const { fetchFoodsForUser, setFoods, foods } = useFoods();
   const [loadingFoods, setLoadingFoods] = useState(true);
-  
+
   const profile = userData.profile;
   const userPreferences = userData.preferences;
   const preferencesLoading = loading;
@@ -108,23 +108,23 @@ export function UserFoodsPage({ embedded = false }: { embedded?: boolean } = {})
       <RoleGate role="user" userRole={profile.role}>
         {/* User's Own Foods Section */}
         <UserOwnFoods />
-        
+
         {/* All Foods Section */}
         <div className="mb-1 mt-1">
           <h2 className="font-bold text-3xl text-foreground mb-2">Discover Foods</h2>
           <p className="text-muted-foreground">Explore all available foods based on your preferences</p>
         </div>
-        
+
         {/* Show preferences warning if user doesn't have preferences set */}
         {!preferencesLoading && userPreferences && !userPreferences.hasPreferences && (
           <PreferencesWarning className="mb-6" />
         )}
-        
-        {/* User Preference Cards - only show if user has preferences */}
-        {!preferencesLoading && userPreferences && userPreferences.hasPreferences && (
+
+        {/* User Preference Cards - only show standalone when not embedded inside FoodAndMealsHub */}
+        {!embedded && !preferencesLoading && userPreferences && userPreferences.hasPreferences && (
           <UserPreferenceCards />
         )}
-          
+
         {loadingFoods ? (
           <div className="text-muted-foreground">Loading foods...</div>
         ) : (

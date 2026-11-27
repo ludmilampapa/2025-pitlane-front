@@ -20,6 +20,8 @@ import { useUser } from '@/lib/contexts/UserContext';
 import { useVoting } from '@/lib/contexts/VotingContext';
 import { isMealCompatibleWithRestrictions } from '@/lib/utils/dietaryCompatibility';
 import { VotingService } from './VotingService';
+import { ConfettiBurst } from './ConfettiBurst';
+import { playGameSfx } from '@/lib/utils/gameSfx';
 import type { VotingSession } from './types';
 import type { Group } from '@/components/groups';
 
@@ -213,10 +215,17 @@ export function GroupMealRoulette({
     setWinnerMealId(null);
     setRotation((prev) => prev + extraSpins + delta);
 
+    // Play decelerating game-show wheel ticks while spinning
+    const tickDelays = [120, 260, 420, 620, 860, 1150, 1500, 1920, 2400, 2950, 3450];
+    tickDelays.forEach((ms) => {
+      window.setTimeout(() => playGameSfx('tick'), ms);
+    });
+
     const chosenMealId = wheelMeals[chosenIndex].MealID;
     window.setTimeout(() => {
       setSpinning(false);
       setWinnerMealId(chosenMealId);
+      playGameSfx('winner');
     }, 3800);
   };
 
@@ -418,7 +427,8 @@ export function GroupMealRoulette({
         {/* Right Column: Result / Live Wheel Pool */}
         <div className="space-y-4 lg:col-span-5">
           {winner && !spinning ? (
-            <div className="rounded-2xl border border-secondary/40 bg-secondary/10 p-5 shadow-sm">
+            <div className="relative overflow-hidden rounded-2xl border border-secondary/40 bg-secondary/10 p-5 shadow-sm">
+              <ConfettiBurst active={Boolean(winner && !spinning)} />
               <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.14em] text-secondary">
                 <CheckCircle2 className="h-3.5 w-3.5" />
                 The Pointer Landed On
