@@ -75,6 +75,7 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
   const [activeFraction, setActiveFraction] = useState<number | null>(1);
   const [showPortionSelector, setShowPortionSelector] = useState(false);
   const [selectedPortions, setSelectedPortions] = useState<PortionData | null>(null);
+  const [customBaseRatios, setCustomBaseRatios] = useState<Record<number, number> | null>(null);
   const [showComposition, setShowComposition] = useState(false);
 
   const profile = userData?.profile;
@@ -158,6 +159,7 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
     setActiveFraction(1);
     setShowPortionSelector(false);
     setSelectedPortions(null);
+    setCustomBaseRatios(null);
     setShowComposition(false);
     onClose();
   }, [onClose]);
@@ -177,26 +179,34 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
     setSelectedMeal(meal);
     setActiveFraction(1);
     setSelectedPortions(null);
+    setCustomBaseRatios(null);
     setError(null);
   };
 
   const applyQuickFraction = (fraction: number) => {
     if (!selectedMeal) return;
     setActiveFraction(fraction);
-    if (fraction === 1) {
+    if (!customBaseRatios && fraction === 1) {
       setSelectedPortions(null);
       return;
     }
-    const foodPortions = selectedMeal.mealFoods.map((mf) => ({
-      foodId: mf.food.FoodID,
-      portionFraction: fraction,
-      absoluteQuantity: Number((mf.quantity * fraction).toFixed(3)),
-    }));
+    const foodPortions = selectedMeal.mealFoods.map((mf) => {
+      const baseRatio = customBaseRatios ? (customBaseRatios[mf.food.FoodID] ?? 1) : 1;
+      const effectiveFraction = Math.min(1, baseRatio * fraction);
+      return {
+        foodId: mf.food.FoodID,
+        portionFraction: effectiveFraction,
+        absoluteQuantity: Number((mf.quantity * effectiveFraction).toFixed(3)),
+      };
+    });
+    const totalCalories = selectedMeal.mealFoods.reduce((sum, mf, idx) => {
+      return sum + mf.food.kCal * foodPortions[idx].absoluteQuantity;
+    }, 0);
     setSelectedPortions({
       mode: 'percentage',
-      portionFraction: fraction,
+      portionFraction: fullMealCalories > 0 ? totalCalories / fullMealCalories : 0,
       foodPortions,
-      totalCalories: fullMealCalories * fraction,
+      totalCalories,
     });
   };
 
@@ -573,7 +583,7 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
                 {isSubmitting
                   ? 'Logging meal...'
                   : selectedMeal
-                    ? `Log to My Day (${effectiveCalories} kcal)`
+                    ? `Log Meal (${effectiveCalories} kcal)`
                     : 'Select a meal to log'}
               </button>
             </form>
@@ -628,8 +638,15 @@ export function RegisterMealModal({ isOpen, onClose, onSubmit, group }: Register
                   })),
                   totalCalories: fullMealCalories,
                 }}
+                initialPortions={selectedPortions}
+                confirmLabel="Save"
                 onConfirm={(portionData) => {
                   setSelectedPortions(portionData);
+                  setCustomBaseRatios(
+                    Object.fromEntries(
+                      portionData.foodPortions.map((fp) => [fp.foodId, fp.portionFraction])
+                    )
+                  );
                   setActiveFraction(null);
                   setShowPortionSelector(false);
                 }}

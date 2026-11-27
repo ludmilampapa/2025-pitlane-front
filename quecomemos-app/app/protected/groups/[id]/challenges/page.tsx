@@ -608,7 +608,7 @@ export default function GroupChallengesPage() {
                   </div>
                   <p className="text-sm text-muted-foreground">
                     {status === 'upcoming' ? (
-                      <>Starts on <strong className="text-foreground">{formatYMDDisplay(challenge.startDate.slice(0, 10))}</strong> · Complete at least <strong className="text-foreground">{targetPct}%</strong> to succeed.</>
+                      <>Starts on <strong className="text-foreground">{formatYMDDisplay(challenge.startDate.slice(0, 10))}</strong> · Complete {targetPct < 100 ? 'at least ' : ''}<strong className="text-foreground">{targetPct}%</strong> to succeed.</>
                     ) : status === 'finished' ? (
                       goalReached ? (
                         <>Challenge completed! You achieved <strong className="text-foreground">{pct}%</strong> (goal: {targetPct}%).</>
@@ -618,7 +618,7 @@ export default function GroupChallengesPage() {
                     ) : goalReached ? (
                       <>Goal reached! <strong className="text-foreground">{pct}%</strong> achieved (target: {targetPct}%).</>
                     ) : (
-                      <>Current progress: <strong className="text-foreground">{pct}%</strong> · Goal: at least <strong className="text-foreground">{targetPct}%</strong> within the challenge dates.</>
+                      <>Current progress: <strong className="text-foreground">{pct}%</strong> · Goal: {targetPct < 100 ? 'at least ' : ''}<strong className="text-foreground">{targetPct}%</strong> within the challenge dates.</>
                     )}
                   </p>
                 </div>

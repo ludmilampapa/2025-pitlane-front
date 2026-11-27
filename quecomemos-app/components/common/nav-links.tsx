@@ -13,7 +13,10 @@ export function NavLinks({ links }: { links: NavLink[] }) {
 
   const isActive = (href: string) => {
     if (href === '/protected') return pathname === href;
-    if (href === '/protected/meals' && pathname.startsWith('/protected/community-meals')) {
+    if (
+      href === '/protected/meals' &&
+      (pathname.startsWith('/protected/community-meals') || pathname.startsWith('/protected/foods'))
+    ) {
       return true;
     }
     return pathname === href || pathname.startsWith(`${href}/`);
