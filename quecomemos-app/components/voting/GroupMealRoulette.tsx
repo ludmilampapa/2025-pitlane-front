@@ -433,7 +433,7 @@ export function GroupMealRoulette({
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 {typeof winner.calories === 'number' && winner.calories > 0 && (
                   <Badge variant="secondary" className="text-xs">
-                    <Flame className="mr-1 h-3 w-3 text-secondary" />
+                    <Flame className="mr-1 h-3 w-3 text-secondary-foreground" />
                     {Math.round(winner.calories)} kcal
                   </Badge>
                 )}
@@ -445,25 +445,25 @@ export function GroupMealRoulette({
                 )}
               </div>
 
-              <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+              <div className="mt-4 flex flex-wrap gap-2">
                 <Button
                   type="button"
                   onClick={() => void handleVoteWinner()}
                   disabled={submitting}
                   className={
                     winner.hasUserVoted
-                      ? 'flex-1 rounded-xl border border-primary/40 bg-card text-primary hover:bg-primary/10'
-                      : 'flex-1 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90'
+                      ? 'min-w-[150px] flex-1 rounded-xl border border-primary/40 bg-card text-primary hover:bg-primary/10'
+                      : 'min-w-[150px] flex-1 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90'
                   }
                 >
                   {winner.hasUserVoted ? (
                     <>
-                      <Undo2 className="mr-1.5 h-4 w-4" />
+                      <Undo2 className="mr-1.5 h-4 w-4 shrink-0" />
                       Voted ✓ (Undo)
                     </>
                   ) : (
                     <>
-                      <ThumbsUp className="mr-1.5 h-4 w-4" />
+                      <ThumbsUp className="mr-1.5 h-4 w-4 shrink-0" />
                       {submitting ? 'Voting...' : 'Vote for This Dish'}
                     </>
                   )}
@@ -473,7 +473,7 @@ export function GroupMealRoulette({
                   variant="outline"
                   onClick={handleSpin}
                   disabled={submitting}
-                  className="rounded-xl"
+                  className="shrink-0 rounded-xl bg-card"
                 >
                   <RefreshCw className="mr-1.5 h-4 w-4" />
                   Respin

@@ -26,6 +26,8 @@ export interface PortionData {
   portionFraction: number;
   foodPortions: Array<{ foodId: number; portionFraction: number; absoluteQuantity: number }>;
   totalCalories: number;
+  selectedMealFraction?: number;
+  baseIngredientRatios?: Record<number, number>;
 }
 
 interface Props {
@@ -38,6 +40,8 @@ interface Props {
   isWinner?: boolean;
   confirmLabel?: string;
   initialPortions?: PortionData | null;
+  initialMealFraction?: number;
+  initialBaseRatios?: Record<number, number> | null;
 }
 
 const PORTION_PRESETS = [
@@ -136,13 +140,28 @@ export function MealPortionSelector({
   isWinner = false,
   confirmLabel = 'Log to My Day',
   initialPortions = null,
+  initialMealFraction,
+  initialBaseRatios = null,
 }: Props) {
-  const [mealFraction, setMealFraction] = useState<number>(1);
+  const [mealFraction, setMealFraction] = useState<number>(
+    () => initialMealFraction ?? initialPortions?.selectedMealFraction ?? 1
+  );
   const [ingredientRatios, setIngredientRatios] = useState<Record<number, number>>(() => {
+    const startFraction = initialMealFraction ?? initialPortions?.selectedMealFraction ?? 1;
+    const savedBase = initialBaseRatios ?? initialPortions?.baseIngredientRatios;
+    if (savedBase) {
+      return Object.fromEntries(
+        meal.mealFoods.map((food) => [food.foodId, savedBase[food.foodId] ?? 1])
+      );
+    }
     if (initialPortions?.foodPortions?.length) {
       const byId = new Map(initialPortions.foodPortions.map((fp) => [fp.foodId, fp.portionFraction]));
       return Object.fromEntries(
-        meal.mealFoods.map((food) => [food.foodId, byId.get(food.foodId) ?? 1])
+        meal.mealFoods.map((food) => {
+          const frac = byId.get(food.foodId);
+          if (frac === undefined) return [food.foodId, 1];
+          return [food.foodId, startFraction > 0 ? Math.min(4, frac / startFraction) : frac];
+        })
       );
     }
     return Object.fromEntries(meal.mealFoods.map((food) => [food.foodId, 1]));
@@ -150,7 +169,7 @@ export function MealPortionSelector({
 
   const getEffectiveQuantity = (food: MealFood) => {
     const ratio = ingredientRatios[food.foodId] ?? 1;
-    return Number((food.quantity * ratio * mealFraction).toFixed(3));
+    return Number((food.quantity * Math.min(1, ratio * mealFraction)).toFixed(3));
   };
 
   const selectedCalories = meal.mealFoods.reduce(
@@ -191,6 +210,8 @@ export function MealPortionSelector({
       portionFraction: meal.totalCalories > 0 ? selectedCalories / meal.totalCalories : 0,
       foodPortions,
       totalCalories: selectedCalories,
+      selectedMealFraction: mealFraction,
+      baseIngredientRatios: { ...ingredientRatios },
     });
   };
 
@@ -270,11 +291,10 @@ export function MealPortionSelector({
             Customized Ingredient Breakdown
           </h4>
           <div className="max-h-60 space-y-4 overflow-y-auto pr-1">
-            {meal.mealFoods.map((food, idx) => {
+            {meal.mealFoods.map((food) => {
               const quantity = getEffectiveQuantity(food);
               const pct = food.quantity > 0 ? Math.min(100, Math.round((quantity / food.quantity) * 100)) : 0;
               const kcal = Math.round(food.kCal * quantity);
-              const accentClass = idx % 3 === 2 ? 'accent-secondary' : 'accent-primary';
 
               return (
                 <div key={food.foodId} className="space-y-1.5">
@@ -292,7 +312,7 @@ export function MealPortionSelector({
                     value={pct}
                     disabled={loading}
                     onChange={(e) => handleSliderChange(food, Number(e.target.value))}
-                    className={`h-2 w-full cursor-pointer appearance-none rounded-lg bg-muted ${accentClass}`}
+                    className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-muted accent-primary"
                   />
                 </div>
               );
