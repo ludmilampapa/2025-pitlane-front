@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { UserFoodsPage } from "@/components/food";
+import { FoodAndMealsHub } from "@/components/food/FoodAndMealsHub";
 import { Suspense } from "react";
 
 function FoodsSkeleton() {
@@ -57,7 +57,7 @@ export default async function FoodsPage() {
   
   return (
     <Suspense fallback={<FoodsSkeleton />}>
-      <UserFoodsPage />
+      <FoodAndMealsHub initialTab="foods" />
     </Suspense>
   );
 }

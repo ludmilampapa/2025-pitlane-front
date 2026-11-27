@@ -36,6 +36,8 @@ interface Props {
   profileId?: string;
   date?: Date;
   isWinner?: boolean;
+  confirmLabel?: string;
+  initialPortions?: PortionData | null;
 }
 
 const PORTION_PRESETS = [
@@ -132,39 +134,51 @@ export function MealPortionSelector({
   profileId,
   date,
   isWinner = false,
+  confirmLabel = 'Log to My Day',
+  initialPortions = null,
 }: Props) {
-  const [portions, setPortions] = useState<Record<number, number>>(() =>
-    Object.fromEntries(meal.mealFoods.map((food) => [food.foodId, food.quantity]))
-  );
+  const [mealFraction, setMealFraction] = useState<number>(1);
+  const [ingredientRatios, setIngredientRatios] = useState<Record<number, number>>(() => {
+    if (initialPortions?.foodPortions?.length) {
+      const byId = new Map(initialPortions.foodPortions.map((fp) => [fp.foodId, fp.portionFraction]));
+      return Object.fromEntries(
+        meal.mealFoods.map((food) => [food.foodId, byId.get(food.foodId) ?? 1])
+      );
+    }
+    return Object.fromEntries(meal.mealFoods.map((food) => [food.foodId, 1]));
+  });
+
+  const getEffectiveQuantity = (food: MealFood) => {
+    const ratio = ingredientRatios[food.foodId] ?? 1;
+    return Number((food.quantity * ratio * mealFraction).toFixed(3));
+  };
 
   const selectedCalories = meal.mealFoods.reduce(
-    (sum, food) => sum + food.kCal * (portions[food.foodId] ?? food.quantity),
+    (sum, food) => sum + food.kCal * getEffectiveQuantity(food),
     0
   );
   const percentage =
     meal.totalCalories > 0 ? Math.round((selectedCalories * 100) / meal.totalCalories) : 0;
 
   const activePreset = PORTION_PRESETS.find(
-    (p) => Math.abs(percentage - Math.round(p.fraction * 100)) <= 2
+    (p) => Math.abs(mealFraction - p.fraction) <= 0.01
   )?.fraction;
 
   const applyFraction = (fraction: number) => {
-    const nextPortions: Record<number, number> = {};
-    meal.mealFoods.forEach((food) => {
-      nextPortions[food.foodId] = Number((food.quantity * fraction).toFixed(3));
-    });
-    setPortions(nextPortions);
+    // Scale the overall plate portion while preserving any custom ingredient ratios (e.g. removed 0% items stay 0%)
+    setMealFraction(fraction);
   };
 
   const handleSliderChange = (food: MealFood, pct: number) => {
     const clampedPct = Math.max(0, Math.min(100, pct));
-    const quantity = Number(((food.quantity * clampedPct) / 100).toFixed(3));
-    setPortions((current) => ({ ...current, [food.foodId]: quantity }));
+    // Store ratio relative to current mealFraction so toggling portion presets keeps this adjustment
+    const nextRatio = mealFraction > 0 ? clampedPct / 100 / mealFraction : clampedPct / 100;
+    setIngredientRatios((current) => ({ ...current, [food.foodId]: Math.min(4, Math.max(0, nextRatio)) }));
   };
 
   const confirm = () => {
     const foodPortions = meal.mealFoods.map((food) => {
-      const absoluteQuantity = portions[food.foodId] ?? food.quantity;
+      const absoluteQuantity = getEffectiveQuantity(food);
       return {
         foodId: food.foodId,
         portionFraction: food.quantity > 0 ? absoluteQuantity / food.quantity : 0,
@@ -257,8 +271,8 @@ export function MealPortionSelector({
           </h4>
           <div className="max-h-60 space-y-4 overflow-y-auto pr-1">
             {meal.mealFoods.map((food, idx) => {
-              const quantity = portions[food.foodId] ?? food.quantity;
-              const pct = food.quantity > 0 ? Math.round((quantity / food.quantity) * 100) : 0;
+              const quantity = getEffectiveQuantity(food);
+              const pct = food.quantity > 0 ? Math.min(100, Math.round((quantity / food.quantity) * 100)) : 0;
               const kcal = Math.round(food.kCal * quantity);
               const accentClass = idx % 3 === 2 ? 'accent-secondary' : 'accent-primary';
 
@@ -323,7 +337,7 @@ export function MealPortionSelector({
               disabled={loading}
               className="flex-1 bg-secondary font-semibold text-secondary-foreground hover:bg-secondary/90"
             >
-              {loading ? 'Logging...' : 'Log to My Day'}
+              {loading ? 'Saving...' : confirmLabel}
             </Button>
           </div>
         </div>

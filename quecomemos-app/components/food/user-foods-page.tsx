@@ -12,7 +12,7 @@ import { useFoods } from '@/lib/contexts/FoodsContext';
 import { API_BASE_URL } from '@/lib/config/api';
 import { UserOwnFoods } from './UserOwnFoods';
 
-export function UserFoodsPage() {
+export function UserFoodsPage({ embedded = false }: { embedded?: boolean } = {}) {
   const { userData, loading, error } = useUser();
   const { fetchFoodsForUser, setFoods, foods } = useFoods();
   const [loadingFoods, setLoadingFoods] = useState(true);
@@ -89,10 +89,12 @@ export function UserFoodsPage() {
 
   return (
     <div className="flex-1 w-full flex flex-col gap-8">
-      <div className="mb-2">
-        <h1 className="font-bold text-4xl text-foreground mb-2">Foods</h1>
-        <p className="text-muted-foreground">Manage your foods and explore all available options</p>
-      </div>
+      {!embedded && (
+        <div className="mb-2">
+          <h1 className="font-bold text-4xl text-foreground mb-2">Foods</h1>
+          <p className="text-muted-foreground">Manage your foods and explore all available options</p>
+        </div>
+      )}
 
       {/* UI solo para admin */}
       <RoleGate role="admin" userRole={profile.role}>
