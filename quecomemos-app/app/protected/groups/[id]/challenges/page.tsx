@@ -66,7 +66,6 @@ export default function GroupChallengesPage() {
   const [form, setForm] = useState({
     name: '',
     description: '',
-    ruleText: '',
     startDate: '',
     endDate: '',
     pausedFoods: [] as string[],
@@ -188,7 +187,7 @@ export default function GroupChallengesPage() {
   };
 
   const resetChallengeForm = () => {
-    setForm({ name: '', description: '', ruleText: '', startDate: '', endDate: '', pausedFoods: [], targetPercentage: 75 });
+    setForm({ name: '', description: '', startDate: '', endDate: '', pausedFoods: [], targetPercentage: 75 });
     setPausedInput('');
     setEditingChallengeId(null);
     setShowForm(false);
@@ -203,7 +202,6 @@ export default function GroupChallengesPage() {
     setForm({
       name: challenge.name,
       description: challenge.description || '',
-      ruleText: challenge.ruleText,
       startDate: challenge.startDate.slice(0, 10),
       endDate: challenge.endDate.slice(0, 10),
       pausedFoods: challenge.pausedFoods ? [...challenge.pausedFoods] : [],
@@ -211,9 +209,6 @@ export default function GroupChallengesPage() {
     });
     setPausedInput('');
     setShowForm(true);
-    if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
   };
 
   const handleDeleteChallenge = async (challenge: Challenge) => {
@@ -239,9 +234,8 @@ export default function GroupChallengesPage() {
     setError(null);
 
     const trimmedName = form.name.trim();
-    const trimmedRule = form.ruleText.trim();
-    if (!trimmedName || !trimmedRule) {
-      setError('Challenge name and rule are required.');
+    if (!trimmedName) {
+      setError('Challenge name is required.');
       return;
     }
     if (!isValidYMD(form.startDate) || !isValidYMD(form.endDate)) {
@@ -259,7 +253,6 @@ export default function GroupChallengesPage() {
       if (editingChallengeId !== null) {
         await GroupChallengesService.updateChallenge(editingChallengeId, {
           name: trimmedName,
-          ruleText: trimmedRule,
           description: form.description.trim(),
           startDate: form.startDate,
           endDate: form.endDate,
@@ -268,10 +261,11 @@ export default function GroupChallengesPage() {
         });
       } else {
         await GroupChallengesService.createChallenge(groupId, {
-          ...form,
           name: trimmedName,
-          ruleText: trimmedRule,
           description: form.description.trim(),
+          startDate: form.startDate,
+          endDate: form.endDate,
+          pausedFoods: form.pausedFoods,
           targetPercentage: form.targetPercentage,
           profileId,
         });
@@ -312,30 +306,48 @@ export default function GroupChallengesPage() {
         {isAdmin && (
           <Button
             onClick={() => {
-              if (showForm && editingChallengeId !== null) {
-                resetChallengeForm();
-              } else {
-                setEditingChallengeId(null);
-                setShowForm((value) => !value);
-              }
+              setError(null);
+              setEditingChallengeId(null);
+              setForm({ name: '', description: '', startDate: '', endDate: '', pausedFoods: [], targetPercentage: 75 });
+              setPausedInput('');
+              setShowForm(true);
             }}
             className="bg-primary text-primary-foreground hover:bg-primary/90"
           >
-            {showForm ? 'Close form' : 'Create challenge'}
+            <Plus className="mr-1.5 h-4 w-4" />
+            Create challenge
           </Button>
         )}
       </div>
 
       {error && <Card><CardContent className="p-4 text-destructive">{error}</CardContent></Card>}
 
-      {showForm && isAdmin && (
-        <Card>
-          <CardHeader><CardTitle>{editingChallengeId !== null ? 'Edit challenge' : 'New challenge'}</CardTitle></CardHeader>
-          <CardContent>
-            <form onSubmit={createChallenge} className="grid gap-4 md:grid-cols-2">
-              <Input placeholder="Challenge name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-              <Input placeholder="Rule, example: no soft drinks" value={form.ruleText} onChange={(e) => setForm({ ...form, ruleText: e.target.value })} required />
-              <Textarea className="md:col-span-2" placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+      {showForm && isAdmin && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={resetChallengeForm}
+        >
+          <div
+            className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-border bg-card shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-border px-6 py-4">
+              <h2 className="text-lg font-bold text-foreground">
+                {editingChallengeId !== null ? 'Edit challenge' : 'New challenge'}
+              </h2>
+              <button
+                type="button"
+                onClick={resetChallengeForm}
+                aria-label="Close challenge modal"
+                className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="p-6">
+              <form onSubmit={createChallenge} className="grid gap-4 md:grid-cols-2">
+                <Input className="md:col-span-2" placeholder="Challenge name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+                <Textarea className="md:col-span-2" placeholder="Description (optional)" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
               <div className="space-y-1.5">
                 <label htmlFor="challenge-start-date" className="text-sm font-medium text-foreground">
                   From
@@ -492,8 +504,10 @@ export default function GroupChallengesPage() {
                 </Button>
               </div>
             </form>
-          </CardContent>
-        </Card>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
 
       {challenges.length === 0 ? (
@@ -676,7 +690,7 @@ export default function GroupChallengesPage() {
         typeof document !== 'undefined' &&
         createPortal(
           <div
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+            className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
             onClick={() => setShowCreateFoodModal(false)}
           >
             <div

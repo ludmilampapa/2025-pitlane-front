@@ -6,6 +6,8 @@ import {
   ArrowRight,
   Award,
   Check,
+  ChevronLeft,
+  ChevronRight,
   Flame,
   Loader2,
   Sparkles,
@@ -129,37 +131,42 @@ export function GamificationHub({
             const challenges: Challenge[] = await chRes.json();
             if (!Array.isArray(challenges) || challenges.length === 0) return;
 
-            // Prefer currently running challenges, otherwise take the most recent active one
-            const running =
-              challenges.find(
-                (c) =>
-                  c.isActive &&
-                  c.startDate.slice(0, 10) <= todayIso &&
-                  c.endDate.slice(0, 10) >= todayIso
-              ) || challenges.find((c) => c.isActive);
+            // Collect all currently running challenges for this group; if none are running, fall back to the most recent active one
+            const runningList = challenges.filter(
+              (c) =>
+                c.isActive &&
+                c.startDate.slice(0, 10) <= todayIso &&
+                c.endDate.slice(0, 10) >= todayIso
+            );
+            const selectedChallenges =
+              runningList.length > 0
+                ? runningList
+                : challenges.filter((c) => c.isActive).slice(0, 1);
 
-            if (!running) return;
+            await Promise.all(
+              selectedChallenges.map(async (challenge) => {
+                const [progRes, rankRes] = await Promise.all([
+                  fetch(
+                    `${API_BASE_URL}/challenges/${challenge.ChallengeID}/progress/${profileId}?date=${encodeURIComponent(todayIso)}`,
+                    { cache: 'no-store' }
+                  ),
+                  fetch(`${API_BASE_URL}/challenges/${challenge.ChallengeID}/ranking/${profileId}`, {
+                    cache: 'no-store',
+                  }),
+                ]);
 
-            const [progRes, rankRes] = await Promise.all([
-              fetch(
-                `${API_BASE_URL}/challenges/${running.ChallengeID}/progress/${profileId}?date=${encodeURIComponent(todayIso)}`,
-                { cache: 'no-store' }
-              ),
-              fetch(`${API_BASE_URL}/challenges/${running.ChallengeID}/ranking/${profileId}`, {
-                cache: 'no-store',
-              }),
-            ]);
+                const prog: ChallengeProgress | null = progRes.ok ? await progRes.json() : null;
+                const rank: ChallengeRankingRow[] = rankRes.ok ? await rankRes.json() : [];
 
-            const prog: ChallengeProgress | null = progRes.ok ? await progRes.json() : null;
-            const rank: ChallengeRankingRow[] = rankRes.ok ? await rankRes.json() : [];
-
-            collected.push({
-              groupId: group.GroupID,
-              groupName: group.name,
-              challenge: running,
-              progress: prog,
-              ranking: Array.isArray(rank) ? rank : [],
-            });
+                collected.push({
+                  groupId: group.GroupID,
+                  groupName: group.name,
+                  challenge,
+                  progress: prog,
+                  ranking: Array.isArray(rank) ? rank : [],
+                });
+              })
+            );
           } catch {
             // Skip group if its challenge endpoints fail
           }
@@ -415,25 +422,45 @@ export function GamificationHub({
                     <h3 className="text-base font-bold text-foreground sm:text-lg">
                       {currentItem.challenge.name}
                     </h3>
-                    <p className="text-xs text-muted-foreground">{currentItem.challenge.ruleText}</p>
+                    {currentItem.challenge.description && (
+                      <p className="text-xs text-muted-foreground">{currentItem.challenge.description}</p>
+                    )}
+                    <p className="mt-1 inline-flex items-center gap-1.5 text-xs font-medium text-primary">
+                      <Utensils className="h-3.5 w-3.5 shrink-0" />
+                      Log your meals to track whether you completed this challenge.
+                    </p>
                   </div>
                 </div>
 
                 {activeItems.length > 1 && (
-                  <div className="flex flex-wrap gap-1">
-                    {activeItems.map((item, idx) => (
-                      <button
-                        key={item.challenge.ChallengeID}
-                        type="button"
-                        onClick={() => setSelectedIndex(idx)}
-                        className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${idx === selectedIndex
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted text-muted-foreground hover:text-foreground'
-                          }`}
-                      >
-                        {item.groupName}
-                      </button>
-                    ))}
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() =>
+                        setSelectedIndex((prev) => (prev - 1 + activeItems.length) % activeItems.length)
+                      }
+                      aria-label="Previous active challenge"
+                      className="h-8 w-8 rounded-full border-border bg-card text-foreground hover:bg-muted"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="min-w-[3rem] text-center text-xs font-semibold text-muted-foreground">
+                      {selectedIndex + 1} / {activeItems.length}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() =>
+                        setSelectedIndex((prev) => (prev + 1) % activeItems.length)
+                      }
+                      aria-label="Next active challenge"
+                      className="h-8 w-8 rounded-full border-border bg-card text-foreground hover:bg-muted"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
                   </div>
                 )}
               </div>

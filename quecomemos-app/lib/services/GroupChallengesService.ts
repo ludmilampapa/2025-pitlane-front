@@ -35,7 +35,7 @@ export const GroupChallengesService = {
     groupId: string | number,
     payload: {
       name: string;
-      ruleText: string;
+      ruleText?: string;
       description?: string;
       startDate: string;
       endDate: string;
@@ -59,7 +59,7 @@ export const GroupChallengesService = {
     challengeId: number,
     payload: {
       name: string;
-      ruleText: string;
+      ruleText?: string;
       description?: string;
       startDate: string;
       endDate: string;

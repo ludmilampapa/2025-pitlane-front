@@ -19,6 +19,7 @@ import {
   ArrowRight,
   Shuffle,
   Gamepad2,
+  XCircle,
 } from 'lucide-react';
 import { useUser } from '@/lib/contexts/UserContext';
 import { useGlobalNotification } from '@/lib/contexts/NotificationContext';
@@ -67,6 +68,7 @@ export function VotingSessionCard({
   } = useVoting();
 
   const [loading, setLoading] = useState(false);
+  const [forceClosing, setForceClosing] = useState(false);
   const [proposeModalTab, setProposeModalTab] = useState<'swipe' | 'manual'>('manual');
   const [showProposeMeal, setShowProposeMeal] = useState(false);
   const [showEarlyCompletion, setShowEarlyCompletion] = useState(false);
@@ -217,6 +219,27 @@ export function VotingSessionCard({
     userId,
     groupRestrictions,
   ]);
+
+  const handleForceClose = async () => {
+    if (!canAdvancePhase || forceClosing) return;
+    setForceClosing(true);
+    try {
+      await VotingService.forceCloseVotingSession(updatedSession.VotingSessionID, userId);
+      clearSession();
+      toast.success('Voting session closed', {
+        description: 'You can now start a new voting session whenever you are ready.',
+      });
+      onVotingComplete?.();
+      await refreshSession();
+    } catch (error) {
+      showError(
+        'Could Not Close Voting',
+        error instanceof Error ? error.message : 'Failed to force-close voting session'
+      );
+    } finally {
+      setForceClosing(false);
+    }
+  };
 
   const handleStartVoting = async () => {
     if (!canParticipate || !canAdvancePhase) {
@@ -640,9 +663,14 @@ export function VotingSessionCard({
         ? 2
         : 3;
 
-  if (isExpired() && updatedSession.status !== 'completed') {
-    return null;
-  }
+  const expiredNow = isExpired() && updatedSession.status !== 'completed';
+  useEffect(() => {
+    if (!expiredNow) return;
+    const t = setTimeout(() => {
+      void refreshSession();
+    }, 1000);
+    return () => clearTimeout(t);
+  }, [expiredNow, refreshSession]);
 
   const proposalCount = updatedSession.proposals?.length || 0;
 
@@ -662,7 +690,24 @@ export function VotingSessionCard({
                   `Hosted by ${updatedSession.initiator?.username || 'Member'}`}
               </p>
             </div>
-            {getStatusBadge()}
+            <div className="flex flex-wrap items-center gap-2">
+              {getStatusBadge()}
+              {canAdvancePhase &&
+                (updatedSession.status === 'proposal_phase' ||
+                  updatedSession.status === 'voting_phase') && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void handleForceClose()}
+                    disabled={forceClosing || loading}
+                    className="h-7 rounded-full border-destructive/40 px-2.5 text-xs font-semibold text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <XCircle className="mr-1 h-3.5 w-3.5" />
+                    {forceClosing ? 'Closing...' : 'Force close voting'}
+                  </Button>
+                )}
+            </div>
           </div>
 
           {/* 3-Round Stepper */}

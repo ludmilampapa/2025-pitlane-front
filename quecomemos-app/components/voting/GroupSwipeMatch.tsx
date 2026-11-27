@@ -35,13 +35,14 @@ interface SwipeMeal {
   MealID: number;
   name: string;
   description?: string | null;
-  svgLink?: string;
+  svgLink?: string | null;
   mealFoods: Array<{
     quantity: number;
     food: {
       FoodID?: number;
       kCal: number;
       name: string;
+      svgLink?: string | null;
       dietaryRestrictions?: FoodTag[];
       preferences?: FoodTag[];
     };
@@ -85,6 +86,8 @@ export function GroupSwipeMatch({
   const [deckScope, setDeckScope] = useState<'personal' | 'compatible'>('personal');
   const [passedIds, setPassedIds] = useState<Set<number>>(new Set());
   const [swipeExit, setSwipeExit] = useState<'left' | 'right' | null>(null);
+  const [failedImages, setFailedImages] = useState<Set<number>>(new Set());
+  const [mealThumbsByName, setMealThumbsByName] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -112,12 +115,25 @@ export function GroupSwipeMatch({
       setLoading(true);
       setError(null);
       try {
-        const [allMealsRes, groupDietRes, userProfileRes, catalogRestRes] = await Promise.all([
+        const [allMealsRes, groupDietRes, userProfileRes, catalogRestRes, themealdbRes] = await Promise.all([
           fetch(`${API_BASE_URL}/meals/all`),
           fetch(`${API_BASE_URL}/groups/${groupId}/dietary-info`).catch(() => null),
           profileId ? fetch(`${API_BASE_URL}/profile/${profileId}/full`).catch(() => null) : Promise.resolve(null),
           fetch(`${API_BASE_URL}/dietary-restrictions`).catch(() => null),
+          fetch('/api/korven-products').catch(() => null),
         ]);
+
+        const thumbMap = new Map<string, string>();
+        if (themealdbRes && themealdbRes.ok) {
+          const extProducts = (await themealdbRes.json()) as Array<{ name?: string; thumb?: string }>;
+          if (Array.isArray(extProducts)) {
+            extProducts.forEach((p) => {
+              if (p.name && p.thumb) {
+                thumbMap.set(p.name.trim().toLowerCase(), p.thumb);
+              }
+            });
+          }
+        }
 
         const catalogMap = new Map<number, string>();
         if (catalogRestRes && catalogRestRes.ok) {
@@ -175,6 +191,7 @@ export function GroupSwipeMatch({
           [...items].sort((a, b) => countMatchedPreferences(b) - countMatchedPreferences(a));
 
         if (!cancelled) {
+          setMealThumbsByName(thumbMap);
           setGroupRestrictionNames(activeRequirements.map((r) => r.name).filter(Boolean));
           const sortedPersonal = sortDeck(matchingTastes);
           const sortedCompatible = sortDeck(strictlyCompatible);
@@ -526,20 +543,44 @@ export function GroupSwipeMatch({
           >
             {/* Visual Dish Header */}
             <div className="relative flex h-48 items-center justify-center overflow-hidden bg-gradient-to-br from-secondary/15 via-muted/40 to-primary/15 sm:h-56">
-              {currentMeal.svgLink ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={currentMeal.svgLink}
-                  alt={currentMeal.name}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="flex flex-col items-center gap-2 text-muted-foreground/60">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-border/60 bg-card/80 shadow-sm">
-                    <Utensils className="h-8 w-8 text-secondary" />
+              {(() => {
+                const directMealImage =
+                  currentMeal.svgLink ||
+                  mealThumbsByName.get(currentMeal.name.trim().toLowerCase()) ||
+                  null;
+                const ingredientImage =
+                  currentMeal.mealFoods?.find((mf) => mf.food?.svgLink)?.food?.svgLink || null;
+                const resolvedImage = !failedImages.has(currentMeal.MealID)
+                  ? directMealImage || ingredientImage
+                  : null;
+                const isIngredientFallback = !directMealImage && Boolean(ingredientImage);
+
+                if (resolvedImage) {
+                  return (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={resolvedImage}
+                      alt={currentMeal.name}
+                      onError={() =>
+                        setFailedImages((prev) => new Set(prev).add(currentMeal.MealID))
+                      }
+                      className={
+                        isIngredientFallback
+                          ? 'h-36 w-36 object-contain drop-shadow-md'
+                          : 'h-full w-full object-cover'
+                      }
+                    />
+                  );
+                }
+
+                return (
+                  <div className="flex flex-col items-center gap-2 text-muted-foreground/60">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-border/60 bg-card/80 shadow-sm">
+                      <Utensils className="h-8 w-8 text-secondary" />
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Top Badges Overlay */}
               <div className="absolute left-3.5 top-3.5 flex flex-wrap gap-1.5">
