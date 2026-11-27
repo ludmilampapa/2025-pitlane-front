@@ -234,6 +234,47 @@ export function VotingSessionCard({
     groupRestrictions,
   ]);
 
+  const handleRouletteWin = async (winnerProposalId: number, mealName: string) => {
+    setLoading(true);
+    try {
+      const result = await VotingService.completeVotingSession(
+        updatedSession.VotingSessionID,
+        winnerProposalId
+      );
+      showSuccess(
+        'Roulette Winner Crowned!',
+        `"${mealName}" won on the Meal Roulette!`
+      );
+      if (userId && result?.session?.winnerMealId) {
+        try {
+          const consumption = (await VotingService.createConsumptionFromVote(
+            updatedSession.VotingSessionID,
+            {
+              profileId: userId,
+              name: mealName,
+              description: `Group meal from Meal Roulette: ${updatedSession.title || 'Meal Vote'}`,
+              quantity: 1,
+            }
+          )) as { ConsumptionID?: number };
+          showLoggedMealToast(mealName, consumption.ConsumptionID);
+        } catch {
+          // Ignore duplicate consumption creation if another client already logged it
+        }
+      }
+      await refreshSession();
+      setShowResultsModal(true);
+      onVotingComplete?.();
+      notifyVotingCompleted(updatedSession.VotingSessionID);
+    } catch (error) {
+      showError(
+        'Could Not Crown Roulette Winner',
+        error instanceof Error ? error.message : 'Please try again.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleForceClose = async () => {
     if (!canAdvancePhase || forceClosing) return;
     setForceClosing(true);
@@ -855,6 +896,21 @@ export function VotingSessionCard({
                     setProposeModalTab('manual');
                     setShowProposeMeal(true);
                   }}
+                  onAdvanceToGame={
+                    canAdvancePhase
+                      ? () => void handleStartVoting()
+                      : () => void handleConfirmReadyForVoting()
+                  }
+                  advanceLabel={
+                    canAdvancePhase
+                      ? proposalCount > 0
+                        ? `Next Stage: Pick a Game (${proposalCount})`
+                        : 'Next Stage: Play with Random Dishes'
+                      : hasUserConfirmedReady
+                        ? 'Ready! Waiting for group...'
+                        : "I'm Ready for Next Stage"
+                  }
+                  advancing={loading}
                 />
               ) : (
                 <div className="rounded-2xl border border-border bg-muted/30 p-5 text-center text-sm text-muted-foreground">
@@ -1162,6 +1218,7 @@ export function VotingSessionCard({
                   session={updatedSession}
                   onVoteProposal={handleVote}
                   onUndoVoteProposal={handleUndoVote}
+                  onRouletteWinner={handleRouletteWin}
                 />
               )}
             </div>

@@ -14,6 +14,7 @@ import {
   Trophy,
   Maximize2,
   X,
+  Clock,
 } from 'lucide-react';
 import { useUser } from '@/lib/contexts/UserContext';
 import { useVoting } from '@/lib/contexts/VotingContext';
@@ -21,6 +22,7 @@ import {
   VotingSessionCard,
   StartVotingButton,
   VotingResultsModal,
+  VotingTimer,
 } from '@/components/voting';
 import type { Group } from '@/components/groups/index';
 import type { VotingSession } from './types';
@@ -170,7 +172,7 @@ export function GroupVotingSystem({
                 className="relative flex max-h-[94vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-secondary/40 bg-background shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="flex items-center justify-between gap-3 border-b border-border bg-card px-5 py-3">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-card px-5 py-3">
                   <div className="flex items-center gap-2.5">
                     <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-secondary/15 text-secondary">
                       <Gamepad2 className="h-4 w-4" />
@@ -182,16 +184,33 @@ export function GroupVotingSystem({
                       <p className="text-xs text-muted-foreground">{group.name}</p>
                     </div>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setMinigameModalOpen(false)}
-                    className="h-8 rounded-xl border-border bg-background text-xs font-semibold text-foreground hover:bg-muted"
-                  >
-                    <X className="mr-1 h-3.5 w-3.5" />
-                    Exit Minigame
-                  </Button>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {activeSession.status === 'proposal_phase' && (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-secondary/35 bg-secondary/10 px-3 py-1 text-xs font-semibold text-secondary">
+                        <Clock className="h-3.5 w-3.5" />
+                        <VotingTimer endTime={activeSession.proposalEndsAt} label="Round" />
+                      </span>
+                    )}
+                    {activeSession.votingEndsAt &&
+                      (activeSession.status === 'proposal_phase' ||
+                        activeSession.status === 'voting_phase') && (
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/35 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                          <Clock className="h-3.5 w-3.5" />
+                          <VotingTimer endTime={activeSession.votingEndsAt} label="Total" />
+                        </span>
+                      )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setMinigameModalOpen(false)}
+                      className="h-8 rounded-xl border-border bg-background text-xs font-semibold text-foreground hover:bg-muted"
+                    >
+                      <X className="mr-1 h-3.5 w-3.5" />
+                      Exit Minigame
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="overflow-y-auto p-3 sm:p-5">
