@@ -114,9 +114,9 @@ export function FoodCarousel({
       {showHeader && (
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="font-bold text-xl mb-2">{title}</h2>
+            <h2 className="font-bold text-xl text-foreground mb-1">{title}</h2>
             {variant === 'editable' && (
-              <p className="text-gray-400">
+              <p className="text-sm text-muted-foreground">
                 {foods.length} food{foods.length !== 1 ? 's' : ''} found
               </p>
             )}
@@ -124,7 +124,7 @@ export function FoodCarousel({
           {showAddButton && onAddClick && (
             <button
               onClick={onAddClick}
-              className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg transition-colors"
+              className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium transition-colors"
             >
               <Plus className="w-4 h-4" />
               Add Food
@@ -140,10 +140,10 @@ export function FoodCarousel({
           {canScrollLeft && (
             <button
               onClick={scrollLeft}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white hover:bg-gray-100 rounded-full p-1.5 md:p-2 shadow-md transition-all duration-200 hover:shadow-lg touch-manipulation"
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-card border border-border hover:bg-muted rounded-full p-1.5 md:p-2 shadow-md transition-all duration-200 hover:shadow-lg touch-manipulation"
               aria-label="Scroll left"
             >
-              <ChevronLeft className="w-4 h-4 md:w-5 md:h-5 text-black" />
+              <ChevronLeft className="w-4 h-4 md:w-5 md:h-5 text-foreground" />
             </button>
           )}
 
@@ -178,22 +178,22 @@ export function FoodCarousel({
           {canScrollRight && (
             <button
               onClick={scrollRight}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white hover:bg-gray-100 rounded-full p-1.5 md:p-2 shadow-md transition-all duration-200 hover:shadow-lg touch-manipulation"
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-card border border-border hover:bg-muted rounded-full p-1.5 md:p-2 shadow-md transition-all duration-200 hover:shadow-lg touch-manipulation"
               aria-label="Scroll right"
             >
-              <ChevronRight className="w-4 h-4 md:w-5 md:h-5 text-black" />
+              <ChevronRight className="w-4 h-4 md:w-5 md:h-5 text-foreground" />
             </button>
           )}
         </div>
       ) : (
-        <div className="text-center py-12 text-gray-400">
-          <Utensils className="w-16 h-16 mx-auto mb-4 text-gray-500" />
-          <h3 className="text-lg font-medium mb-2">{emptyStateTitle}</h3>
+        <div className="text-center py-12 text-muted-foreground rounded-2xl border border-dashed border-border bg-card/60">
+          <Utensils className="w-14 h-14 mx-auto mb-3 text-muted-foreground/70" />
+          <h3 className="text-lg font-semibold text-foreground mb-1">{emptyStateTitle}</h3>
           <p className="text-sm mb-4">{emptyStateDescription}</p>
           {onAddClick && (
             <button
               onClick={onAddClick}
-              className="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded-lg transition-colors"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2 rounded-lg text-sm font-medium transition-colors"
             >
               {emptyStateButtonText}
             </button>

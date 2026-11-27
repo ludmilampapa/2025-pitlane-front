@@ -161,9 +161,9 @@ export function UserOwnFoods({ refreshTrigger = 0 }: UserOwnFoodsProps) {
 
       {/* Edit Modal - Using original EditForm with Korven integration */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="sm:max-w-[600px] bg-neutral-900/95 border-amber-800/30 backdrop-blur-sm">
+        <DialogContent className="sm:max-w-[600px] bg-card border-border">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-amber-100">
+            <DialogTitle className="text-2xl font-bold text-foreground">
               Edit Food
             </DialogTitle>
           </DialogHeader>

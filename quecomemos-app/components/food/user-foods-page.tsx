@@ -89,9 +89,9 @@ export function UserFoodsPage() {
 
   return (
     <div className="flex-1 w-full flex flex-col gap-8">
-      <div className="mb-6">
-        <h1 className="font-bold text-4xl text-amber-200 mb-2">Foods</h1>
-        <p className="text-gray-400">Manage your foods and explore all available options</p>
+      <div className="mb-2">
+        <h1 className="font-bold text-4xl text-foreground mb-2">Foods</h1>
+        <p className="text-muted-foreground">Manage your foods and explore all available options</p>
       </div>
 
       {/* UI solo para admin */}
@@ -109,8 +109,8 @@ export function UserFoodsPage() {
         
         {/* All Foods Section */}
         <div className="mb-1 mt-1">
-          <h2 className="font-bold text-3xl text-amber-200 mb-2">Discover Foods</h2>
-          <p className="text-gray-400">Explore all available foods based on your preferences</p>
+          <h2 className="font-bold text-3xl text-foreground mb-2">Discover Foods</h2>
+          <p className="text-muted-foreground">Explore all available foods based on your preferences</p>
         </div>
         
         {/* Show preferences warning if user doesn't have preferences set */}
@@ -124,7 +124,7 @@ export function UserFoodsPage() {
         )}
           
         {loadingFoods ? (
-          <div className="text-gray-500">Loading foods...</div>
+          <div className="text-muted-foreground">Loading foods...</div>
         ) : (
           <UserFoods foods={foods} />
         )}

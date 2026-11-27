@@ -207,6 +207,26 @@ export class VotingService {
   }
 
   /**
+   * Force-close (cancel) an active voting session in any phase
+   */
+  static async forceCloseVotingSession(sessionId: number, userId?: string) {
+    const response = await fetch(`${VOTING_BASE_URL}/sessions/${sessionId}/force-close`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userId ? { userId } : {}),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Failed to force-close voting session');
+    }
+
+    return response.json();
+  }
+
+  /**
    * Create group consumption from completed voting session
    */
   static async createConsumptionFromVote(
