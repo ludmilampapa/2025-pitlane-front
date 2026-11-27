@@ -788,9 +788,7 @@ export function WeeklyMenuCalendar({
         </CardContent>
       </Card>
 
-      {/* ================================================================
-          UNIFIED SLOT CONFIGURATION & PROPOSAL MODAL (ONLY IN 'manage')
-         ================================================================ */}
+      {/* UNIFIED SLOT CONFIGURATION & PROPOSAL MODAL (ONLY IN 'manage') */}
       {mode === 'manage' &&
         selectedSlot &&
         typeof document !== 'undefined' &&

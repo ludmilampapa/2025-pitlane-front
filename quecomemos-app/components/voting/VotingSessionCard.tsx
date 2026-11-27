@@ -718,9 +718,7 @@ export function VotingSessionCard({
         </CardHeader>
 
         <CardContent className="space-y-6 p-5 sm:p-6">
-          {/* ================================================================
-              ROUND 1: SWIPE PERSONAL MATCHES + MANUAL ADD + POOL TRAY
-             ================================================================ */}
+          {/* ROUND 1: SWIPE PERSONAL MATCHES + MANUAL ADD + POOL TRAY */}
           {updatedSession.status === 'proposal_phase' && (
             <div className="space-y-6">
               {/* Personalized Swipe Stage */}
@@ -841,9 +839,7 @@ export function VotingSessionCard({
             </div>
           )}
 
-          {/* ================================================================
-              ROUND 2: IMMERSIVE GAME MODE CHOOSER -> EXCLUSIVE ARENA
-             ================================================================ */}
+          {/* ROUND 2: IMMERSIVE GAME MODE CHOOSER -> EXCLUSIVE ARENA */}
           {updatedSession.status === 'voting_phase' && (
             <div className="space-y-5">
               {/* Shared Round 2 Action HUD */}
@@ -1046,9 +1042,7 @@ export function VotingSessionCard({
             </div>
           )}
 
-          {/* ================================================================
-              ROUND 3: WINNER PODIUM & FINAL STANDINGS
-             ================================================================ */}
+          {/* ROUND 3: WINNER PODIUM & FINAL STANDINGS */}
           {updatedSession.status === 'completed' && (
             <div className="space-y-5">
               {updatedSession.winnerMeal && (
