@@ -4,10 +4,18 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Activity, ChefHat, Calendar, Search, Filter, History, Target, Flame, Plus, Trophy } from 'lucide-react';
+import { ArrowLeft, Activity, ChefHat, Calendar, Search, Filter, History, Target, Flame, Plus, Trophy, Pencil, Trash2, X } from 'lucide-react';
 import { useUser } from '@/lib/contexts/UserContext';
 import { API_BASE_URL } from '@/lib/config/api';
-import { formatArgentinaDate, formatArgentinaTime } from '@/lib/utils/timezone';
+import {
+  argentinaDateTimeToISO,
+  formatArgentinaDate,
+  formatArgentinaHHMM,
+  formatArgentinaTime,
+  formatArgentinaYMD,
+  isValidHHMM,
+  isValidYMD,
+} from '@/lib/utils/timezone';
 import { useCalorieProgress } from '@/lib/hooks/useKcalProgress';
 import { CalorieGoalSettings } from '@/components/profile/calorie-goal';
 import { CalorieProgressDisplay } from '@/components/profile/CalorieProgressDisplay';
@@ -115,6 +123,11 @@ export default function UserHistoryPage() {
   const [activeTab, setActiveTab] = useState('history');
   const [isRegisterMealModalOpen, setIsRegisterMealModalOpen] = useState(false);
   const [isBadgeModalOpen, setIsBadgeModalOpen] = useState(false);
+  const [editingConsumption, setEditingConsumption] = useState<Consumption | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', description: '', date: '', time: '' });
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
 
   // Context hooks
   const { userData } = useUser();
@@ -257,6 +270,88 @@ export default function UserHistoryPage() {
 
   const openRegisterMealModal = () => {
     setIsRegisterMealModalOpen(true);
+  };
+
+  const startEditConsumption = (consumption: Consumption) => {
+    const dt = new Date(consumption.consumedAt);
+    setEditError(null);
+    setEditingConsumption(consumption);
+    setEditForm({
+      name: consumption.name || '',
+      description: consumption.description || '',
+      date: formatArgentinaYMD(dt),
+      time: formatArgentinaHHMM(dt),
+    });
+  };
+
+  const handleSaveEditConsumption = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingConsumption || !profile?.id || savingEdit) return;
+    setEditError(null);
+
+    const trimmedName = editForm.name.trim();
+    if (!trimmedName) {
+      setEditError('Name is required.');
+      return;
+    }
+    if (!isValidYMD(editForm.date) || !isValidHHMM(editForm.time)) {
+      setEditError('Please enter a valid date and time.');
+      return;
+    }
+    const iso = argentinaDateTimeToISO(editForm.date, editForm.time);
+    if (new Date(iso).getTime() > Date.now() + 60_000) {
+      setEditError('Consumption date cannot be in the future.');
+      return;
+    }
+
+    setSavingEdit(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/consumptions/${editingConsumption.ConsumptionID}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          profileId: profile.id,
+          name: trimmedName,
+          description: editForm.description.trim() || null,
+          consumedAt: iso,
+        }),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error || 'Failed to update consumption');
+      }
+      setEditingConsumption(null);
+      showSuccess('Meal log updated', 'Your consumption record has been saved.');
+      await fetchUserHistory();
+      triggerRefresh();
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : 'Failed to update consumption');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleDeleteConsumption = async (consumption: Consumption) => {
+    if (!profile?.id || deletingId !== null) return;
+    setDeletingId(consumption.ConsumptionID);
+    try {
+      const res = await fetch(`${API_BASE_URL}/consumptions/${consumption.ConsumptionID}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profileId: profile.id }),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error || 'Failed to delete consumption');
+      }
+      showSuccess('Meal log deleted', `"${consumption.name}" was removed from your history.`);
+      await fetchUserHistory();
+      triggerRefresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete consumption');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const closeRegisterMealModal = () => {
@@ -518,8 +613,31 @@ export default function UserHistoryPage() {
                               </span>
                             </div>
                           </div>
-                          <div className="flex items-center text-muted-foreground">
-                            <Activity className="w-4 h-4" />
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => startEditConsumption(consumption)}
+                              disabled={deletingId !== null}
+                              aria-label={`Edit ${consumption.name}`}
+                              className="h-8 px-2.5 text-xs"
+                            >
+                              <Pencil className="mr-1 h-3.5 w-3.5" />
+                              Edit
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => void handleDeleteConsumption(consumption)}
+                              disabled={deletingId !== null}
+                              aria-label={`Delete ${consumption.name}`}
+                              className="h-8 border-destructive/40 px-2.5 text-xs text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="mr-1 h-3.5 w-3.5" />
+                              {deletingId === consumption.ConsumptionID ? 'Deleting...' : 'Delete'}
+                            </Button>
                           </div>
                         </div>
                       </div>
@@ -676,6 +794,105 @@ export default function UserHistoryPage() {
         onClose={closeRegisterMealModal}
         onSubmit={handleRegisterMeal}
       />
+
+      {/* Edit Consumption Modal */}
+      {editingConsumption && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          onClick={() => setEditingConsumption(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-border bg-card shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-border px-5 py-4">
+              <h2 className="text-lg font-bold text-foreground">Edit Meal Log</h2>
+              <button
+                type="button"
+                onClick={() => setEditingConsumption(null)}
+                aria-label="Close edit modal"
+                className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveEditConsumption} className="space-y-4 p-5">
+              {editError && (
+                <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
+                  {editError}
+                </div>
+              )}
+              <div className="space-y-1.5">
+                <label htmlFor="edit-consumption-name" className="text-xs font-medium text-foreground">
+                  Name
+                </label>
+                <input
+                  id="edit-consumption-name"
+                  type="text"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
+                  required
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="edit-consumption-desc" className="text-xs font-medium text-foreground">
+                  Description (optional)
+                </label>
+                <textarea
+                  id="edit-consumption-desc"
+                  rows={2}
+                  value={editForm.description}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, description: e.target.value }))}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label htmlFor="edit-consumption-date" className="text-xs font-medium text-foreground">
+                    Date
+                  </label>
+                  <input
+                    id="edit-consumption-date"
+                    type="date"
+                    value={editForm.date}
+                    max={formatArgentinaYMD()}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, date: e.target.value }))}
+                    required
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label htmlFor="edit-consumption-time" className="text-xs font-medium text-foreground">
+                    Time
+                  </label>
+                  <input
+                    id="edit-consumption-time"
+                    type="time"
+                    value={editForm.time}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, time: e.target.value }))}
+                    required
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setEditingConsumption(null)}
+                  disabled={savingEdit}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={savingEdit} className="bg-primary text-primary-foreground hover:bg-primary/90">
+                  {savingEdit ? 'Saving...' : 'Save changes'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Badge Selection Modal */}
       {profile?.id && (

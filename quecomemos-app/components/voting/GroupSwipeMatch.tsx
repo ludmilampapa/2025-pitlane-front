@@ -22,6 +22,7 @@ import {
   type RestrictionItem,
 } from '@/lib/utils/dietaryCompatibility';
 import { VotingService } from './VotingService';
+import { playGameSfx } from '@/lib/utils/gameSfx';
 import type { VotingSession } from './types';
 import type { Group } from '@/components/groups';
 
@@ -86,6 +87,8 @@ export function GroupSwipeMatch({
   const [deckScope, setDeckScope] = useState<'personal' | 'compatible'>('personal');
   const [passedIds, setPassedIds] = useState<Set<number>>(new Set());
   const [swipeExit, setSwipeExit] = useState<'left' | 'right' | null>(null);
+  const [dragStartX, setDragStartX] = useState<number | null>(null);
+  const [dragX, setDragX] = useState(0);
   const [failedImages, setFailedImages] = useState<Set<number>>(new Set());
   const [mealThumbsByName, setMealThumbsByName] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -276,15 +279,18 @@ export function GroupSwipeMatch({
     () =>
       currentMeal
         ? (currentMeal.mealFoods || []).reduce(
-            (sum, mf) => sum + (mf.quantity || 1) * (mf.food?.kCal || 0),
-            0
-          )
+          (sum, mf) => sum + (mf.quantity || 1) * (mf.food?.kCal || 0),
+          0
+        )
         : 0,
     [currentMeal]
   );
 
   const handlePass = useCallback(() => {
     if (!currentMeal || submitting || swipeExit) return;
+    playGameSfx('swipe_no');
+    setDragX(0);
+    setDragStartX(null);
     setSwipeExit('left');
     window.setTimeout(() => {
       setPassedIds((prev) => new Set(prev).add(currentMeal.MealID));
@@ -310,6 +316,9 @@ export function GroupSwipeMatch({
       return;
     }
 
+    playGameSfx('swipe_yes');
+    setDragX(0);
+    setDragStartX(null);
     setSubmitting(true);
     setSwipeExit('right');
 
@@ -425,22 +434,20 @@ export function GroupSwipeMatch({
               <button
                 type="button"
                 onClick={() => setDeckScope('personal')}
-                className={`rounded-lg px-2.5 py-1 font-medium transition-colors ${
-                  deckScope === 'personal'
-                    ? 'bg-card text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
+                className={`rounded-lg px-2.5 py-1 font-medium transition-colors ${deckScope === 'personal'
+                  ? 'bg-card text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+                  }`}
               >
                 My Cravings ({personalMeals.length})
               </button>
               <button
                 type="button"
                 onClick={() => setDeckScope('compatible')}
-                className={`rounded-lg px-2.5 py-1 font-medium transition-colors ${
-                  deckScope === 'compatible'
-                    ? 'bg-card text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
+                className={`rounded-lg px-2.5 py-1 font-medium transition-colors ${deckScope === 'compatible'
+                  ? 'bg-card text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+                  }`}
               >
                 All Safe ({allCompatibleMeals.length})
               </button>
@@ -531,16 +538,68 @@ export function GroupSwipeMatch({
             />
           )}
 
-          {/* Active Swipe Card */}
+          {/* Active Swipe Card (supports real mouse & touch drag!) */}
           <div
-            className={`relative overflow-hidden rounded-3xl border border-border bg-card shadow-lg transition-all duration-200 ${
-              swipeExit === 'left'
-                ? '-translate-x-10 -rotate-3 opacity-30'
-                : swipeExit === 'right'
-                  ? 'translate-x-10 rotate-3 opacity-30'
-                  : 'translate-x-0 rotate-0 opacity-100'
-            }`}
+            onPointerDown={(e) => {
+              if (submitting || swipeExit) return;
+              const target = e.target as HTMLElement | null;
+              if (target?.closest('button')) return;
+              setDragStartX(e.clientX);
+              setDragX(0);
+              (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+            }}
+            onPointerMove={(e) => {
+              if (dragStartX === null || submitting || swipeExit) return;
+              setDragX(e.clientX - dragStartX);
+            }}
+            onPointerUp={() => {
+              if (dragStartX === null) return;
+              const finalDelta = dragX;
+              setDragStartX(null);
+              if (finalDelta > 90) {
+                void handlePropose();
+              } else if (finalDelta < -90) {
+                handlePass();
+              } else {
+                setDragX(0);
+              }
+            }}
+            onPointerCancel={() => {
+              setDragStartX(null);
+              setDragX(0);
+            }}
+            style={
+              dragStartX !== null
+                ? {
+                  transform: `translateX(${dragX}px) rotate(${(dragX * 0.045).toFixed(2)}deg)`,
+                  transition: 'none',
+                }
+                : undefined
+            }
+            className={`relative select-none touch-pan-y cursor-grab active:cursor-grabbing overflow-hidden rounded-3xl border border-border bg-card shadow-lg transition-all duration-200 ${swipeExit === 'left'
+              ? '-translate-x-16 -rotate-6 opacity-20'
+              : swipeExit === 'right'
+                ? 'translate-x-16 rotate-6 opacity-20'
+                : 'translate-x-0 rotate-0 opacity-100'
+              }`}
           >
+            {/* Dynamic YUM! / NOPE Arcade Stamps */}
+            {(dragX > 28 || swipeExit === 'right') && (
+              <div
+                style={{ opacity: swipeExit === 'right' ? 1 : Math.min(1, (dragX - 28) / 70) }}
+                className="pointer-events-none absolute left-5 top-5 z-20 -rotate-12 rounded-xl border-4 border-emerald-500 bg-emerald-500/20 px-4 py-1 text-2xl font-black tracking-widest text-emerald-500 shadow-lg backdrop-blur-xs"
+              >
+                YUM!
+              </div>
+            )}
+            {(dragX < -28 || swipeExit === 'left') && (
+              <div
+                style={{ opacity: swipeExit === 'left' ? 1 : Math.min(1, (-dragX - 28) / 70) }}
+                className="pointer-events-none absolute right-5 top-5 z-20 rotate-12 rounded-xl border-4 border-destructive bg-destructive/20 px-4 py-1 text-2xl font-black tracking-widest text-destructive shadow-lg backdrop-blur-xs"
+              >
+                NOPE
+              </div>
+            )}
             {/* Visual Dish Header */}
             <div className="relative flex h-48 items-center justify-center overflow-hidden bg-gradient-to-br from-secondary/15 via-muted/40 to-primary/15 sm:h-56">
               {(() => {

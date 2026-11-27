@@ -20,7 +20,10 @@ import {
   Shuffle,
   Gamepad2,
   XCircle,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
+import { isGameSfxMuted, setGameSfxMuted } from '@/lib/utils/gameSfx';
 import { useUser } from '@/lib/contexts/UserContext';
 import { useGlobalNotification } from '@/lib/contexts/NotificationContext';
 import { useVoting } from '@/lib/contexts/VotingContext';
@@ -69,6 +72,17 @@ export function VotingSessionCard({
 
   const [loading, setLoading] = useState(false);
   const [forceClosing, setForceClosing] = useState(false);
+  const [sfxMuted, setSfxMuted] = useState(false);
+
+  useEffect(() => {
+    setSfxMuted(isGameSfxMuted());
+  }, []);
+
+  const toggleSfx = () => {
+    const next = !sfxMuted;
+    setSfxMuted(next);
+    setGameSfxMuted(next);
+  };
   const [proposeModalTab, setProposeModalTab] = useState<'swipe' | 'manual'>('manual');
   const [showProposeMeal, setShowProposeMeal] = useState(false);
   const [showEarlyCompletion, setShowEarlyCompletion] = useState(false);
@@ -692,6 +706,17 @@ export function VotingSessionCard({
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {getStatusBadge()}
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={toggleSfx}
+                title={sfxMuted ? 'Unmute game sounds' : 'Mute game sounds'}
+                aria-label={sfxMuted ? 'Unmute game sounds' : 'Mute game sounds'}
+                className="h-7 w-7 rounded-full border-border bg-card text-muted-foreground hover:text-foreground"
+              >
+                {sfxMuted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5 text-primary" />}
+              </Button>
               {canAdvancePhase &&
                 (updatedSession.status === 'proposal_phase' ||
                   updatedSession.status === 'voting_phase') && (
@@ -709,6 +734,52 @@ export function VotingSessionCard({
                 )}
             </div>
           </div>
+
+          {/* Party Game Players Ready Strip */}
+          {(updatedSession.group?.members?.length || 0) > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              {updatedSession.group?.members?.map((member, idx) => {
+                const mId = member.profile.id;
+                const mName = member.profile.username || 'Player';
+                const isReady =
+                  updatedSession.status === 'proposal_phase'
+                    ? updatedSession.proposalConfirmations?.some((c) => c.userId === mId)
+                    : updatedSession.status === 'voting_phase'
+                      ? updatedSession.voteConfirmations?.some((c) => c.userId === mId)
+                      : true;
+                const avatarColors = [
+                  'bg-primary text-primary-foreground',
+                  'bg-secondary text-secondary-foreground',
+                  'bg-amber-600 text-white',
+                  'bg-emerald-600 text-white',
+                ];
+                return (
+                  <div
+                    key={mId}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-xs font-medium transition-all ${
+                      isReady
+                        ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                        : 'border-border bg-card text-muted-foreground'
+                    }`}
+                  >
+                    <span
+                      className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold uppercase ${
+                        avatarColors[idx % avatarColors.length]
+                      }`}
+                    >
+                      {mName.slice(0, 2)}
+                    </span>
+                    <span className="max-w-[90px] truncate">{mName}</span>
+                    {isReady && (
+                      <span className="rounded-full bg-emerald-500/20 px-1.5 py-0.2 text-[10px] font-bold uppercase">
+                        Ready
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* 3-Round Stepper */}
           <div className="grid grid-cols-3 gap-2 text-xs">
