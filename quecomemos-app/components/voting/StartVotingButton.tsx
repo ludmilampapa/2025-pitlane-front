@@ -18,6 +18,8 @@ interface StartVotingButtonProps {
   className?: string;
 }
 
+const GAME_DURATION_OPTIONS = [5, 10, 15, 30] as const;
+
 export function StartVotingButton({
   group,
   onVotingStarted,
@@ -27,6 +29,7 @@ export function StartVotingButton({
   const { userData } = useUser();
   const { showSuccess, showError } = useGlobalNotification();
   const [loading, setLoading] = useState(false);
+  const [totalDurationMinutes, setTotalDurationMinutes] = useState<number>(15);
 
   const userId = userData?.profile?.id;
   const isGroupMember = group.members?.some((member) => member.profile.id === userId) || false;
@@ -44,11 +47,12 @@ export function StartVotingButton({
         groupId: group.GroupID,
         title: `Meal Vote · ${formatArgentinaDate(new Date(), 'en-US', { month: 'short', day: 'numeric' })}`,
         description: `Group meal voting session for ${group.name}`,
+        totalDurationMinutes,
       });
 
       showSuccess(
-        'Voting Session Started!',
-        'Members can now propose meals for the next 5 minutes.'
+        'Meal Showdown Started!',
+        `Total game timer set to ${totalDurationMinutes} minutes.`
       );
 
       onVotingStarted?.(createdSession);
@@ -67,14 +71,42 @@ export function StartVotingButton({
   }
 
   return (
-    <Button
-      onClick={handleStartVoting}
-      disabled={disabled || loading}
-      className={`rounded-xl bg-secondary text-secondary-foreground shadow-sm transition-all hover:bg-secondary/90 hover:shadow ${className}`}
-    >
-      <Sparkles className="mr-2 h-4 w-4" />
-      {loading ? 'Starting game...' : 'Start Meal Game'}
-    </Button>
+    <div className="flex flex-wrap items-center justify-center gap-2.5">
+      <div
+        role="group"
+        aria-label="Total game duration"
+        className="inline-flex items-center gap-1 rounded-xl border border-border bg-background/90 p-1 text-xs"
+      >
+        <span className="inline-flex items-center gap-1 px-2 font-medium text-muted-foreground">
+          <Clock className="h-3.5 w-3.5 text-secondary" />
+          Total:
+        </span>
+        {GAME_DURATION_OPTIONS.map((mins) => (
+          <button
+            key={mins}
+            type="button"
+            disabled={disabled || loading}
+            onClick={() => setTotalDurationMinutes(mins)}
+            className={`rounded-lg px-2.5 py-1 font-bold transition-colors ${
+              totalDurationMinutes === mins
+                ? 'bg-primary text-primary-foreground shadow-xs'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            }`}
+          >
+            {mins}m
+          </button>
+        ))}
+      </div>
+
+      <Button
+        onClick={handleStartVoting}
+        disabled={disabled || loading}
+        className={`rounded-xl bg-secondary text-secondary-foreground shadow-sm transition-all hover:bg-secondary/90 hover:shadow ${className}`}
+      >
+        <Sparkles className="mr-2 h-4 w-4" />
+        {loading ? 'Starting game...' : 'Start Meal Game'}
+      </Button>
+    </div>
   );
 }
 

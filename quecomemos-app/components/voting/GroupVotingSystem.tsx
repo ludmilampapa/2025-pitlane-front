@@ -1,7 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import {
   Users,
   Dices,
@@ -10,6 +12,8 @@ import {
   Flame,
   Gamepad2,
   Trophy,
+  Maximize2,
+  X,
 } from 'lucide-react';
 import { useUser } from '@/lib/contexts/UserContext';
 import { useVoting } from '@/lib/contexts/VotingContext';
@@ -51,8 +55,16 @@ export function GroupVotingSystem({
 
   const userId = userData?.profile?.id;
   const isGroupMember = group.members?.some((member) => member.profile.id === userId) || false;
+  const [minigameModalOpen, setMinigameModalOpen] = useState(true);
+
+  useEffect(() => {
+    if (activeSession?.VotingSessionID) {
+      setMinigameModalOpen(true);
+    }
+  }, [activeSession?.VotingSessionID]);
 
   const handleVotingStarted = (createdSession?: VotingSession) => {
+    setMinigameModalOpen(true);
     void startSession(createdSession);
   };
 
@@ -119,15 +131,79 @@ export function GroupVotingSystem({
   };
 
   if (activeSession) {
+    const canShowPortal = minigameModalOpen && typeof document !== 'undefined';
+
     return (
       <>
         <div className={`space-y-3 ${className}`}>
-          <SyncBar />
-          <VotingSessionCard
-            session={activeSession}
-            onVotingComplete={onVotingComplete}
-          />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <SyncBar />
+            {!minigameModalOpen && (
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setMinigameModalOpen(true)}
+                className="rounded-xl bg-secondary text-xs font-bold text-secondary-foreground hover:bg-secondary/90"
+              >
+                <Maximize2 className="mr-1.5 h-3.5 w-3.5" />
+                Open Minigame View
+              </Button>
+            )}
+          </div>
+
+          {!canShowPortal && (
+            <VotingSessionCard
+              session={activeSession}
+              onVotingComplete={onVotingComplete}
+            />
+          )}
         </div>
+
+        {/* Full-Focus Arcade Minigame Modal */}
+        {canShowPortal &&
+          createPortal(
+            <div
+              className="fixed inset-0 z-[90] flex items-center justify-center bg-black/75 p-3 backdrop-blur-md sm:p-6"
+              onClick={() => setMinigameModalOpen(false)}
+            >
+              <div
+                className="relative flex max-h-[94vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-secondary/40 bg-background shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between gap-3 border-b border-border bg-card px-5 py-3">
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-secondary/15 text-secondary">
+                      <Gamepad2 className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <p className="text-xs font-extrabold uppercase tracking-wider text-secondary">
+                        Meal Showdown · Minigame
+                      </p>
+                      <p className="text-xs text-muted-foreground">{group.name}</p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setMinigameModalOpen(false)}
+                    className="h-8 rounded-xl border-border bg-background text-xs font-semibold text-foreground hover:bg-muted"
+                  >
+                    <X className="mr-1 h-3.5 w-3.5" />
+                    Exit Minigame
+                  </Button>
+                </div>
+
+                <div className="overflow-y-auto p-3 sm:p-5">
+                  <VotingSessionCard
+                    session={activeSession}
+                    onVotingComplete={onVotingComplete}
+                  />
+                </div>
+              </div>
+            </div>,
+            document.body
+          )}
 
         {showResultsModal && activeSession && (
           <VotingResultsModal
