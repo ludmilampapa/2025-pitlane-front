@@ -50,6 +50,7 @@ interface GroupMealRouletteProps {
   onSwitchToClassic?: () => void;
   onVoteProposal?: (proposalId: number) => Promise<void> | void;
   onUndoVoteProposal?: (proposalId: number) => Promise<void> | void;
+  onRouletteWinner?: (proposalId: number, mealName: string) => Promise<void> | void;
 }
 
 const SLICE_COLORS = [
@@ -87,6 +88,7 @@ export function GroupMealRoulette({
   session,
   onVoteProposal,
   onUndoVoteProposal,
+  onRouletteWinner,
 }: GroupMealRouletteProps) {
   const { userData } = useUser();
   const { refreshSession } = useVoting();
@@ -221,11 +223,15 @@ export function GroupMealRoulette({
       window.setTimeout(() => playGameSfx('tick'), ms);
     });
 
-    const chosenMealId = wheelMeals[chosenIndex].MealID;
+    const chosenSlice = wheelMeals[chosenIndex];
+    const chosenMealId = chosenSlice.MealID;
     window.setTimeout(() => {
       setSpinning(false);
       setWinnerMealId(chosenMealId);
       playGameSfx('winner');
+      if (onRouletteWinner && chosenSlice.proposalId && session?.status === 'voting_phase') {
+        void onRouletteWinner(chosenSlice.proposalId, chosenSlice.name);
+      }
     }, 3800);
   };
 

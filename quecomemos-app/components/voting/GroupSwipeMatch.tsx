@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import {
+  ArrowRight,
   Flame,
+  Gamepad2,
   Heart,
   Leaf,
   Plus,
@@ -59,6 +61,9 @@ interface GroupSwipeMatchProps {
   onSwitchToClassic?: () => void;
   onFinished?: () => void;
   onOpenManualAdd?: () => void;
+  onAdvanceToGame?: () => void;
+  advanceLabel?: string;
+  advancing?: boolean;
   embedded?: boolean;
 }
 
@@ -67,6 +72,9 @@ export function GroupSwipeMatch({
   session,
   onFinished,
   onOpenManualAdd,
+  onAdvanceToGame,
+  advanceLabel = 'Next Stage: Pick a Game',
+  advancing = false,
   embedded = false,
 }: GroupSwipeMatchProps) {
   const { userData } = useUser();
@@ -471,60 +479,80 @@ export function GroupSwipeMatch({
 
       {/* Empty Deck State */}
       {!currentMeal ? (
-        <div className="flex min-h-[300px] flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/20 p-8 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <Utensils className="h-6 w-6" />
+        <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/20 p-6 text-center sm:p-8">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary/15 text-secondary">
+            <Gamepad2 className="h-6 w-6" />
           </div>
-          <h3 className="mt-3 text-lg font-bold text-foreground">
+          <h3 className="mt-3 text-xl font-extrabold text-foreground">
             {baseDeck.length === 0
               ? 'No matching dishes in catalog yet'
-              : "You've swiped through your deck!"}
+              : "You're done picking dishes!"}
           </h3>
           <p className="mt-1 max-w-md text-xs leading-relaxed text-muted-foreground sm:text-sm">
             {baseDeck.length === 0
-              ? 'Create a dish manually or continue straight to the game mode — random dishes will load automatically.'
-              : 'Reset passed cards, explore all safe dishes, add one manually, or advance to pick your game mode!'}
+              ? 'Continue to the game mode to auto-load random dishes, or add one manually.'
+              : 'Ready for the next stage? Jump straight into choosing the game mode!'}
           </p>
 
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-2.5">
-            {passedIds.size > 0 && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setPassedIds(new Set())}
-                className="rounded-xl"
-              >
-                <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-                Review Passed ({passedIds.size})
-              </Button>
-            )}
-            {deckScope === 'personal' && allCompatibleMeals.length > personalMeals.length && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setDeckScope('compatible');
-                  setPassedIds(new Set());
-                }}
-                className="rounded-xl"
-              >
-                <Sparkles className="mr-1.5 h-3.5 w-3.5 text-primary" />
-                Browse All Safe Dishes
-              </Button>
-            )}
-            {onOpenManualAdd && (
-              <Button
-                type="button"
-                size="sm"
-                onClick={onOpenManualAdd}
-                className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90"
-              >
-                <Plus className="mr-1.5 h-3.5 w-3.5" />
-                Add Dish Manually
-              </Button>
-            )}
+          {onAdvanceToGame && (
+            <Button
+              type="button"
+              size="lg"
+              disabled={advancing}
+              onClick={onAdvanceToGame}
+              className="mt-5 h-12 w-full max-w-sm rounded-2xl bg-secondary px-6 text-base font-extrabold text-secondary-foreground shadow-md transition-transform hover:scale-[1.02] hover:bg-secondary/90"
+            >
+              <Gamepad2 className="mr-2 h-5 w-5" />
+              {advancing ? 'Loading game...' : advanceLabel}
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          )}
+
+          <div className="mt-6 w-full max-w-md border-t border-border/70 pt-4">
+            <p className="text-xs font-medium text-muted-foreground">
+              Not sure about your picks? Add more dishes manually or browse the full database:
+            </p>
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+              {onOpenManualAdd && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={onOpenManualAdd}
+                  className="rounded-xl border-primary/40 bg-card text-xs font-semibold text-primary hover:bg-primary/10"
+                >
+                  <Plus className="mr-1.5 h-3.5 w-3.5" />
+                  Add + Manual / Full Database
+                </Button>
+              )}
+              {deckScope === 'personal' && allCompatibleMeals.length > personalMeals.length && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setDeckScope('compatible');
+                    setPassedIds(new Set());
+                  }}
+                  className="rounded-xl text-xs"
+                >
+                  <Sparkles className="mr-1.5 h-3.5 w-3.5 text-primary" />
+                  Browse All Safe Dishes
+                </Button>
+              )}
+              {passedIds.size > 0 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPassedIds(new Set())}
+                  className="rounded-xl text-xs"
+                >
+                  <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                  Review Passed ({passedIds.size})
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       ) : (

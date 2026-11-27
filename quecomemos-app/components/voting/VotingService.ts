@@ -190,12 +190,13 @@ export class VotingService {
   /**
    * Complete voting session and determine winner
    */
-  static async completeVotingSession(sessionId: number) {
+  static async completeVotingSession(sessionId: number, winnerProposalId?: number) {
     const response = await fetch(`${VOTING_BASE_URL}/sessions/${sessionId}/complete`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify(winnerProposalId ? { winnerProposalId } : {}),
     });
 
     if (!response.ok) {
