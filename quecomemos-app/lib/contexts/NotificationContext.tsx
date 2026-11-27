@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
-import { NotificationType } from '@/components/modals/StackedNotifications';
-import { StackedNotifications } from '@/components/modals/StackedNotifications';
+import { createContext, useCallback, useContext, ReactNode } from 'react';
+import { toast } from 'sonner';
+import type { NotificationType } from '@/components/modals/StackedNotifications';
 
 interface NotificationItem {
   id: string;
@@ -39,86 +39,89 @@ interface NotificationContextType {
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
+/**
+ * Adapter Pattern: bridges legacy useGlobalNotification() callers directly to Sonner toasts
+ * so every notification across the app shares one consistent, non-blocking visual style.
+ */
 export function NotificationProvider({ children }: { children: ReactNode }) {
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const showNotification = useCallback(
+    (
+      type: NotificationType,
+      title: string,
+      message: string,
+      options?: {
+        autoClose?: boolean;
+        autoCloseTime?: number;
+        customIcon?: React.ReactNode;
+      }
+    ) => {
+      const toastOptions = {
+        description: message || undefined,
+        duration: options?.autoClose === false ? Infinity : options?.autoCloseTime ?? 4000,
+      };
 
-  const generateId = () => `notification-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  const EXIT_ANIMATION_MS = 300; // duration for exit animation
+      switch (type) {
+        case 'success':
+          toast.success(title, toastOptions);
+          break;
+        case 'error':
+          toast.error(title, toastOptions);
+          break;
+        case 'warning':
+          toast.warning(title, toastOptions);
+          break;
+        default:
+          toast.info(title, toastOptions);
+          break;
+      }
+    },
+    []
+  );
 
-  const showNotification = (
-    type: NotificationType,
-    title: string,
-    message: string,
-    options?: {
-      autoClose?: boolean;
-      autoCloseTime?: number;
-      customIcon?: React.ReactNode;
-    }
-  ) => {
-    console.log('Global notification triggered:', { type, title, message });
-    
-    const newNotification: NotificationItem = {
-      id: generateId(),
-      type,
-      title,
-      message,
-      autoClose: options?.autoClose ?? true,
-      autoCloseTime: options?.autoCloseTime ?? 4000,
-      customIcon: options?.customIcon,
-      createdAt: Date.now(),
-    };
+  const showSuccess = useCallback(
+    (title: string, message: string, customIcon?: React.ReactNode) => {
+      showNotification('success', title, message, { customIcon });
+    },
+    [showNotification]
+  );
 
-    setNotifications(prev => [...prev, newNotification]);
+  const showError = useCallback(
+    (title: string, message: string) => {
+      showNotification('error', title, message);
+    },
+    [showNotification]
+  );
 
-    // Auto-remove notification if autoClose is enabled.
-    if (newNotification.autoClose) {
-      const startClosingAt = Math.max(0, (newNotification.autoCloseTime ?? 4000) - EXIT_ANIMATION_MS);
-      // start closing (trigger exit animation)
-      setTimeout(() => {
-        setNotifications(prev => prev.map(n => n.id === newNotification.id ? { ...n, closing: true } : n));
-      }, startClosingAt);
+  const showWarning = useCallback(
+    (title: string, message: string) => {
+      showNotification('warning', title, message);
+    },
+    [showNotification]
+  );
 
-      // remove after full duration
-      setTimeout(() => {
-        removeNotification(newNotification.id);
-      }, newNotification.autoCloseTime);
-    }
-  };
+  const showInfo = useCallback(
+    (title: string, message: string) => {
+      showNotification('info', title, message);
+    },
+    [showNotification]
+  );
 
-  // Start close (manual or programmatic): mark as closing then remove after exit animation
-  const startCloseNotification = (id: string) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, closing: true } : n));
-    setTimeout(() => removeNotification(id), EXIT_ANIMATION_MS);
-  };
+  const removeNotification = useCallback((id: string) => {
+    toast.dismiss(id);
+  }, []);
 
-  const showSuccess = (title: string, message: string, customIcon?: React.ReactNode) => {
-    showNotification('success', title, message, { customIcon });
-  };
+  const startCloseNotification = useCallback((id: string) => {
+    toast.dismiss(id);
+  }, []);
 
-  const showError = (title: string, message: string) => {
-    showNotification('error', title, message);
-  };
-
-  const showWarning = (title: string, message: string) => {
-    showNotification('warning', title, message);
-  };
-
-  const showInfo = (title: string, message: string) => {
-    showNotification('info', title, message);
-  };
-
-  const removeNotification = (id: string) => {
-    setNotifications(prev => prev.filter(notification => notification.id !== id));
-  };
-
-  const clearAllNotifications = () => {
-    setNotifications([]);
-  };
+  const clearAllNotifications = useCallback(() => {
+    toast.dismiss();
+  }, []);
 
   return (
     <NotificationContext.Provider
       value={{
-        notifications,
+        notifications: [],
         showNotification,
         showSuccess,
         showError,
@@ -130,13 +133,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       }}
     >
       {children}
-      
-      {/* Global Notification Stack - Non-blocking */}
-      <StackedNotifications 
-        notifications={notifications}
-        onRemove={removeNotification}
-        onStartClose={startCloseNotification}
-      />
     </NotificationContext.Provider>
   );
 }
