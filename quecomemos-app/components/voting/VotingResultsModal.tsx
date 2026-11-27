@@ -43,6 +43,8 @@ export function VotingResultsModal({
   const winnerImage = (winnerProposal.meal as { svgLink?: string | null }).svgLink || null;
   const totalVotes = sortedProposals.reduce((sum, p) => sum + p.voteCount, 0);
   const maxVotes = Math.max(...sortedProposals.map((p) => p.voteCount), 0);
+  const tiedAtTopCount = sortedProposals.filter((p) => p.voteCount === maxVotes).length;
+  const wasRandomTieBreaker = tiedAtTopCount > 1;
 
   const totalCalories =
     winnerProposal.meal.mealFoods?.reduce(
@@ -108,7 +110,7 @@ export function VotingResultsModal({
                 </div>
                 <div>
                   <span className="text-xs font-semibold uppercase tracking-[0.12em] text-amber-700 dark:text-amber-300">
-                    Winner
+                    {wasRandomTieBreaker ? `Winner · Random tie-breaker (${tiedAtTopCount} tied)` : 'Winner'}
                   </span>
                   <h3 className="text-lg font-bold text-foreground">
                     {winnerProposal.meal.name}

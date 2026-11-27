@@ -812,18 +812,27 @@ export function VotingSessionCard({
           <div className="space-y-2">
             <Progress value={getPhaseProgress()} className="h-2" />
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5">
-                <Clock className="h-3.5 w-3.5 text-secondary" />
-                {updatedSession.status === 'proposal_phase' && (
-                  <VotingTimer endTime={updatedSession.proposalEndsAt} label="Pool closes in" />
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="inline-flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5 text-secondary" />
+                  {updatedSession.status === 'proposal_phase' && (
+                    <VotingTimer endTime={updatedSession.proposalEndsAt} label="Pool closes in" />
+                  )}
+                  {updatedSession.status === 'voting_phase' && updatedSession.votingEndsAt && (
+                    <VotingTimer endTime={updatedSession.votingEndsAt} label="Game ends in" />
+                  )}
+                  {updatedSession.status === 'completed' && updatedSession.completedAt && (
+                    <span>Completed {formatArgentinaDateTime(updatedSession.completedAt)}</span>
+                  )}
+                </span>
+
+                {updatedSession.status === 'proposal_phase' && updatedSession.votingEndsAt && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-0.5 text-[11px] font-semibold text-foreground">
+                    <Clock className="h-3 w-3 text-primary" />
+                    <VotingTimer endTime={updatedSession.votingEndsAt} label="Total game" />
+                  </span>
                 )}
-                {updatedSession.status === 'voting_phase' && updatedSession.votingEndsAt && (
-                  <VotingTimer endTime={updatedSession.votingEndsAt} label="Round ends in" />
-                )}
-                {updatedSession.status === 'completed' && updatedSession.completedAt && (
-                  <span>Completed {formatArgentinaDateTime(updatedSession.completedAt)}</span>
-                )}
-              </span>
+              </div>
 
               <span className="inline-flex items-center gap-1.5">
                 <Users className="h-3.5 w-3.5 text-primary" />

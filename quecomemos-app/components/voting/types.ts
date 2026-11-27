@@ -72,6 +72,7 @@ export interface CreateVotingSessionRequest {
   groupId: number;
   title?: string;
   description?: string;
+  totalDurationMinutes?: number;
 }
 
 export interface ProposeMealRequest {
