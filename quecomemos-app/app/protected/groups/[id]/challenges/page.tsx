@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Trophy, Target, CalendarDays, Plus, X, HeartHandshake, Pencil, Trash2 } from 'lucide-react';
+import { ArrowLeft, Trophy, Target, CalendarDays, Plus, X, HeartHandshake, Pencil, Trash2, CheckCircle2, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -17,7 +17,37 @@ import { formatLocalYMD } from '@/lib/hooks/useWeeklyMenu';
 import { formatYMDDisplay, isValidYMD } from '@/lib/utils/timezone';
 import { useUser } from '@/lib/contexts/UserContext';
 import { useCalorieProgressRefresh } from '@/lib/contexts/CalorieProgressContext';
-import type { Challenge, ChallengeProgress, ChallengeRankingRow, GroupData } from '@/lib/types/groupChallenges';
+import type { Challenge, ChallengeProgress, ChallengeRankingRow, ChallengeTargetPercentage, GroupData } from '@/lib/types/groupChallenges';
+
+const TARGET_GOAL_OPTIONS: Array<{ value: ChallengeTargetPercentage; label: string; hint: string }> = [
+  { value: 50, label: '50%', hint: 'At least half' },
+  { value: 75, label: '75%', hint: 'Most of the challenge' },
+  { value: 100, label: '100%', hint: 'Full challenge' },
+];
+
+function getFallbackStatus(challenge: Challenge, todayYmd: string): 'upcoming' | 'active' | 'finished' {
+  const start = challenge.startDate.slice(0, 10);
+  const end = challenge.endDate.slice(0, 10);
+  if (todayYmd < start) return 'upcoming';
+  if (todayYmd > end) return 'finished';
+  return 'active';
+}
+
+function getOutcomeBadge(outcome: string | undefined, status: 'upcoming' | 'active' | 'finished') {
+  if (outcome === 'completed') {
+    return { label: 'Completed', className: 'border-emerald-500/40 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' };
+  }
+  if (outcome === 'not_completed') {
+    return { label: 'Not completed', className: 'border-border bg-muted text-muted-foreground' };
+  }
+  if (outcome === 'goal_reached') {
+    return { label: 'Goal reached', className: 'border-primary/40 bg-primary/15 text-primary' };
+  }
+  if (status === 'upcoming' || outcome === 'upcoming') {
+    return { label: 'Upcoming', className: 'border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-300' };
+  }
+  return { label: 'In progress', className: 'border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-200' };
+}
 
 export default function GroupChallengesPage() {
   const params = useParams();
@@ -40,6 +70,7 @@ export default function GroupChallengesPage() {
     startDate: '',
     endDate: '',
     pausedFoods: [] as string[],
+    targetPercentage: 75 as ChallengeTargetPercentage,
   });
   const [pausedInput, setPausedInput] = useState('');
   const [catalogFoods, setCatalogFoods] = useState<Array<{ FoodID: number; name: string }>>([]);
@@ -157,7 +188,7 @@ export default function GroupChallengesPage() {
   };
 
   const resetChallengeForm = () => {
-    setForm({ name: '', description: '', ruleText: '', startDate: '', endDate: '', pausedFoods: [] });
+    setForm({ name: '', description: '', ruleText: '', startDate: '', endDate: '', pausedFoods: [], targetPercentage: 75 });
     setPausedInput('');
     setEditingChallengeId(null);
     setShowForm(false);
@@ -166,6 +197,9 @@ export default function GroupChallengesPage() {
   const startEditChallenge = (challenge: Challenge) => {
     setError(null);
     setEditingChallengeId(challenge.ChallengeID);
+    const currentTarget = challenge.targetPercentage === 50 || challenge.targetPercentage === 75 || challenge.targetPercentage === 100
+      ? challenge.targetPercentage
+      : 100;
     setForm({
       name: challenge.name,
       description: challenge.description || '',
@@ -173,6 +207,7 @@ export default function GroupChallengesPage() {
       startDate: challenge.startDate.slice(0, 10),
       endDate: challenge.endDate.slice(0, 10),
       pausedFoods: challenge.pausedFoods ? [...challenge.pausedFoods] : [],
+      targetPercentage: currentTarget,
     });
     setPausedInput('');
     setShowForm(true);
@@ -229,6 +264,7 @@ export default function GroupChallengesPage() {
           startDate: form.startDate,
           endDate: form.endDate,
           pausedFoods: form.pausedFoods,
+          targetPercentage: form.targetPercentage,
         });
       } else {
         await GroupChallengesService.createChallenge(groupId, {
@@ -236,6 +272,7 @@ export default function GroupChallengesPage() {
           name: trimmedName,
           ruleText: trimmedRule,
           description: form.description.trim(),
+          targetPercentage: form.targetPercentage,
           profileId,
         });
       }
@@ -323,6 +360,32 @@ export default function GroupChallengesPage() {
                   onChange={(e) => setForm({ ...form, endDate: e.target.value })}
                   required
                 />
+              </div>
+
+              <div className="md:col-span-2 space-y-2">
+                <span className="text-sm font-medium text-foreground">Completion goal</span>
+                <p className="text-xs text-muted-foreground">
+                  Minimum percentage of the challenge period required to complete this goal.
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {TARGET_GOAL_OPTIONS.map((option) => {
+                    const selected = form.targetPercentage === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setForm({ ...form, targetPercentage: option.value })}
+                        className={`flex flex-col items-center rounded-xl border px-3 py-2.5 text-center transition-colors ${selected
+                            ? 'border-primary bg-primary/10 text-primary shadow-xs'
+                            : 'border-border bg-card text-foreground hover:border-primary/40'
+                          }`}
+                      >
+                        <span className="text-base font-bold">{option.label}</span>
+                        <span className="text-[11px] text-muted-foreground">{option.hint}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="md:col-span-2 space-y-2.5 rounded-xl border border-border bg-muted/30 p-4">
@@ -435,90 +498,179 @@ export default function GroupChallengesPage() {
 
       {challenges.length === 0 ? (
         <Card><CardContent className="p-10 text-center text-muted-foreground"><Target className="w-10 h-10 mx-auto mb-3" />No challenges yet</CardContent></Card>
-      ) : challenges.map((challenge) => {
-        const userProgress = progress[challenge.ChallengeID];
-        const rows = ranking[challenge.ChallengeID] || [];
-        return (
-          <Card key={challenge.ChallengeID}>
-            <CardHeader>
-              <CardTitle className="flex flex-wrap items-center justify-between gap-2">
-                <span>{challenge.name}</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-primary">{userProgress?.percentage || 0}%</span>
-                  {isAdmin && (
-                    <>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => startEditChallenge(challenge)}
-                        disabled={deletingChallengeId !== null}
-                        className="h-8 px-2.5 text-xs"
-                      >
-                        <Pencil className="mr-1 h-3.5 w-3.5" />
-                        Edit
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => void handleDeleteChallenge(challenge)}
-                        disabled={deletingChallengeId !== null}
-                        className="h-8 border-destructive/40 px-2.5 text-xs text-destructive hover:bg-destructive/10"
-                      >
-                        <Trash2 className="mr-1 h-3.5 w-3.5" />
-                        {deletingChallengeId === challenge.ChallengeID ? 'Deleting...' : 'Delete'}
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <p className="text-sm text-muted-foreground">{challenge.description || challenge.ruleText}</p>
-              {challenge.pausedFoods && challenge.pausedFoods.length > 0 && (
-                <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                  <span className="inline-flex items-center gap-1 font-medium text-muted-foreground">
-                    <HeartHandshake className="h-3.5 w-3.5 text-primary" />
-                    Taking a break from:
-                  </span>
-                  {challenge.pausedFoods.map((item) => (
-                    <span
-                      key={item}
-                      className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 font-medium text-amber-800 dark:text-amber-200"
-                    >
-                      {item}
-                    </span>
-                  ))}
-                </div>
-              )}
-              <div className="flex items-center gap-2 text-sm"><CalendarDays className="w-4 h-4" /> {formatYMDDisplay(challenge.startDate.slice(0, 10))} – {formatYMDDisplay(challenge.endDate.slice(0, 10))}</div>
-              <div className="h-3 bg-[#EFE7DB] rounded overflow-hidden"><div className="h-full bg-primary" style={{ width: `${userProgress?.percentage || 0}%` }} /></div>
-              <p className="text-sm">You completed <strong>{userProgress?.completedDays || 0}</strong> of <strong>{userProgress?.totalDays || 0}</strong> days.</p>
-              <ChallengeCheckInStatus
-                isAutoTracked={isAutoTrackedChallenge(challenge)}
-                todayCompleted={Boolean(userProgress?.todayCompleted)}
-                onCheckIn={() => toggleToday(challenge)}
-                loading={markingChallengeId === challenge.ChallengeID}
-                actionLabel="Mark today"
-                autoHint="Not completed today · Log a meal without paused foods"
-              />
+      ) : (() => {
+        const todayYmd = formatLocalYMD(new Date());
+        const renderChallengeCard = (challenge: Challenge) => {
+          const userProgress = progress[challenge.ChallengeID];
+          const rows = ranking[challenge.ChallengeID] || [];
+          const targetPct = userProgress?.targetPercentage ?? challenge.targetPercentage ?? 100;
+          const pct = userProgress?.percentage ?? 0;
+          const status = userProgress?.status ?? getFallbackStatus(challenge, todayYmd);
+          const goalReached = userProgress?.goalReached ?? pct >= targetPct;
+          const badge = getOutcomeBadge(userProgress?.outcome, status);
 
-              <div>
-                <h3 className="font-semibold mb-2">Ranking</h3>
-                <div className="space-y-2">
-                  {rows.map((row, index) => (
-                    <div key={row.profileId} className="flex items-center justify-between border-b pb-2">
-                      <span>{index + 1}. {row.username || 'User'}</span>
-                      <span className="text-sm text-primary">{row.completedDays}/{row.totalDays} ({row.percentage}%)</span>
-                    </div>
-                  ))}
+          return (
+            <Card key={challenge.ChallengeID} className={status === 'finished' ? 'opacity-90' : ''}>
+              <CardHeader>
+                <CardTitle className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span>{challenge.name}</span>
+                    <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${badge.className}`}>
+                      {badge.label}
+                    </span>
+                    <span className="rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                      Goal: {targetPct}%
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-primary">{pct}%</span>
+                    {isAdmin && (
+                      <>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => startEditChallenge(challenge)}
+                          disabled={deletingChallengeId !== null}
+                          className="h-8 px-2.5 text-xs"
+                        >
+                          <Pencil className="mr-1 h-3.5 w-3.5" />
+                          Edit
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => void handleDeleteChallenge(challenge)}
+                          disabled={deletingChallengeId !== null}
+                          className="h-8 border-destructive/40 px-2.5 text-xs text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="mr-1 h-3.5 w-3.5" />
+                          {deletingChallengeId === challenge.ChallengeID ? 'Deleting...' : 'Delete'}
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <p className="text-sm text-muted-foreground">{challenge.description || challenge.ruleText}</p>
+                {challenge.pausedFoods && challenge.pausedFoods.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                    <span className="inline-flex items-center gap-1 font-medium text-muted-foreground">
+                      <HeartHandshake className="h-3.5 w-3.5 text-primary" />
+                      Taking a break from:
+                    </span>
+                    {challenge.pausedFoods.map((item) => (
+                      <span
+                        key={item}
+                        className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 font-medium text-amber-800 dark:text-amber-200"
+                      >
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="flex items-center gap-2 text-sm">
+                  <CalendarDays className="w-4 h-4" />
+                  <span>
+                    {formatYMDDisplay(challenge.startDate.slice(0, 10))} – {formatYMDDisplay(challenge.endDate.slice(0, 10))}
+                  </span>
                 </div>
+
+                <div className="space-y-1.5">
+                  <div className="relative h-3 rounded bg-muted overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-300 ${goalReached ? 'bg-emerald-600 dark:bg-emerald-500' : 'bg-primary'}`}
+                      style={{ width: `${Math.min(100, pct)}%` }}
+                    />
+                    {targetPct < 100 && (
+                      <div
+                        title={`Target goal: ${targetPct}%`}
+                        className="absolute top-0 bottom-0 w-0.5 bg-foreground/60"
+                        style={{ left: `${targetPct}%` }}
+                      />
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {status === 'upcoming' ? (
+                      <>Starts on <strong className="text-foreground">{formatYMDDisplay(challenge.startDate.slice(0, 10))}</strong> · Complete at least <strong className="text-foreground">{targetPct}%</strong> to succeed.</>
+                    ) : status === 'finished' ? (
+                      goalReached ? (
+                        <>Challenge completed! You achieved <strong className="text-foreground">{pct}%</strong> (goal: {targetPct}%).</>
+                      ) : (
+                        <>Challenge ended at <strong className="text-foreground">{pct}%</strong> (goal was {targetPct}%).</>
+                      )
+                    ) : goalReached ? (
+                      <>Goal reached! <strong className="text-foreground">{pct}%</strong> achieved (target: {targetPct}%).</>
+                    ) : (
+                      <>Current progress: <strong className="text-foreground">{pct}%</strong> · Goal: at least <strong className="text-foreground">{targetPct}%</strong> within the challenge dates.</>
+                    )}
+                  </p>
+                </div>
+
+                {status === 'active' ? (
+                  <ChallengeCheckInStatus
+                    isAutoTracked={isAutoTrackedChallenge(challenge)}
+                    todayCompleted={Boolean(userProgress?.todayCompleted)}
+                    onCheckIn={() => toggleToday(challenge)}
+                    loading={markingChallengeId === challenge.ChallengeID}
+                    actionLabel="Log progress today"
+                    autoHint="Auto-tracked · Log a meal without paused foods"
+                  />
+                ) : status === 'upcoming' ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/35 bg-sky-500/10 px-3 py-1.5 text-xs font-semibold text-sky-700 dark:text-sky-300">
+                    <Clock className="h-3.5 w-3.5 shrink-0" />
+                    Starts on {formatYMDDisplay(challenge.startDate.slice(0, 10))}
+                  </span>
+                ) : (
+                  <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold ${badge.className}`}>
+                    <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                    {goalReached ? 'Final result: Completed' : 'Final result: Not completed'}
+                  </span>
+                )}
+
+                <div>
+                  <h3 className="font-semibold mb-2">Group results</h3>
+                  <div className="space-y-2">
+                    {rows.map((row, index) => {
+                      const rowBadge = getOutcomeBadge(row.outcome, status);
+                      return (
+                        <div key={row.profileId} className="flex items-center justify-between gap-2 border-b pb-2">
+                          <span>{index + 1}. {row.username || 'User'}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-primary">{row.percentage}%</span>
+                            <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${rowBadge.className}`}>
+                              {rowBadge.label}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        };
+
+        const activeOrUpcoming = challenges.filter((c) => (progress[c.ChallengeID]?.status ?? getFallbackStatus(c, todayYmd)) !== 'finished');
+        const finishedChallenges = challenges.filter((c) => (progress[c.ChallengeID]?.status ?? getFallbackStatus(c, todayYmd)) === 'finished');
+
+        return (
+          <div className="space-y-6">
+            {activeOrUpcoming.map(renderChallengeCard)}
+            {finishedChallenges.length > 0 && (
+              <div className="space-y-4 pt-2">
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                  Finished challenges
+                </h2>
+                {finishedChallenges.map(renderChallengeCard)}
               </div>
-            </CardContent>
-          </Card>
+            )}
+          </div>
         );
-      })}
+      })()}
 
       {showCreateFoodModal &&
         typeof document !== 'undefined' &&

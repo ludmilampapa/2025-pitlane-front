@@ -40,6 +40,7 @@ export const GroupChallengesService = {
       startDate: string;
       endDate: string;
       pausedFoods?: string[];
+      targetPercentage?: 50 | 75 | 100;
       profileId: string;
     }
   ): Promise<Challenge> {
@@ -63,6 +64,7 @@ export const GroupChallengesService = {
       startDate: string;
       endDate: string;
       pausedFoods?: string[];
+      targetPercentage?: 50 | 75 | 100;
     }
   ): Promise<Challenge> {
     return requestJson<Challenge>(

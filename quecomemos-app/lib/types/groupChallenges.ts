@@ -1,3 +1,12 @@
+export type ChallengeTargetPercentage = 50 | 75 | 100;
+export type ChallengeLifecycleStatus = 'upcoming' | 'active' | 'finished';
+export type ChallengeOutcome =
+  | 'upcoming'
+  | 'in_progress'
+  | 'goal_reached'
+  | 'completed'
+  | 'not_completed';
+
 export interface Challenge {
   ChallengeID: number;
   groupId: number;
@@ -5,6 +14,7 @@ export interface Challenge {
   description: string | null;
   ruleText: string;
   pausedFoods?: string[];
+  targetPercentage?: number;
   startDate: string;
   endDate: string;
   isActive: boolean;
@@ -27,6 +37,10 @@ export interface ChallengeProgress {
   streak: number;
   totalDays: number;
   percentage: number;
+  targetPercentage?: number;
+  status?: ChallengeLifecycleStatus;
+  goalReached?: boolean;
+  outcome?: ChallengeOutcome;
 }
 
 export interface ChallengeRankingRow {
@@ -35,6 +49,10 @@ export interface ChallengeRankingRow {
   completedDays: number;
   totalDays: number;
   percentage: number;
+  targetPercentage?: number;
+  status?: ChallengeLifecycleStatus;
+  goalReached?: boolean;
+  outcome?: ChallengeOutcome;
 }
 
 export interface WeeklyMenuEntry {
