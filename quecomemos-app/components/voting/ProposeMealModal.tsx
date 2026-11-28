@@ -2,13 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Plus, Leaf, Utensils, Flame, Search } from 'lucide-react';
+import { X, Plus, Leaf, Utensils } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MealSearchBar } from '../meal/MealSearchBar';
 import { MealComposition } from '../meal/MealComposition';
 import AddMealForm from '../meal/AddMealForm';
-import { GroupSwipeMatch } from './GroupSwipeMatch';
 import { useMeals, Meal } from '@/lib/contexts/MealsContext';
 import { useUser } from '@/lib/contexts/UserContext';
 import { fetchGroupDietaryInfo } from '@/lib/utils/groupService';
@@ -39,13 +38,10 @@ export function ProposeMealModal({
   onClose,
   onPropose,
   groupId,
-  session = null,
-  initialTab = 'swipe',
 }: ProposeMealModalProps) {
   const { userData } = useUser();
   const { allMeals, fetchAllMeals } = useMeals();
 
-  const [activeTab, setActiveTab] = useState<'swipe' | 'manual'>(initialTab);
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
   const [groupDietaryInfo, setGroupDietaryInfo] = useState<GroupDietaryInfo | null>(null);
   const [showCreateMeal, setShowCreateMeal] = useState(false);
@@ -55,13 +51,10 @@ export function ProposeMealModal({
     groupDietaryInfo?.dietaryRestrictions?.map((r) => r.DietaryRestrictionID) || [];
 
   useEffect(() => {
-    if (isOpen) {
-      setActiveTab(initialTab);
-      if (allMeals.length === 0) {
-        void fetchAllMeals(userData?.profile?.id);
-      }
+    if (isOpen && allMeals.length === 0) {
+      void fetchAllMeals(userData?.profile?.id);
     }
-  }, [isOpen, initialTab, allMeals.length, fetchAllMeals, userData?.profile?.id]);
+  }, [isOpen, allMeals.length, fetchAllMeals, userData?.profile?.id]);
 
   useEffect(() => {
     const fetchGroupInfo = async () => {
