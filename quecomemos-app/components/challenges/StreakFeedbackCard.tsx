@@ -2,6 +2,7 @@
 
 import { Flame, Snowflake, Check } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 import { ChallengeCheckInStatus } from '@/components/challenges/ChallengeCheckInStatus';
 import type { ChallengeProgress } from '@/lib/types/groupChallenges';
 
@@ -20,6 +21,21 @@ export function StreakFeedbackCard({
 }: StreakFeedbackCardProps) {
   const completedToday = progress?.todayCompleted ?? false;
   const streak = progress?.streak ?? 0;
+  const completedDays = progress?.completedDays ?? 0;
+  const totalDays = progress?.totalDays ?? 0;
+  const percentage = progress?.percentage ?? 0;
+
+  const progressBlock = totalDays > 0 && (
+    <div className="mt-3 space-y-1.5 rounded-xl border border-border bg-muted/25 p-3">
+      <div className="flex items-center justify-between gap-2 text-xs">
+        <span className="font-semibold text-foreground">Your progress</span>
+        <span className="font-bold tabular-nums text-primary">
+          {completedDays} / {totalDays} days ({percentage}%)
+        </span>
+      </div>
+      <Progress value={Math.min(100, percentage)} className="h-2" />
+    </div>
+  );
 
   if (completedToday) {
     return (
@@ -40,6 +56,7 @@ export function StreakFeedbackCard({
               <p className="mt-1 text-sm text-muted-foreground">
                 Completed today: <span className="font-medium text-foreground">{challengeName}</span>
               </p>
+              {progressBlock}
             </div>
           </div>
         </CardContent>
@@ -57,6 +74,8 @@ export function StreakFeedbackCard({
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-secondary">Streak at risk</p>
             <h3 className="mt-1 text-lg font-bold text-foreground">Don&apos;t lose your streak!</h3>
+            <p className="mt-0.5 text-xs text-muted-foreground">{challengeName}</p>
+            {progressBlock}
             <div className="mt-3">
               <ChallengeCheckInStatus
                 isAutoTracked={isAutoTracked}

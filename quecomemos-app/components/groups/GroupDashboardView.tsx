@@ -173,7 +173,7 @@ export function GroupDashboardView({ groupId, profileId, isAdmin }: GroupDashboa
           </Card>
         )}
 
-        <ChallengeRanking ranking={ranking} />
+        <ChallengeRanking ranking={ranking} currentProfileId={profileId} />
       </div>
     </div>
   );

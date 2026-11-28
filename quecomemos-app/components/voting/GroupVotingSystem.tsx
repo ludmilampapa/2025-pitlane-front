@@ -178,8 +178,8 @@ export function GroupVotingSystem({
                       <Gamepad2 className="h-4 w-4" />
                     </span>
                     <div>
-                      <p className="text-xs font-extrabold uppercase tracking-wider text-secondary">
-                        Meal Showdown · Minigame
+                      <p className="text-xs font-bold uppercase tracking-wider text-secondary">
+                        Group Meal Game
                       </p>
                       <p className="text-xs text-muted-foreground">{group.name}</p>
                     </div>
@@ -245,31 +245,22 @@ export function GroupVotingSystem({
     <div className={`space-y-3 ${className}`}>
       <SyncBar />
 
-      {/* Immersive Game Lobby */}
-      <Card className="relative overflow-hidden rounded-3xl border-border bg-card shadow-sm">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -left-16 -top-16 h-52 w-52 rounded-full bg-secondary/10 blur-3xl"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -bottom-16 -right-16 h-52 w-52 rounded-full bg-primary/10 blur-3xl"
-        />
-
-        <CardContent className="relative p-6 sm:p-10">
+      {/* Game Lobby */}
+      <Card className="rounded-3xl border-border bg-card shadow-sm">
+        <CardContent className="p-6 sm:p-10">
           <div className="mx-auto max-w-xl text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-secondary/30 bg-secondary/10 shadow-sm">
               <Gamepad2 className="h-8 w-8 text-secondary" />
             </div>
 
-            <span className="text-xs font-bold uppercase tracking-[0.16em] text-secondary">
-              Multiplayer Food Showdown
+            <span className="text-xs font-bold uppercase tracking-[0.14em] text-secondary">
+              Group Meal Game
             </span>
             <h2 className="mt-1.5 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-              Ready to Play What We Eat?
+              Decide What to Eat Together
             </h2>
             <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
-              Swipe dishes matched to your personal tastes &amp; diet, add favorites manually or let fate load random dishes, then enter <strong className="font-semibold text-foreground">Classic List</strong> or <strong className="font-semibold text-foreground">Meal Roulette</strong>!
+              Swipe dishes matched to your tastes and restrictions, add favorites manually or load random picks, then vote in <strong className="font-semibold text-foreground">Classic List</strong> or <strong className="font-semibold text-foreground">Meal Roulette</strong>.
             </p>
 
             {/* Connected Group Players */}
@@ -330,10 +321,10 @@ export function GroupVotingSystem({
               <div className="rounded-2xl border border-border/70 bg-muted/30 p-3.5">
                 <div className="flex items-center gap-2 text-xs font-bold text-primary">
                   <Dices className="h-4 w-4" />
-                  Round 2 · Choose Arena
+                  Round 2 · Choose Game
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Play Classic List or Meal Roulette with your pool — or random dishes!
+                  Play Classic List or Meal Roulette with your pool or random dishes.
                 </p>
               </div>
 

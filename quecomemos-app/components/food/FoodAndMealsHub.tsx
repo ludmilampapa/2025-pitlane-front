@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ChefHat, Utensils } from 'lucide-react';
 import { UserMeals, AllMeals, UserPreferenceCards } from '@/components/profile';
+import { CalorieGoalCard } from './CalorieGoalCard';
 import { UserFoodsPage } from './user-foods-page';
 
 interface FoodAndMealsHubProps {
@@ -15,12 +16,8 @@ export function FoodAndMealsHub({ initialTab = 'meals' }: FoodAndMealsHubProps) 
   return (
     <div className="space-y-8">
       {/* Unified Header with Meals / Foods Tabs */}
-      <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-secondary/10 blur-2xl"
-        />
-        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3.5">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-primary">
               {activeTab === 'meals' ? (
@@ -78,8 +75,15 @@ export function FoodAndMealsHub({ initialTab = 'meals' }: FoodAndMealsHubProps) 
         </div>
       </div>
 
-      {/* Preferences & Dietary Restrictions Banner (always visible for both Meals and Foods) */}
-      <UserPreferenceCards />
+      {/* Preferences, Dietary Restrictions & Daily Calorie Goal */}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+        <div className="xl:col-span-7">
+          <UserPreferenceCards />
+        </div>
+        <div className="xl:col-span-5">
+          <CalorieGoalCard />
+        </div>
+      </div>
 
       {/* Tab Content */}
       {activeTab === 'meals' ? (

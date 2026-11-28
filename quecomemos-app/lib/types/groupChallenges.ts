@@ -40,6 +40,7 @@ export interface ChallengeProgress {
   targetPercentage?: number;
   status?: ChallengeLifecycleStatus;
   goalReached?: boolean;
+  badgeEarned?: boolean;
   outcome?: ChallengeOutcome;
 }
 
@@ -52,6 +53,7 @@ export interface ChallengeRankingRow {
   targetPercentage?: number;
   status?: ChallengeLifecycleStatus;
   goalReached?: boolean;
+  badgeEarned?: boolean;
   outcome?: ChallengeOutcome;
 }
 

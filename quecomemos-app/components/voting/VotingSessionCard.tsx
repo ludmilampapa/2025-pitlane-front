@@ -316,10 +316,10 @@ export function VotingSessionCard({
         await refreshSession();
       }
       showSuccess(
-        hadZeroProposals ? 'Random Pool Loaded!' : 'Pool Locked In!',
+        hadZeroProposals ? 'Random Pool Loaded' : 'Pool Ready',
         hadZeroProposals
-          ? 'Random compatible dishes are ready — pick Classic List or Meal Roulette!'
-          : 'Choose Classic List or Meal Roulette to cast your votes!'
+          ? 'Random compatible dishes are ready. Pick Classic List or Meal Roulette.'
+          : 'Choose Classic List or Meal Roulette to cast your votes.'
       );
     } catch (error) {
       showError(
@@ -935,7 +935,7 @@ export function VotingSessionCard({
                     <p className="mt-0.5 text-xs text-muted-foreground">
                       {proposalCount > 0
                         ? 'These dishes will load into Classic List and Meal Roulette.'
-                        : 'No dishes picked yet — if you continue now, random compatible dishes will load automatically!'}
+                        : 'No dishes picked yet. If you continue now, random compatible dishes will load automatically.'}
                     </p>
                   </div>
 
@@ -1100,10 +1100,10 @@ export function VotingSessionCard({
                       {proposalCount} {proposalCount === 1 ? 'Dish' : 'Dishes'} Ready in the Pool
                     </Badge>
                     <h3 className="mt-2.5 text-2xl font-bold tracking-tight text-foreground">
-                      Choose How You Want to Play!
+                      Choose How to Vote
                     </h3>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      Pick an immersive arena below — both are loaded with the exact same meal pool and sync votes live with the group.
+                      Both modes use the same meal pool and sync live with everyone in the group.
                     </p>
                   </div>
 
@@ -1142,15 +1142,15 @@ export function VotingSessionCard({
                           <ListChecks className="h-6 w-6" />
                         </div>
                         <h4 className="mt-4 text-xl font-bold text-foreground">
-                          Classic List Showdown
+                          Classic List Vote
                         </h4>
                         <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-                          Inspect every dish head-to-head, check calories &amp; ingredients, and tap 👍 to back your favorites.
+                          Compare dishes side by side, check calories and ingredients, and vote for your favorites.
                         </p>
                       </div>
 
                       <div className="mt-6 inline-flex items-center gap-1.5 text-sm font-bold text-secondary">
-                        Enter Classic Arena
+                        Open Classic List
                         <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                       </div>
                     </button>

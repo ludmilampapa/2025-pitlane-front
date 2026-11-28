@@ -51,7 +51,7 @@ export function StartVotingButton({
       });
 
       showSuccess(
-        'Meal Showdown Started!',
+        'Game Started',
         `Total game timer set to ${totalDurationMinutes} minutes.`
       );
 
@@ -125,13 +125,13 @@ export function VotingInfoCard({ className = '' }: VotingInfoCardProps) {
     {
       num: 2,
       title: 'Build or Randomize',
-      desc: 'Add dishes by swipe/search — or skip to auto-load random meals.',
+      desc: 'Add dishes by swipe or search, or skip to load random meals.',
       icon: Clock,
     },
     {
       num: 3,
-      title: 'Pick Your Arena',
-      desc: 'Enter Classic List or Meal Roulette in one immersive game view.',
+      title: 'Pick a Game Mode',
+      desc: 'Vote with Classic List or spin the Meal Roulette.',
       icon: Users,
     },
     {

@@ -75,13 +75,13 @@ export default function PlayLobbyPage() {
           <div className="space-y-1.5">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-secondary/35 bg-secondary/15 px-3 py-1 text-xs font-bold uppercase tracking-wider text-secondary">
               <Gamepad2 className="h-3.5 w-3.5" />
-              Meal Showdown Lobby
+              Play Lobby
             </span>
             <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
               Pick a Group Room &amp; Play
             </h1>
             <p className="text-sm text-muted-foreground">
-              Join a live voting round or start a fresh Swipe + Meal Roulette showdown with your group.
+              Join a live voting round or start a new Swipe and Meal Roulette game with your group.
             </p>
           </div>
           <Button asChild variant="outline" className="self-start rounded-xl sm:self-center">
@@ -105,7 +105,7 @@ export default function PlayLobbyPage() {
             <Dices className="mb-3 h-10 w-10 text-secondary" />
             <h2 className="text-lg font-bold text-foreground">No game rooms yet</h2>
             <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-              Create or join a group to play Meal Showdown with friends, family, or roommates.
+              Create or join a group to play with friends, family, or roommates.
             </p>
             <Button asChild className="mt-4 rounded-xl bg-primary text-primary-foreground">
               <Link href="/protected/groups">
@@ -149,10 +149,10 @@ export default function PlayLobbyPage() {
                     <h2 className="text-lg font-bold text-foreground">{room.name}</h2>
                     <p className="line-clamp-2 text-xs text-muted-foreground">
                       {isLive
-                        ? `${room.activeSession?.title || 'Meal Showdown'} · ${
+                        ? `${room.activeSession?.title || 'Group Vote'} · ${
                             room.activeSession?.status === 'proposal_phase'
                               ? 'Round 1: Swipe & Pool'
-                              : 'Round 2: Voting Arena'
+                              : 'Round 2: Voting Game'
                           }`
                         : room.description || 'Swipe dishes, spin the roulette, and vote together.'}
                     </p>
