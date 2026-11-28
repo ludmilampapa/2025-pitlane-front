@@ -1,7 +1,6 @@
 import { AuthButton } from "@/components/auth";
 import { Logo } from "@/components/common";
 import { NavLinks } from "@/components/common/nav-links";
-import { NavbarBadgeButton } from "@/components/common/navbar-badge-button";
 import { NavbarNotificationsBell } from "@/components/common/navbar-notifications-bell";
 import { NavbarRegisterMealButton } from "@/components/common/navbar-register-meal-button";
 
@@ -30,7 +29,6 @@ export default function ProtectedLayout({
           <div className="flex shrink-0 items-center gap-3">
             <NavbarRegisterMealButton />
             <NavbarNotificationsBell />
-            <NavbarBadgeButton />
             <AuthButton />
           </div>
         </div>
