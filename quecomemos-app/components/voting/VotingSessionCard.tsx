@@ -23,7 +23,8 @@ import {
   Volume2,
   VolumeX,
 } from 'lucide-react';
-import { isGameSfxMuted, setGameSfxMuted } from '@/lib/utils/gameSfx';
+import { isGameSfxMuted, playGameSfx, setGameSfxMuted } from '@/lib/utils/gameSfx';
+import { markBadgesSeen, triggerBadgeCheck } from '@/components/common/BadgeUnlockWatcher';
 import { useUser } from '@/lib/contexts/UserContext';
 import { useGlobalNotification } from '@/lib/contexts/NotificationContext';
 import { useVoting } from '@/lib/contexts/VotingContext';
@@ -257,10 +258,21 @@ export function VotingSessionCard({
           : `"${mealName}" won on the Meal Roulette!`
       );
       if (iWon && earnedBadges.length > 0) {
+        playGameSfx('badge');
+        if (userId) {
+          markBadgesSeen(
+            userId,
+            earnedBadges
+              .map((b: { BadgeID?: number }) => b.BadgeID)
+              .filter((id: number | undefined): id is number => typeof id === 'number')
+          );
+        }
         showSuccess(
           'Badge Unlocked!',
           `You earned: ${earnedBadges.map((b: { name?: string }) => b.name || 'Vote Winner').join(', ')}`
         );
+      } else {
+        triggerBadgeCheck();
       }
       if (userId && result?.session?.winnerMealId) {
         try {
@@ -371,10 +383,21 @@ export function VotingSessionCard({
           : `The winning meal is "${winnerName}" with ${voteCount} ${voteCount === 1 ? 'vote' : 'votes'}!`
       );
       if (iWon && earnedBadges.length > 0) {
+        playGameSfx('badge');
+        if (userId) {
+          markBadgesSeen(
+            userId,
+            earnedBadges
+              .map((b: { BadgeID?: number }) => b.BadgeID)
+              .filter((id: number | undefined): id is number => typeof id === 'number')
+          );
+        }
         showSuccess(
           'Badge Unlocked!',
           `You earned: ${earnedBadges.map((b: { name?: string }) => b.name || 'Vote Winner').join(', ')}`
         );
+      } else {
+        triggerBadgeCheck();
       }
       if (early) setShowEarlyCompletion(false);
 

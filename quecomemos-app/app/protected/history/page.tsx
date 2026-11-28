@@ -680,7 +680,11 @@ export default function UserHistoryPage() {
           )}
 
           {/* User Badges */}
-          <UserBadges badges={badges} loading={loadingBadges} />
+          <UserBadges
+            badges={badges}
+            totalBadges={stats?.totalBadges}
+            loading={loadingBadges}
+          />
         </TabsContent>
 
         {/* Tab: Votings */}
