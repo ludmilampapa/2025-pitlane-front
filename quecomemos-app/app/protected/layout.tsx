@@ -1,5 +1,6 @@
 import { AuthButton } from "@/components/auth";
 import { Logo } from "@/components/common";
+import { BadgeUnlockWatcher } from "@/components/common/BadgeUnlockWatcher";
 import { NavLinks } from "@/components/common/nav-links";
 import { NavbarNotificationsBell } from "@/components/common/navbar-notifications-bell";
 import { NavbarRegisterMealButton } from "@/components/common/navbar-register-meal-button";
@@ -35,6 +36,7 @@ export default function ProtectedLayout({
       </nav>
 
       <div className="w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 md:px-8">
+        <BadgeUnlockWatcher />
         {children}
       </div>
     </main>

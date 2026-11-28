@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Trophy, Calendar } from 'lucide-react';
+import { Trophy, Calendar, Lock } from 'lucide-react';
 
 interface BadgeData {
   BadgeID: number;
@@ -19,11 +19,14 @@ interface BadgeData {
 
 interface UserBadgesProps {
   badges: BadgeData[];
+  totalBadges?: number;
   loading?: boolean;
 }
 
-export function UserBadges({ badges, loading = false }: UserBadgesProps) {
+export function UserBadges({ badges, totalBadges, loading = false }: UserBadgesProps) {
   const [failedImages, setFailedImages] = useState<Record<number, boolean>>({});
+  const effectiveTotal = Math.max(badges.length, totalBadges ?? badges.length);
+  const lockedCount = Math.max(0, effectiveTotal - badges.length);
   if (loading) {
     return (
       <Card>
@@ -42,7 +45,7 @@ export function UserBadges({ badges, loading = false }: UserBadgesProps) {
     );
   }
 
-  if (badges.length === 0) {
+  if (badges.length === 0 && lockedCount === 0) {
     return (
       <Card>
         <CardHeader>
@@ -112,9 +115,16 @@ export function UserBadges({ badges, loading = false }: UserBadgesProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Trophy className="w-5 h-5 text-yellow-500" />
-          Badges ({badges.length})
+        <CardTitle className="flex items-center justify-between gap-2">
+          <span className="flex items-center gap-2">
+            <Trophy className="w-5 h-5 text-yellow-500" />
+            Badges ({badges.length} / {effectiveTotal})
+          </span>
+          {lockedCount > 0 && (
+            <span className="text-xs font-medium text-muted-foreground">
+              {lockedCount} hidden left to discover
+            </span>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -132,7 +142,8 @@ export function UserBadges({ badges, loading = false }: UserBadgesProps) {
                       alt={badge.name}
                       width={32}
                       height={32}
-                      className="w-full h-full rounded-full border border-border bg-card p-0.5"
+                      unoptimized
+                      className="w-full h-full rounded-full border border-border bg-card p-0.5 object-contain"
                       onError={() => setFailedImages((prev) => ({ ...prev, [badge.BadgeID]: true }))}
                     />
                   ) : (
@@ -160,6 +171,33 @@ export function UserBadges({ badges, loading = false }: UserBadgesProps) {
                         month: 'short'
                       })}
                     </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {Array.from({ length: lockedCount }).map((_, idx) => (
+            <div
+              key={`locked-badge-${idx}`}
+              className="rounded-lg border-2 border-dashed border-border bg-muted/35 p-4 text-muted-foreground opacity-80 select-none"
+            >
+              <div className="flex items-start gap-3">
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-border bg-muted text-muted-foreground">
+                  <Lock className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="mb-1 truncate text-sm font-semibold text-foreground/70">
+                    ??? · Secret Badge
+                  </h3>
+                  <p className="mb-2 line-clamp-2 text-xs text-muted-foreground">
+                    Keep playing, voting, and completing challenges to discover this badge.
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <Badge variant="outline" className="text-xs text-muted-foreground">
+                      Locked
+                    </Badge>
+                    <span className="text-xs opacity-60">Undiscovered</span>
                   </div>
                 </div>
               </div>

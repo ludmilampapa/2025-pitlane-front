@@ -1,6 +1,6 @@
 'use client';
 
-export type GameSfxType = 'swipe_yes' | 'swipe_no' | 'tick' | 'vote' | 'winner';
+export type GameSfxType = 'swipe_yes' | 'swipe_no' | 'tick' | 'vote' | 'winner' | 'badge';
 
 const STORAGE_KEY = 'qc_game_sfx_muted';
 
@@ -78,6 +78,12 @@ export function playGameSfx(sound: GameSfxType): void {
         playTone(ctx, 659.25, 0.1, 0.12, 'triangle', 0.09);
         playTone(ctx, 783.99, 0.2, 0.14, 'triangle', 0.09);
         playTone(ctx, 1046.5, 0.32, 0.35, 'triangle', 0.1);
+        break;
+      case 'badge':
+        playTone(ctx, 659.25, 0, 0.1, 'sine', 0.09);
+        playTone(ctx, 830.61, 0.09, 0.1, 'sine', 0.09);
+        playTone(ctx, 987.77, 0.18, 0.12, 'sine', 0.09);
+        playTone(ctx, 1318.51, 0.28, 0.32, 'triangle', 0.1);
         break;
     }
   } catch {
