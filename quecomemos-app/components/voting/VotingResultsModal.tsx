@@ -2,13 +2,14 @@
 
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Trophy, Users, TrendingUp, Clock, ChefHat, Flame, X, Crown } from 'lucide-react';
+import { Trophy, Users, TrendingUp, Clock, ChefHat, Flame, X, Crown, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ConfettiBurst } from './ConfettiBurst';
 import { playGameSfx } from '@/lib/utils/gameSfx';
+import { useUser } from '@/lib/contexts/UserContext';
 import type { VotingSession, MealProposal } from './types';
 
 interface VotingResultsModalProps {
@@ -26,6 +27,10 @@ export function VotingResultsModal({
   session,
   winnerProposal,
 }: VotingResultsModalProps) {
+  const { userData } = useUser();
+  const currentUserId = userData?.profile?.id;
+  const userWon = Boolean(currentUserId && winnerProposal?.proposedById === currentUserId);
+
   useEffect(() => {
     if (isOpen && winnerProposal) {
       playGameSfx('winner');
@@ -85,6 +90,20 @@ export function VotingResultsModal({
         </CardHeader>
 
         <CardContent className="space-y-6 pt-6">
+          {userWon && (
+            <div className="flex items-center gap-3 rounded-2xl border border-emerald-500/40 bg-emerald-500/15 px-4 py-3 text-emerald-800 dark:text-emerald-200">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white">
+                <Award className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-bold">You won this vote!</p>
+                <p className="text-xs opacity-90">
+                  Your dish took 1st place and counts toward your Vote Winner badge.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Winner Banner with Dish Photo */}
           <div className="overflow-hidden rounded-2xl border border-amber-500/40 bg-amber-500/10">
             {winnerImage && (

@@ -25,12 +25,12 @@ export default function ProtectedLayout({
           <div className="flex min-w-0 items-center gap-5">
             <Logo size="md" className="shrink-0 pl-0" />
             <NavLinks links={links} />
-            <NavbarBadgeButton />
           </div>
 
           <div className="flex shrink-0 items-center gap-3">
             <NavbarRegisterMealButton />
             <NavbarNotificationsBell />
+            <NavbarBadgeButton />
             <AuthButton />
           </div>
         </div>
