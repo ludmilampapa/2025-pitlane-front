@@ -369,6 +369,7 @@ export function GroupSwipeMatch({
     session,
     profileId,
     refreshSession,
+    updateSessionOptimistically,
     availableToSwipe.length,
     onFinished,
   ]);

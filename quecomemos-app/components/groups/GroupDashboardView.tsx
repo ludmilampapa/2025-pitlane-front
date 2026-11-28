@@ -91,18 +91,20 @@ export function GroupDashboardView({ groupId, profileId, isAdmin }: GroupDashboa
     };
   }, [groupId]);
 
+  const { refresh: refreshStreak, ranking: streakRanking } = streakHook;
+
   useEffect(() => {
-    void streakHook.refresh();
-  }, [streakHook.refresh]);
+    void refreshStreak();
+  }, [refreshStreak]);
 
   const handleMealRefresh = useCallback(() => {
-    void streakHook.refresh();
-  }, [streakHook.refresh]);
+    void refreshStreak();
+  }, [refreshStreak]);
   useCalorieProgressRefresh(handleMealRefresh);
 
   useEffect(() => {
-    setRanking(streakHook.ranking);
-  }, [streakHook.ranking]);
+    setRanking(streakRanking);
+  }, [streakRanking]);
 
   const groupAdherence = useMemo(() => {
     if (ranking.length === 0) return 0;
