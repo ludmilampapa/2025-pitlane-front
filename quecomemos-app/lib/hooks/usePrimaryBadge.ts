@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { API_BASE_URL } from '@/lib/config/api';
 import { createClient } from '@/lib/supabase/client';
 
@@ -52,7 +52,7 @@ export function usePrimaryBadge(profileId?: string): PrimaryBadgeResult {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchPrimaryBadge = async () => {
+  const fetchPrimaryBadge = useCallback(async () => {
     if (!profileId) {
       setPrimaryBadgeState(null);
       setLoading(false);
@@ -71,9 +71,6 @@ export function usePrimaryBadge(profileId?: string): PrimaryBadgeResult {
       }
 
       const url = `${API_BASE_URL}/profile/${profileId}/primary-badge`;
-      console.log('Fetching primary badge from:', url);
-      console.log('API_BASE_URL:', API_BASE_URL);
-      console.log('profileId:', profileId);
 
       const response = await fetch(url, {
         method: 'GET',
@@ -83,11 +80,8 @@ export function usePrimaryBadge(profileId?: string): PrimaryBadgeResult {
         }
       });
 
-      console.log('Primary badge response status:', response.status);
-
       if (!response.ok) {
         const errorText = await response.text();
-        console.log('Primary badge error response:', errorText);
         throw new Error(`Failed to fetch primary badge: ${response.status} - ${errorText}`);
       }
 
@@ -103,7 +97,7 @@ export function usePrimaryBadge(profileId?: string): PrimaryBadgeResult {
     } finally {
       setLoading(false);
     }
-  };
+  }, [profileId]);
 
   const setPrimaryBadge = async (badgeId: number | null): Promise<boolean> => {
     if (!profileId) return false;
@@ -117,8 +111,6 @@ export function usePrimaryBadge(profileId?: string): PrimaryBadgeResult {
       }
 
       const url = `${API_BASE_URL}/profile/${profileId}/primary-badge`;
-      console.log('Updating primary badge at:', url);
-      console.log('badgeId:', badgeId);
 
       const response = await fetch(url, {
         method: 'PUT',
@@ -129,11 +121,8 @@ export function usePrimaryBadge(profileId?: string): PrimaryBadgeResult {
         body: JSON.stringify({ badgeId })
       });
 
-      console.log('Update primary badge response status:', response.status);
-
       if (!response.ok) {
         const errorText = await response.text();
-        console.log('Update primary badge error response:', errorText);
         throw new Error(`Failed to update primary badge: ${response.status} - ${errorText}`);
       }
 
@@ -149,7 +138,6 @@ export function usePrimaryBadge(profileId?: string): PrimaryBadgeResult {
     }
   };
 
-  // Subscribe to cache updates for this profileId
   useEffect(() => {
     if (!profileId) return;
 
@@ -161,8 +149,8 @@ export function usePrimaryBadge(profileId?: string): PrimaryBadgeResult {
   }, [profileId]);
 
   useEffect(() => {
-    fetchPrimaryBadge();
-  }, [profileId]);
+    void fetchPrimaryBadge();
+  }, [fetchPrimaryBadge]);
 
   return {
     primaryBadge,

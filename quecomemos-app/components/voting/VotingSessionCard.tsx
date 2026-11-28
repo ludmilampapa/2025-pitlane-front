@@ -228,7 +228,6 @@ export function VotingSessionCard({
     }
   }, [
     updatedSession.proposals?.length,
-    updatedSession.groupId,
     updatedSession.VotingSessionID,
     userId,
     groupRestrictions,
