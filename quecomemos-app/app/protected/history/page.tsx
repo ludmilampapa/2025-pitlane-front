@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Activity, ChefHat, Calendar, Search, Filter, History, Target, Flame, Plus, Trophy, Pencil, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Activity, ChefHat, Calendar, Search, Filter, History, Plus, Trophy, Pencil, Trash2, X, Vote, Medal, CalendarDays } from 'lucide-react';
 import { useUser } from '@/lib/contexts/UserContext';
 import { API_BASE_URL } from '@/lib/config/api';
 import {
@@ -16,9 +16,6 @@ import {
   isValidHHMM,
   isValidYMD,
 } from '@/lib/utils/timezone';
-import { useCalorieProgress } from '@/lib/hooks/useKcalProgress';
-import { CalorieGoalSettings } from '@/components/profile/calorie-goal';
-import { CalorieProgressDisplay } from '@/components/profile/CalorieProgressDisplay';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RegisterMealModal } from '@/components/modals';
 import { useGlobalNotification } from '@/lib/contexts/NotificationContext';
@@ -29,8 +26,12 @@ import { UserBadges } from '@/components/profile/UserBadges';
 import { useUserBadges } from '@/lib/hooks/useUserBadges';
 import { PrimaryBadgeDisplay } from '@/components/profile/PrimaryBadgeDisplay';
 import { BadgeSelectionModal } from '@/components/profile/BadgeSelectionModal';
-
-import { createClient } from '@/lib/supabase/client';
+import {
+  useUserGroupActivity,
+  VotingsHistoryTab,
+  ChallengesHistoryTab,
+  WeeklyMenusHistoryTab,
+} from '@/components/history/GroupActivityHistory';
 
 interface Consumption {
   ConsumptionID: number;
@@ -132,32 +133,27 @@ export default function UserHistoryPage() {
   // Context hooks
   const { userData } = useUser();
   const profile = userData.profile;
-  const { progress, loading: loadingProgress, updateCalorieGoal: updateCalorieGoalFromHook } = useCalorieProgress();
   const { allMeals, loadingMeals, fetchAllMeals } = useMeals();
   const { showNotification, showSuccess } = useGlobalNotification();
   const { triggerRefresh } = useCalorieProgressContext();
   const { badges, stats, loading: loadingBadges } = useUserBadges(profile?.id);
+  const {
+    loading: loadingGroupActivity,
+    votings,
+    challenges,
+    menuEntries,
+  } = useUserGroupActivity(profile?.id);
 
   const fetchUserHistory = useCallback(async () => {
     if (!profile?.id) return;
     
     try {
       setLoading(true);
-      console.debug('Fetching user history', `${API_BASE_URL}/consumptions/user/${profile.id}`);
       const res = await fetch(`${API_BASE_URL}/consumptions/user/${profile.id}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      console.debug('User history payload', data);
-      
-      // Log consumptions with meal portions
-      const consumptionsWithPortions = data.filter((c: Consumption) => 
-        c.consumptionMeals?.[0]?.mealPortion
-      );
-      console.debug('Consumptions with meal portions:', consumptionsWithPortions.length, 'out of', data.length);
-      
       setConsumptions(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.debug('Error fetching user history', err);
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
@@ -230,43 +226,6 @@ export default function UserHistoryPage() {
       </div>
     );
   }
-
-  const updateCalorieGoal = async (newGoal: number): Promise<boolean> => {
-    if (!profile?.id) {
-      console.error('No profile ID available');
-      return false;
-    }
-
-    try {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session?.access_token) {
-        throw new Error('No valid session found');
-      }
-
-      const response = await fetch(`${API_BASE_URL}/profile/${profile.id}/calorie-goal`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({ calorieGoal: newGoal }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to update calorie goal: ${response.status}`);
-      }
-
-      // Update the hook's state by calling the hook's update function
-      await updateCalorieGoalFromHook(newGoal);
-      
-      return true;
-    } catch (error) {
-      console.error('Error updating calorie goal:', error);
-      return false;
-    }
-  };
 
   const openRegisterMealModal = () => {
     setIsRegisterMealModalOpen(true);
@@ -410,7 +369,7 @@ export default function UserHistoryPage() {
 
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-3xl font-bold">My Personal Consumption History</h1>
+            <h1 className="text-3xl font-bold">My Activity History</h1>
             {profile?.id && (
               <div className="flex items-center gap-2">
                 <PrimaryBadgeDisplay 
@@ -431,7 +390,7 @@ export default function UserHistoryPage() {
             )}
           </div>
           <p className="text-muted-foreground mt-1">
-            Record of your individual meal consumption activity
+            Meals consumed, earned badges, group votings, challenges, and weekly menus
           </p>
         </div>
 
@@ -448,40 +407,31 @@ export default function UserHistoryPage() {
             Register Meal
             {loadingMeals && <span className="text-xs ml-1">(Loading...)</span>}
           </Button>
-
-          {/* User Info
-          {profile && (
-            <div className="flex items-center gap-3 bg-muted/50 p-3 rounded-lg border">
-              <div className="w-10 h-10 bg-muted border border-border rounded-full flex items-center justify-center">
-                <User className="w-5 h-5 text-foreground" />
-              </div>
-              <div>
-                <div className="font-medium text-sm">
-                  {profile.username || 'User'}
-                </div>
-                <div className="text-xs text-muted-foreground capitalize">
-                  {profile.role}
-                </div>
-              </div>
-            </div>
-          )} */}
         </div>
       </div>
 
-      {/* Tabs for Profile Sections */}
+      {/* Tabs for All History Sections */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="history" className="flex items-center gap-2">
-            <History className="w-4 h-4" />
-            Consumption History
+        <TabsList className="grid h-auto w-full grid-cols-2 gap-1 sm:grid-cols-5">
+          <TabsTrigger value="history" className="flex items-center gap-1.5 py-2">
+            <History className="h-4 w-4 shrink-0" />
+            <span>Meals</span>
           </TabsTrigger>
-          <TabsTrigger value="goals" className="flex items-center gap-2">
-            <Target className="w-4 h-4" />
-            Calorie Goals
+          <TabsTrigger value="badges" className="flex items-center gap-1.5 py-2">
+            <Trophy className="h-4 w-4 shrink-0" />
+            <span>Badges {stats ? `(${stats.earnedBadges}/${stats.totalBadges})` : ''}</span>
           </TabsTrigger>
-          <TabsTrigger value="badges" className="flex items-center gap-2">
-            <Trophy className="w-4 h-4" />
-            Badges {stats && `(${stats.earnedBadges}/${stats.totalBadges})`}
+          <TabsTrigger value="votings" className="flex items-center gap-1.5 py-2">
+            <Vote className="h-4 w-4 shrink-0" />
+            <span>Votings ({votings.length})</span>
+          </TabsTrigger>
+          <TabsTrigger value="challenges" className="flex items-center gap-1.5 py-2">
+            <Medal className="h-4 w-4 shrink-0" />
+            <span>Challenges ({challenges.length})</span>
+          </TabsTrigger>
+          <TabsTrigger value="menus" className="flex items-center gap-1.5 py-2">
+            <CalendarDays className="h-4 w-4 shrink-0" />
+            <span>Weekly Menus ({menuEntries.length})</span>
           </TabsTrigger>
         </TabsList>
 
@@ -673,60 +623,6 @@ export default function UserHistoryPage() {
       )}
         </TabsContent>
 
-        {/* Tab: Calorie Goals */}
-        <TabsContent value="goals" className="space-y-6 mt-6">
-          {/* Calorie Summary Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Flame className="h-5 w-5 text-orange-500" />
-                Total Calories Consumed
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center p-4 bg-primary/5 rounded-lg">
-                  <div className="text-3xl font-bold text-primary">
-                    {loadingProgress ? '...' : (progress?.consumed || 0).toLocaleString()}
-                  </div>
-                  <div className="text-sm text-muted-foreground mt-1">
-                    Total kcal consumed
-                  </div>
-                </div>
-                <div className="text-center p-4 bg-green-500/5 rounded-lg">
-                  <div className="text-3xl font-bold text-green-600">
-                    {loadingProgress ? '...' : (progress?.goal || 2000).toLocaleString()}
-                  </div>
-                  <div className="text-sm text-muted-foreground mt-1">
-                    Daily goal
-                  </div>
-                </div>
-                <div className="text-center p-4 bg-blue-500/5 rounded-lg">
-                  <div className="text-3xl font-bold text-blue-600">
-                    {loadingProgress ? '...' : Math.round((progress?.consumed || 0) / (progress?.goal || 2000) * 100)}%
-                  </div>
-                  <div className="text-sm text-muted-foreground mt-1">
-                    Of daily goal
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="grid gap-6 md:grid-cols-2">
-            <CalorieProgressDisplay
-              consumed={progress?.consumed || 0}
-              goal={progress?.goal || 2000}
-              loading={loadingProgress}
-            />
-
-            <CalorieGoalSettings
-              currentGoal={progress?.goal || 2000}
-              onUpdate={updateCalorieGoal}
-            />
-          </div>
-        </TabsContent>
-
         {/* Tab: Badges */}
         <TabsContent value="badges" className="space-y-6 mt-6">
           {/* Badge Statistics */}
@@ -785,6 +681,32 @@ export default function UserHistoryPage() {
 
           {/* User Badges */}
           <UserBadges badges={badges} loading={loadingBadges} />
+        </TabsContent>
+
+        {/* Tab: Votings */}
+        <TabsContent value="votings" className="mt-6">
+          <VotingsHistoryTab
+            votings={votings}
+            loading={loadingGroupActivity}
+            profileId={profile?.id}
+          />
+        </TabsContent>
+
+        {/* Tab: Challenges */}
+        <TabsContent value="challenges" className="mt-6">
+          <ChallengesHistoryTab
+            challenges={challenges}
+            loading={loadingGroupActivity}
+            profileId={profile?.id}
+          />
+        </TabsContent>
+
+        {/* Tab: Weekly Menus */}
+        <TabsContent value="menus" className="mt-6">
+          <WeeklyMenusHistoryTab
+            menuEntries={menuEntries}
+            loading={loadingGroupActivity}
+          />
         </TabsContent>
       </Tabs>
 

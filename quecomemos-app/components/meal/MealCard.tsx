@@ -40,9 +40,9 @@ interface MealCardProps {
   className?: string;
 }
 
-export function MealCard({ 
-  meal, 
-  onClick, 
+export function MealCard({
+  meal,
+  onClick,
   showExtendedInfo = true,
   maxFoodsToShow = DEFAULTS.MAX_FOODS_TO_SHOW,
   className = ""
@@ -62,9 +62,8 @@ export function MealCard({
 
   return (
     <Card
-      className={`bg-card border-border hover:border-primary/50 shadow-sm hover:shadow-md transition-all ${
-        onClick ? 'cursor-pointer' : ''
-      } ${className}`}
+      className={`bg-card border-border hover:border-primary/50 shadow-sm hover:shadow-md transition-all ${onClick ? 'cursor-pointer' : ''
+        } ${className}`}
       onClick={handleClick}
     >
       <div className="p-4">
@@ -86,14 +85,14 @@ export function MealCard({
             <span className="capitalize">{meal.profile.role}</span>
           </div>
         </div>
-        
+
         {/* Description */}
         {meal.description && (
           <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
             {meal.description}
           </p>
         )}
-        
+
         {/* Metadata */}
         <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3 flex-wrap">
           <div className="flex items-center">

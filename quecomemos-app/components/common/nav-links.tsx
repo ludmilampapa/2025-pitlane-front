@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Gamepad2 } from 'lucide-react';
 
 interface NavLink {
   href: string;
@@ -26,6 +27,29 @@ export function NavLinks({ links }: { links: NavLink[] }) {
     <div className="hidden items-center gap-1 md:flex">
       {links.map((link) => {
         const active = isActive(link.href);
+        const isPlay = link.href === '/protected/play';
+
+        if (isPlay) {
+          return (
+            <Link
+              key={link.href}
+              href={link.href}
+              aria-current={active ? 'page' : undefined}
+              className={`relative inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-bold transition-all ${
+                active
+                  ? 'border-secondary bg-secondary text-secondary-foreground shadow-sm'
+                  : 'border-secondary/35 bg-gradient-to-r from-secondary/15 via-amber-500/15 to-primary/15 text-secondary hover:border-secondary/60 hover:from-secondary/25 hover:to-primary/25'
+              }`}
+            >
+              <Gamepad2 className="h-4 w-4" />
+              <span>{link.label}</span>
+              {!active && (
+                <span className="h-1.5 w-1.5 rounded-full bg-secondary animate-pulse" aria-hidden />
+              )}
+            </Link>
+          );
+        }
+
         return (
           <Link
             key={link.href}

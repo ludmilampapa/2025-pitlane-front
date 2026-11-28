@@ -475,7 +475,7 @@ export function GroupMealRoulette({
                   {winner.hasUserVoted ? (
                     <>
                       <Undo2 className="mr-1.5 h-4 w-4 shrink-0" />
-                      Voted ✓ (Undo)
+                      Voted (Undo)
                     </>
                   ) : (
                     <>
@@ -528,11 +528,12 @@ export function GroupMealRoulette({
                   </div>
                   {typeof meal.voteCount === 'number' && (
                     <span
-                      className={`shrink-0 font-semibold ${
+                      className={`inline-flex shrink-0 items-center gap-1 font-semibold ${
                         meal.hasUserVoted ? 'text-primary' : 'text-muted-foreground'
                       }`}
                     >
-                      {meal.voteCount} 👍
+                      {meal.voteCount}
+                      <ThumbsUp className="h-3 w-3" />
                     </span>
                   )}
                 </div>

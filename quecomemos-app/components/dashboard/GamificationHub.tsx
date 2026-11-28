@@ -10,9 +10,11 @@ import {
   ChevronRight,
   Flame,
   Loader2,
+  Medal,
   Sparkles,
   Target,
   Trophy,
+  Users,
   Utensils,
   Zap,
 } from 'lucide-react';
@@ -285,7 +287,7 @@ export function GamificationHub({
         ? '...'
         : `${Math.round(calorieProgress?.consumed ?? 0)} / ${Math.round(calorieProgress?.goal ?? 2000)} kcal`,
       icon: Target,
-      href: '/protected/history',
+      href: '/protected/foods',
     },
   ];
 
@@ -498,6 +500,100 @@ export function GamificationHub({
                   );
                 })}
               </div>
+
+              {/* Personal + Teammates progress breakdown */}
+              {(() => {
+                const myCompleted = currentItem.progress?.completedDays ?? 0;
+                const myTotal = currentItem.progress?.totalDays ?? 0;
+                const myPct = currentItem.progress?.percentage ?? 0;
+                const sortedRanking = [...currentItem.ranking].sort((a, b) => {
+                  if (b.percentage !== a.percentage) return b.percentage - a.percentage;
+                  if (b.completedDays !== a.completedDays) return b.completedDays - a.completedDays;
+                  return a.username.localeCompare(b.username);
+                });
+                const ranks: number[] = [];
+                for (let i = 0; i < sortedRanking.length; i++) {
+                  if (i === 0) {
+                    ranks.push(1);
+                  } else {
+                    const prev = sortedRanking[i - 1];
+                    const curr = sortedRanking[i];
+                    const same =
+                      curr.percentage === prev.percentage &&
+                      curr.completedDays === prev.completedDays;
+                    ranks.push(same ? ranks[i - 1] : i + 1);
+                  }
+                }
+                const teammates = sortedRanking
+                  .map((row, idx) => ({
+                    ...row,
+                    rank: ranks[idx],
+                    tied: ranks.filter((r) => r === ranks[idx]).length > 1,
+                  }))
+                  .filter((row) => row.profileId !== profileId);
+
+                return (
+                  <div className="space-y-3 rounded-xl border border-border bg-card p-3.5">
+                    {/* Your progress */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between gap-2 text-xs">
+                        <span className="inline-flex items-center gap-1.5 font-semibold text-foreground">
+                          <Target className="h-3.5 w-3.5 text-primary" />
+                          Your progress
+                        </span>
+                        <span className="font-bold tabular-nums text-primary">
+                          {myCompleted} / {myTotal} days ({myPct}%)
+                        </span>
+                      </div>
+                      <Progress value={Math.min(100, myPct)} className="h-2" />
+                    </div>
+
+                    {/* Teammates progress */}
+                    {teammates.length > 0 && (
+                      <div className="space-y-2 border-t border-border/70 pt-2.5">
+                        <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          <span className="inline-flex items-center gap-1.5">
+                            <Users className="h-3.5 w-3.5" />
+                            Teammates ({teammates.length})
+                          </span>
+                          <span>Completed</span>
+                        </div>
+                        <div className="max-h-36 space-y-2 overflow-y-auto pr-1">
+                          {teammates.map((member) => (
+                            <div key={member.profileId} className="space-y-1">
+                              <div className="flex items-center justify-between gap-2 text-xs">
+                                <span className="inline-flex min-w-0 items-center gap-1.5 font-medium text-foreground">
+                                  {member.rank === 1 && member.completedDays > 0 ? (
+                                    <Trophy className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+                                  ) : member.rank === 2 && member.completedDays > 0 ? (
+                                    <Medal className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                                  ) : member.rank === 3 && member.completedDays > 0 ? (
+                                    <Medal className="h-3.5 w-3.5 shrink-0 text-orange-500" />
+                                  ) : (
+                                    <span className="w-3.5 shrink-0 text-center text-[11px] text-muted-foreground">
+                                      #{member.rank}
+                                    </span>
+                                  )}
+                                  <span className="truncate">{member.username || 'Member'}</span>
+                                  {member.tied && member.rank <= 3 && member.completedDays > 0 && (
+                                    <span className="rounded bg-muted px-1 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                                      Tied
+                                    </span>
+                                  )}
+                                </span>
+                                <span className="shrink-0 tabular-nums text-muted-foreground">
+                                  {member.completedDays}/{member.totalDays}d ({member.percentage}%)
+                                </span>
+                              </div>
+                              <Progress value={Math.min(100, member.percentage)} className="h-1.5" />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Mini leaderboard + action */}
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

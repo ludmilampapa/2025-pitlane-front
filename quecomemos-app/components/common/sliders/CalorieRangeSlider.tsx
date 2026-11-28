@@ -75,7 +75,7 @@ export function CalorieRangeSlider({
   return (
     <div className={`space-y-4 ${className}`}>
       <div className="space-y-2">
-        <label className="text-sm font-medium text-amber-200">
+        <label className="text-sm font-medium text-foreground">
           Calories Range
         </label>
         
@@ -94,7 +94,7 @@ export function CalorieRangeSlider({
         {/* Manual Input Fields */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs text-amber-300/70 mb-1">
+            <label className="block text-xs font-medium text-muted-foreground mb-1">
               Min Calories
             </label>
             <input
@@ -105,11 +105,11 @@ export function CalorieRangeSlider({
               min={absoluteMin}
               max={localMax}
               step={step}
-              className="w-full px-3 py-2 bg-amber-800/30 border border-amber-700/50 rounded-md text-amber-100 placeholder-amber-300/70 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent text-sm"
+              className="w-full px-3 py-2 bg-card border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent text-sm"
             />
           </div>
           <div>
-            <label className="block text-xs text-amber-300/70 mb-1">
+            <label className="block text-xs font-medium text-muted-foreground mb-1">
               Max Calories
             </label>
             <input
@@ -120,13 +120,13 @@ export function CalorieRangeSlider({
               min={localMin}
               max={absoluteMax}
               step={step}
-              className="w-full px-3 py-2 bg-amber-800/30 border border-amber-700/50 rounded-md text-amber-100 placeholder-amber-300/70 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent text-sm"
+              className="w-full px-3 py-2 bg-card border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent text-sm"
             />
           </div>
         </div>
 
         {/* Display Range */}
-        <div className="text-center text-sm text-amber-300/70">
+        <div className="text-center text-xs font-medium text-muted-foreground">
           {localMin} - {localMax} kcal
         </div>
       </div>

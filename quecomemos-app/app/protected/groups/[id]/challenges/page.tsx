@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Trophy, Target, CalendarDays, Plus, X, HeartHandshake, Pencil, Trash2, CheckCircle2, Clock } from 'lucide-react';
+import { ArrowLeft, Trophy, Target, CalendarDays, Plus, X, HeartHandshake, Pencil, Trash2, CheckCircle2, Clock, Award, Crown, Medal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -592,7 +592,21 @@ export default function GroupChallengesPage() {
                   </span>
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                    <span className="font-medium text-foreground">
+                      Your progress:{' '}
+                      <strong>{userProgress?.completedDays ?? 0}</strong> /{' '}
+                      <strong>{userProgress?.totalDays ?? 0}</strong> days{' '}
+                      <span className="text-primary font-bold">({pct}%)</span>
+                    </span>
+                    {goalReached && (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/15 px-2.5 py-0.5 text-xs font-bold text-amber-800 dark:text-amber-200">
+                        <Award className="h-3.5 w-3.5 text-amber-600 dark:text-amber-300" />
+                        Challenge Badge Earned
+                      </span>
+                    )}
+                  </div>
                   <div className="relative h-3 rounded bg-muted overflow-hidden">
                     <div
                       className={`h-full transition-all duration-300 ${goalReached ? 'bg-emerald-600 dark:bg-emerald-500' : 'bg-primary'}`}
@@ -606,19 +620,19 @@ export default function GroupChallengesPage() {
                       />
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     {status === 'upcoming' ? (
-                      <>Starts on <strong className="text-foreground">{formatYMDDisplay(challenge.startDate.slice(0, 10))}</strong> · Complete {targetPct < 100 ? 'at least ' : ''}<strong className="text-foreground">{targetPct}%</strong> to succeed.</>
+                      <>Starts on <strong className="text-foreground">{formatYMDDisplay(challenge.startDate.slice(0, 10))}</strong> · Complete {targetPct < 100 ? 'at least ' : ''}<strong className="text-foreground">{targetPct}%</strong> to earn the badge.</>
                     ) : status === 'finished' ? (
                       goalReached ? (
-                        <>Challenge completed! You achieved <strong className="text-foreground">{pct}%</strong> (goal: {targetPct}%).</>
+                        <>Challenge completed! You achieved <strong className="text-foreground">{userProgress?.completedDays ?? 0}/{userProgress?.totalDays ?? 0} days ({pct}%)</strong> (goal: {targetPct}%).</>
                       ) : (
-                        <>Challenge ended at <strong className="text-foreground">{pct}%</strong> (goal was {targetPct}%).</>
+                        <>Challenge ended at <strong className="text-foreground">{userProgress?.completedDays ?? 0}/{userProgress?.totalDays ?? 0} days ({pct}%)</strong> (goal was {targetPct}%).</>
                       )
                     ) : goalReached ? (
-                      <>Goal reached! <strong className="text-foreground">{pct}%</strong> achieved (target: {targetPct}%).</>
+                      <>Goal reached! You unlocked the <strong className="text-foreground">Challenge Badge</strong> ({pct}% of {targetPct}% target).</>
                     ) : (
-                      <>Current progress: <strong className="text-foreground">{pct}%</strong> · Goal: {targetPct < 100 ? 'at least ' : ''}<strong className="text-foreground">{targetPct}%</strong> within the challenge dates.</>
+                      <>Personal goal: {targetPct < 100 ? 'at least ' : ''}<strong className="text-foreground">{targetPct}%</strong> within the challenge dates to earn the badge.</>
                     )}
                   </p>
                 </div>
@@ -645,22 +659,95 @@ export default function GroupChallengesPage() {
                 )}
 
                 <div>
-                  <h3 className="font-semibold mb-2">Group results</h3>
+                  <h3 className="font-semibold mb-2.5 flex items-center gap-1.5 text-sm">
+                    <Trophy className="h-4 w-4 text-amber-500" />
+                    Compliance Ranking
+                  </h3>
                   <div className="space-y-2">
-                    {rows.map((row, index) => {
-                      const rowBadge = getOutcomeBadge(row.outcome, status);
-                      return (
-                        <div key={row.profileId} className="flex items-center justify-between gap-2 border-b pb-2">
-                          <span>{index + 1}. {row.username || 'User'}</span>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold text-primary">{row.percentage}%</span>
-                            <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${rowBadge.className}`}>
-                              {rowBadge.label}
-                            </span>
+                    {(() => {
+                      // Shared podium ranking: tied members (same percentage & completedDays) share the exact same rank & medal
+                      let currentRank = 1;
+                      const rankedRows = rows.map((row, idx) => {
+                        if (idx > 0) {
+                          const prev = rows[idx - 1];
+                          const isTied =
+                            row.percentage === prev.percentage &&
+                            row.completedDays === prev.completedDays;
+                          if (!isTied) {
+                            currentRank = idx + 1;
+                          }
+                        }
+                        return { row, rank: currentRank };
+                      });
+                      const rankCounts = new Map<number, number>();
+                      rankedRows.forEach((r) => rankCounts.set(r.rank, (rankCounts.get(r.rank) || 0) + 1));
+
+                      return rankedRows.map(({ row, rank }) => {
+                        const rowBadge = getOutcomeBadge(row.outcome, status);
+                        const hasEarnedBadge = Boolean(row.badgeEarned ?? row.goalReached);
+                        const isMe = row.profileId === profileId;
+                        const isTiedRank = (rankCounts.get(rank) || 0) > 1 && row.completedDays > 0;
+
+                        return (
+                          <div
+                            key={row.profileId}
+                            className={`flex flex-wrap items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm ${
+                              isMe ? 'border-primary/35 bg-primary/5' : 'border-border/70 bg-background/60'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              {rank === 1 && row.completedDays > 0 ? (
+                                <span title={isTiedRank ? 'Tied for 1st place' : '1st place'} className="inline-flex items-center gap-0.5 text-xs font-extrabold text-amber-600 dark:text-amber-300">
+                                  <Crown className="h-4 w-4 shrink-0 text-amber-500" />
+                                  1st
+                                </span>
+                              ) : rank === 2 && row.completedDays > 0 ? (
+                                <span title={isTiedRank ? 'Tied for 2nd place' : '2nd place'} className="inline-flex items-center gap-0.5 text-xs font-extrabold text-slate-600 dark:text-slate-300">
+                                  <Medal className="h-4 w-4 shrink-0 text-slate-400" />
+                                  2nd
+                                </span>
+                              ) : rank === 3 && row.completedDays > 0 ? (
+                                <span title={isTiedRank ? 'Tied for 3rd place' : '3rd place'} className="inline-flex items-center gap-0.5 text-xs font-extrabold text-secondary">
+                                  <Award className="h-4 w-4 shrink-0 text-secondary" />
+                                  3rd
+                                </span>
+                              ) : (
+                                <span className="w-6 text-center text-xs font-semibold text-muted-foreground">
+                                  #{rank}
+                                </span>
+                              )}
+                              <span className="truncate font-medium text-foreground">
+                                {row.username || 'User'}
+                                {isMe && <span className="ml-1 text-xs text-primary">(You)</span>}
+                              </span>
+                              {isTiedRank && rank <= 3 && (
+                                <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                                  Tied
+                                </span>
+                              )}
+                              {hasEarnedBadge && (
+                                <span
+                                  title="Completed challenge goal"
+                                  className="inline-flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/15 px-2 py-0.5 text-[11px] font-bold text-amber-800 dark:text-amber-200"
+                                >
+                                  <Award className="h-3 w-3 text-amber-600 dark:text-amber-300" />
+                                  Badge
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-semibold text-foreground">
+                                {row.completedDays}/{row.totalDays} days
+                              </span>
+                              <span className="text-xs font-bold text-primary">({row.percentage}%)</span>
+                              <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${rowBadge.className}`}>
+                                {rowBadge.label}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
               </CardContent>

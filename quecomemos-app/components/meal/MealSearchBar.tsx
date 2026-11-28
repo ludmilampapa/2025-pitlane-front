@@ -284,7 +284,7 @@ export function MealSearchBar({
 
       {/* Advanced Filters */}
       {showAdvancedFilters && showFilters && (
-        <div className="mt-2 p-4 bg-muted border border-border rounded-lg space-y-4">
+        <div className="relative z-[60] mt-2 p-4 bg-muted border border-border rounded-lg space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Calorie Range Slider */}
             <div>
@@ -361,7 +361,7 @@ export function MealSearchBar({
       {showDropdown && (
         <div
           onMouseDown={(e) => e.preventDefault()}
-          className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-xl max-h-64 overflow-y-auto"
+          className="absolute z-30 w-full mt-1 bg-card border border-border rounded-lg shadow-xl max-h-64 overflow-y-auto"
         >
           {searchResults.length > 0 ? (
             <div className="py-1">

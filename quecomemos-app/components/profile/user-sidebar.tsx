@@ -183,9 +183,9 @@ export function UserSidebar() {
           >
             <Activity className="h-5 w-5 text-primary" />
             <div>
-              <div className="text-sm font-medium text-foreground">My Profile</div>
+              <div className="text-sm font-medium text-foreground">History</div>
               <div className="text-xs text-muted-foreground">
-                View your consumption history and calorie goals
+                Meals, badges, votings, challenges &amp; weekly menus
               </div>
             </div>
           </Link>
