@@ -9,7 +9,6 @@ import {
   Clock,
   Users,
   Trophy,
-  Plus,
   CheckCircle,
   Flame,
   Sparkles,
