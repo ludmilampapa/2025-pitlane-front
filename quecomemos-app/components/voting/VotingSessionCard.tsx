@@ -241,10 +241,27 @@ export function VotingSessionCard({
         updatedSession.VotingSessionID,
         winnerProposalId
       );
-      showSuccess(
-        'Roulette Winner Crowned!',
-        `"${mealName}" won on the Meal Roulette!`
+      const iWon = Boolean(
+        userId &&
+          (result?.winnerUserId === userId || result?.winnerProposal?.proposedById === userId)
       );
+      const earnedBadges = Array.isArray(result?.winnerBadges)
+        ? result.winnerBadges
+        : Array.isArray(result?.session?.winnerBadges)
+        ? result.session.winnerBadges
+        : [];
+      showSuccess(
+        iWon ? 'You won the vote!' : 'Roulette Winner Crowned!',
+        iWon
+          ? `Your proposal "${mealName}" won on the Meal Roulette!`
+          : `"${mealName}" won on the Meal Roulette!`
+      );
+      if (iWon && earnedBadges.length > 0) {
+        showSuccess(
+          'Badge Unlocked!',
+          `You earned: ${earnedBadges.map((b: { name?: string }) => b.name || 'Vote Winner').join(', ')}`
+        );
+      }
       if (userId && result?.session?.winnerMealId) {
         try {
           const consumption = (await VotingService.createConsumptionFromVote(
@@ -337,11 +354,28 @@ export function VotingSessionCard({
       const result = await VotingService.completeVotingSession(updatedSession.VotingSessionID);
       const winnerName = result.winnerProposal?.meal?.name || 'Unknown meal';
       const voteCount = result.winnerProposal?.voteCount || 0;
+      const iWon = Boolean(
+        userId &&
+          (result?.winnerUserId === userId || result?.winnerProposal?.proposedById === userId)
+      );
+      const earnedBadges = Array.isArray(result?.winnerBadges)
+        ? result.winnerBadges
+        : Array.isArray(result?.session?.winnerBadges)
+        ? result.session.winnerBadges
+        : [];
 
       showSuccess(
-        early ? 'Voting Completed Early!' : 'Winner Crowned!',
-        `The winning meal is "${winnerName}" with ${voteCount} votes!`
+        iWon ? 'You won the vote!' : early ? 'Voting Completed Early!' : 'Winner Crowned!',
+        iWon
+          ? `Your proposal "${winnerName}" won with ${voteCount} ${voteCount === 1 ? 'vote' : 'votes'}!`
+          : `The winning meal is "${winnerName}" with ${voteCount} ${voteCount === 1 ? 'vote' : 'votes'}!`
       );
+      if (iWon && earnedBadges.length > 0) {
+        showSuccess(
+          'Badge Unlocked!',
+          `You earned: ${earnedBadges.map((b: { name?: string }) => b.name || 'Vote Winner').join(', ')}`
+        );
+      }
       if (early) setShowEarlyCompletion(false);
 
       if (userId && result.session?.winnerMealId) {
