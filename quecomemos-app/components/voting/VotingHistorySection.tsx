@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   BarChart3,
+  CheckCircle2,
   ChevronRight,
   Clock,
   Dices,
@@ -11,6 +12,7 @@ import {
   TimerOff,
   Trophy,
   Users,
+  UtensilsCrossed,
   Vote,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,6 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { VotingService } from './VotingService';
 import { VotingDetailsModal } from './VotingDetailsModal';
 import { useVoting } from '@/lib/contexts/VotingContext';
+import { useUser } from '@/lib/contexts/UserContext';
 import { formatArgentinaDate } from '@/lib/utils/timezone';
 
 interface ProposalSummary {
@@ -47,6 +50,7 @@ interface VotingHistoryItem {
   proposals?: ProposalSummary[];
   totalVotes: number;
   participantCount: number;
+  loggedUserIds?: string[];
 }
 
 interface VotingHistorySectionProps {
@@ -61,6 +65,8 @@ export function VotingHistorySection({ groupId, className = '' }: VotingHistoryS
   const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { onVotingCompleted } = useVoting();
+  const { userData } = useUser();
+  const currentUserId = userData?.profile?.id;
 
   useEffect(() => {
     void loadHistory();
@@ -307,7 +313,6 @@ export function VotingHistorySection({ groupId, className = '' }: VotingHistoryS
                           </p>
                         )}
 
-                        {/* Proposals per participant */}
                         {proposals.length > 0 && (
                           <div className="flex flex-wrap gap-1">
                             {proposals.slice(0, 4).map((p) => (
@@ -329,7 +334,6 @@ export function VotingHistorySection({ groupId, className = '' }: VotingHistoryS
                           </div>
                         )}
 
-                        {/* Metadata */}
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
                           <span className="inline-flex items-center gap-1">
                             <Clock className="h-3 w-3" />
@@ -345,6 +349,19 @@ export function VotingHistorySection({ groupId, className = '' }: VotingHistoryS
                               {session.totalVotes}{' '}
                               {session.totalVotes === 1 ? 'vote' : 'votes'}
                             </span>
+                          )}
+                          {!isCancelled && currentUserId && (
+                            session.loggedUserIds?.includes(currentUserId) ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">
+                                <CheckCircle2 className="h-3 w-3" />
+                                Meal logged
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:text-amber-300">
+                                <UtensilsCrossed className="h-3 w-3" />
+                                Not logged yet
+                              </span>
+                            )
                           )}
                         </div>
                       </div>
@@ -371,7 +388,10 @@ export function VotingHistorySection({ groupId, className = '' }: VotingHistoryS
 
       <VotingDetailsModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          void loadHistory();
+        }}
         sessionId={selectedSessionId}
       />
     </>

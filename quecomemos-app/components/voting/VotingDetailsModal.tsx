@@ -143,7 +143,12 @@ export function VotingDetailsModal({ isOpen, onClose, sessionId }: VotingDetails
       (a, b) => b.voteCount - a.voteCount
     );
     const totalVotes = sortedProposals.reduce((sum, p) => sum + p.voteCount, 0);
-    const winner = sortedProposals[0];
+    const winner =
+      sortedProposals.find((p) => p.mealId === sessionDetails.winnerMeal?.mealId) ||
+      sortedProposals[0];
+    const otherProposals = winner
+      ? sortedProposals.filter((p) => p.proposalId !== winner.proposalId)
+      : sortedProposals.slice(1);
     const currentParticipant = getCurrentUserParticipant();
     const deadlinePassed =
       !!currentParticipant?.portionDeadline &&
@@ -220,15 +225,25 @@ export function VotingDetailsModal({ isOpen, onClose, sessionId }: VotingDetails
                 </Button>
               )}
             </div>
+
+            {userId &&
+              sessionDetails.status === 'completed' &&
+              !currentParticipant?.hasSelectedPortion &&
+              !currentParticipant?.defaultedToWhole &&
+              !deadlinePassed && (
+                <p className="mt-2.5 text-xs text-muted-foreground">
+                  Not logged in your meal history yet — click <strong className="text-foreground">Select Portion</strong> to record what you ate.
+                </p>
+              )}
           </div>
         )}
 
-        {sortedProposals.length > 1 && (
+        {otherProposals.length > 0 && (
           <div className="space-y-2">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Other Proposals
             </h4>
-            {sortedProposals.slice(1).map((proposal, index) => {
+            {otherProposals.map((proposal, index) => {
               const pct = totalVotes > 0 ? (proposal.voteCount / totalVotes) * 100 : 0;
               return (
                 <div
