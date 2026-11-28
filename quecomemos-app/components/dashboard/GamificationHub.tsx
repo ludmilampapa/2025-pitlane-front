@@ -133,17 +133,12 @@ export function GamificationHub({
             const challenges: Challenge[] = await chRes.json();
             if (!Array.isArray(challenges) || challenges.length === 0) return;
 
-            // Collect all currently running challenges for this group; if none are running, fall back to the most recent active one
-            const runningList = challenges.filter(
+            const selectedChallenges = challenges.filter(
               (c) =>
                 c.isActive &&
                 c.startDate.slice(0, 10) <= todayIso &&
                 c.endDate.slice(0, 10) >= todayIso
             );
-            const selectedChallenges =
-              runningList.length > 0
-                ? runningList
-                : challenges.filter((c) => c.isActive).slice(0, 1);
 
             await Promise.all(
               selectedChallenges.map(async (challenge) => {
