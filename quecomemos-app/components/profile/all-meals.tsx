@@ -187,10 +187,10 @@ export function AllMeals() {
                             <div className="mt-5 flex flex-wrap justify-center gap-2">
                                 <Button
                                     variant="outline"
-                                    onClick={() => router.push('/protected/meals')}
+                                    onClick={() => router.push('/protected/settings')}
                                     className="border-primary bg-card text-primary hover:bg-primary/15 hover:text-foreground"
                                 >
-                                    Explore meals
+                                    Update preferences
                                 </Button>
                             </div>
                         </div>

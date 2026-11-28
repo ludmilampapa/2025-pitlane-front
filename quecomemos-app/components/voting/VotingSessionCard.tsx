@@ -795,7 +795,7 @@ export function VotingSessionCard({
             <div>
               <CardTitle className="flex items-center gap-2 text-lg font-bold text-foreground sm:text-xl">
                 <Gamepad2 className="h-5 w-5 text-secondary" />
-                {updatedSession.title || 'Group Meal Showdown'}
+                {updatedSession.title || 'Group Meal Game'}
               </CardTitle>
               <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
                 {updatedSession.description ||
@@ -998,20 +998,6 @@ export function VotingSessionCard({
 
                   {canParticipate && (
                     <div className="flex flex-wrap items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setProposeModalTab('manual');
-                          setShowProposeMeal(true);
-                        }}
-                        className="rounded-xl bg-card text-xs"
-                      >
-                        <Plus className="mr-1 h-3.5 w-3.5 text-primary" />
-                        Add Manually
-                      </Button>
-
                       {!hasUserConfirmedReady ? (
                         <Button
                           type="button"

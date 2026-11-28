@@ -106,68 +106,28 @@ export function ProposeMealModal({
     >
       <div className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-border bg-card text-card-foreground shadow-2xl">
         {/* Header */}
-        <div className="flex flex-col gap-4 border-b border-border px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center justify-between gap-4 border-b border-border px-6 py-4">
           <div>
-            <h2 className="text-xl font-bold text-foreground">Propose Dishes</h2>
-            <p className="mt-0.5 text-sm text-muted-foreground">
-              Swipe dishes matched to your tastes &amp; restrictions, or add one manually.
+            <h2 className="text-lg font-bold text-foreground">Propose a Dish</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Search the catalog or create a new meal &amp; foods to propose.
             </p>
           </div>
 
-          <div className="flex items-center gap-2 self-end sm:self-auto">
-            <div className="inline-flex rounded-xl border border-border bg-muted/60 p-1 text-xs">
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveTab('swipe');
-                  setShowCreateMeal(false);
-                }}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-semibold transition-colors ${
-                  activeTab === 'swipe'
-                    ? 'bg-card text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Flame className="h-3.5 w-3.5 text-secondary" />
-                Swipe Matches
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('manual')}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-semibold transition-colors ${
-                  activeTab === 'manual'
-                    ? 'bg-card text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Search className="h-3.5 w-3.5 text-primary" />
-                Manual / Create
-              </button>
-            </div>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleClose}
-              aria-label="Close modal"
-              className="rounded-xl text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleClose}
+            aria-label="Close modal"
+            className="rounded-xl text-muted-foreground hover:text-foreground"
+          >
+            <X className="h-5 w-5" />
+          </Button>
         </div>
 
         {/* Content */}
         <div className="space-y-5 p-6">
-          {activeTab === 'swipe' ? (
-            <GroupSwipeMatch
-              groupId={groupId}
-              session={session}
-              embedded={true}
-              onOpenManualAdd={() => setActiveTab('manual')}
-            />
-          ) : (
-            <>
+          <>
               {groupDietaryInfo && groupDietaryInfo.dietaryRestrictions.length > 0 && (
                 <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/25 bg-primary/10 px-4 py-3 text-xs">
                   <span className="inline-flex items-center gap-1.5 font-semibold text-primary">
@@ -190,16 +150,16 @@ export function ProposeMealModal({
                 <div className="space-y-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="text-sm text-muted-foreground">
-                      Search existing catalog dishes or create a brand-new recipe
+                      Search existing dishes or create a new meal and custom foods
                     </p>
                     <Button
                       type="button"
                       size="sm"
                       onClick={() => setShowCreateMeal(true)}
-                      className="rounded-xl bg-secondary text-secondary-foreground hover:bg-secondary/90"
+                      className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90"
                     >
                       <Plus className="mr-1.5 h-4 w-4" />
-                      Create New Meal
+                      Create Meal / Food
                     </Button>
                   </div>
 
@@ -226,7 +186,7 @@ export function ProposeMealModal({
                           onClick={handlePropose}
                           className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90"
                         >
-                          Add to Game Pool
+                          Propose
                         </Button>
                       </div>
                     </div>
@@ -260,7 +220,6 @@ export function ProposeMealModal({
                 </div>
               )}
             </>
-          )}
         </div>
       </div>
     </div>,

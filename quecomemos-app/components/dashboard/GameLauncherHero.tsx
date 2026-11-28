@@ -64,7 +64,7 @@ export function GameLauncherHero({ groups, loadingGroups }: GameLauncherHeroProp
             groupId: group.GroupID,
             groupName: group.name,
             sessionId: active.VotingSessionID,
-            title: active.title || 'Group Meal Showdown',
+            title: active.title || 'Group Meal Game',
             status: active.status,
             proposalCount: active.proposals?.length || 0,
           } satisfies LiveSessionInfo;
@@ -90,18 +90,8 @@ export function GameLauncherHero({ groups, loadingGroups }: GameLauncherHeroProp
   const targetGroupId = selectedGroupId ?? groups[0]?.GroupID ?? null;
 
   return (
-    <section className="relative overflow-hidden rounded-3xl border border-secondary/35 bg-gradient-to-br from-card via-card to-secondary/10 p-5 shadow-md sm:p-6">
-      {/* Subtle arcade glow accents */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-secondary/15 blur-3xl"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -bottom-16 left-1/3 h-40 w-40 rounded-full bg-primary/10 blur-3xl"
-      />
-
-      <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+    <section className="rounded-3xl border border-secondary/35 bg-card p-5 shadow-sm sm:p-6">
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
         {/* Left: Game Pitch */}
         <div className="space-y-2.5 max-w-2xl">
           <div className="flex flex-wrap items-center gap-2">
@@ -113,7 +103,7 @@ export function GameLauncherHero({ groups, loadingGroups }: GameLauncherHeroProp
             ) : (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-secondary/35 bg-secondary/15 px-3 py-1 text-xs font-bold uppercase tracking-wider text-secondary">
                 <Gamepad2 className="h-3.5 w-3.5" />
-                Meal Showdown · Party Game
+                Group Meal Game
               </span>
             )}
             <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background/80 px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
@@ -124,8 +114,8 @@ export function GameLauncherHero({ groups, loadingGroups }: GameLauncherHeroProp
 
           <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
             {liveSession
-              ? `Jump into "${liveSession.title}"!`
-              : "Can't decide what to eat? Play Meal Showdown!"}
+              ? `Join "${liveSession.title}"`
+              : "Can't decide what to eat? Play with your group"}
           </h1>
 
           <p className="text-sm text-muted-foreground">

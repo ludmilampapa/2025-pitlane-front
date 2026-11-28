@@ -242,7 +242,7 @@ export function HomeWeeklyMenuCard({
                 <div className="space-y-2">
                   {MOMENTS.map(({ key, label, Icon, accent }) => {
                     const entry = entryMap.get(`${selectedDayYMD}_${key}`);
-                    const dishName = entry?.meal?.name || null;
+                    const dishName = entry?.meal?.name || entry?.customMeal || null;
                     const kcal = getEntryCalories(entry);
 
                     return (

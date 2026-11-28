@@ -9,6 +9,7 @@ import { useMeals } from '@/lib/contexts/MealsContext';
 import { useCalorieProgressContext } from '@/lib/contexts/CalorieProgressContext';
 import { useGlobalNotification } from '@/lib/contexts/NotificationContext';
 import { MealService, type RegisterMealData } from '@/lib/services/MealService';
+import { triggerBadgeCheck } from '@/components/common/BadgeUnlockWatcher';
 
 export function NavbarRegisterMealButton() {
   const [isOpen, setIsOpen] = useState(false);
@@ -48,6 +49,7 @@ export function NavbarRegisterMealButton() {
         `${mealName} was added to your daily log.`,
         <Utensils className="h-6 w-6" />
       );
+      triggerBadgeCheck();
       setIsOpen(false);
     } else {
       showError('Could not register meal', result.error || 'Please try again.');

@@ -462,7 +462,7 @@ export function GroupSwipeMatch({
             </div>
           )}
 
-          {onOpenManualAdd && !embedded && (
+          {onOpenManualAdd && !embedded && currentMeal && (
             <Button
               type="button"
               variant="outline"
@@ -471,7 +471,7 @@ export function GroupSwipeMatch({
               className="rounded-xl border-border bg-card text-xs hover:bg-muted"
             >
               <Plus className="mr-1.5 h-3.5 w-3.5 text-primary" />
-              Search / Add Manually
+              Propose
             </Button>
           )}
         </div>
@@ -510,7 +510,7 @@ export function GroupSwipeMatch({
 
           <div className="mt-6 w-full max-w-md border-t border-border/70 pt-4">
             <p className="text-xs font-medium text-muted-foreground">
-              Not sure about your picks? Add more dishes manually or browse the full database:
+              Not sure about your picks? Search the database or create a new meal or food:
             </p>
             <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
               {onOpenManualAdd && (
@@ -522,7 +522,7 @@ export function GroupSwipeMatch({
                   className="rounded-xl border-primary/40 bg-card text-xs font-semibold text-primary hover:bg-primary/10"
                 >
                   <Plus className="mr-1.5 h-3.5 w-3.5" />
-                  Add + Manual / Full Database
+                  Propose
                 </Button>
               )}
               {deckScope === 'personal' && allCompatibleMeals.length > personalMeals.length && (

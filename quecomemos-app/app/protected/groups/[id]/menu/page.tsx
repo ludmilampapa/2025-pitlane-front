@@ -83,13 +83,9 @@ export default function GroupMenuPage() {
 
   return (
     <div className="container mx-auto max-w-6xl space-y-6 p-4 sm:p-6">
-      {/* Editorial Header */}
-      <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-primary/10 blur-2xl"
-        />
-        <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      {/* Header */}
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-start gap-3.5">
             <Button
               variant="outline"
@@ -122,7 +118,7 @@ export default function GroupMenuPage() {
               className="rounded-xl border-border bg-background/80 text-xs hover:bg-muted"
             >
               <Vote className="mr-1.5 h-3.5 w-3.5 text-secondary" />
-              Meal Showdown
+              Play / Voting
             </Button>
             <Button
               variant="outline"

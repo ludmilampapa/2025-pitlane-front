@@ -34,7 +34,7 @@ interface SettingsFormProps {
 export function SettingsForm({ initialProfile }: SettingsFormProps) {
   const { updateProfile: updateUserProfile } = useUser();
   const { showSuccess, showError } = useGlobalNotification();
-  const { badges, loading: badgesLoading } = useUserBadges(initialProfile?.id);
+  const { badges, stats, loading: badgesLoading } = useUserBadges(initialProfile?.id);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
@@ -122,11 +122,10 @@ export function SettingsForm({ initialProfile }: SettingsFormProps) {
 
       // Actualizar email en Supabase si cambió
       if (profileData.email && profileData.email !== authEmail) {
-        const { error: emailError, data } = await supabase.auth.updateUser({
+        const { error: emailError } = await supabase.auth.updateUser({
           email: profileData.email,
         });
 
-        console.log('Email update response:', { data, emailError });
         if (emailError) {
           throw new Error('Failed to update email: ' + emailError.message);
         }
@@ -479,7 +478,7 @@ export function SettingsForm({ initialProfile }: SettingsFormProps) {
           {/* All User Badges */}
           <div>
             <h4 className="font-medium mb-3">Your Achievement History</h4>
-            <UserBadges badges={badges} loading={badgesLoading} />
+            <UserBadges badges={badges} totalBadges={stats?.totalBadges} loading={badgesLoading} />
           </div>
         </CardContent>
       </Card>
