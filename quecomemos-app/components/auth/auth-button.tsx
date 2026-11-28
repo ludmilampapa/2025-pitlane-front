@@ -9,6 +9,7 @@ import { BadgeSelectionModal } from "@/components/profile/BadgeSelectionModal";
 import { ThemeSwitcher } from "@/components/common";
 import { useUserProfile } from "@/lib/hooks/useUserProfile";
 import { usePrimaryBadge } from "@/lib/hooks/usePrimaryBadge";
+import { useUserBadges } from "@/lib/hooks/useUserBadges";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -17,6 +18,8 @@ export function AuthButton() {
   const [isBadgeModalOpen, setIsBadgeModalOpen] = useState(false);
   const { profile, loading } = useUserProfile();
   const { primaryBadge, refetch: refetchPrimaryBadge } = usePrimaryBadge(profile?.id);
+  const { badges } = useUserBadges(profile?.id);
+  const hasEarnedBadges = badges.length > 0;
   const supabase = createClient();
 
   useEffect(() => {
@@ -53,14 +56,14 @@ export function AuthButton() {
     <div className="flex items-center gap-2">
       {loading ? (
         <div className="h-8 w-28 animate-pulse rounded-full bg-muted" />
-      ) : (
+      ) : primaryBadge ? (
         <button
           type="button"
           onClick={() => setIsBadgeModalOpen(true)}
           title="Customize your profile badge"
           className="badge-shimmer-btn hidden items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-bold text-white shadow-md transition-transform duration-200 hover:scale-[1.03] hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 sm:inline-flex"
         >
-          {primaryBadge?.iconUrl ? (
+          {primaryBadge.iconUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={primaryBadge.iconUrl}
@@ -73,13 +76,22 @@ export function AuthButton() {
           <span className="max-w-[140px] truncate">
             {profile?.username || profile?.email || 'User'}
           </span>
-          {primaryBadge?.name && (
-            <>
-              <span className="opacity-65">·</span>
-              <span className="max-w-[90px] truncate opacity-95">{primaryBadge.name}</span>
-            </>
-          )}
+          <span className="opacity-65">·</span>
+          <span className="max-w-[90px] truncate opacity-95">{primaryBadge.name}</span>
         </button>
+      ) : hasEarnedBadges ? (
+        <button
+          type="button"
+          onClick={() => setIsBadgeModalOpen(true)}
+          title="Select a profile badge"
+          className="hidden max-w-[160px] truncate rounded-full px-2.5 py-1 text-sm font-medium text-foreground transition-colors hover:bg-muted sm:inline-flex"
+        >
+          {profile?.username || profile?.email || 'User'}
+        </button>
+      ) : (
+        <span className="hidden max-w-[160px] truncate px-1 text-sm font-medium text-foreground sm:inline">
+          {profile?.username || profile?.email || 'User'}
+        </span>
       )}
       <ThemeSwitcher />
       <UserSidebar />
