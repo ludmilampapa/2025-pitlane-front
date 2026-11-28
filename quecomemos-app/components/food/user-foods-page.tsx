@@ -64,8 +64,8 @@ export function UserFoodsPage({ embedded = false }: { embedded?: boolean } = {})
     return (
       <div className="flex-1 w-full flex flex-col gap-12">
         <div className="mb-4">
-          <div className="w-48 h-6 bg-gray-200 rounded animate-pulse mb-2"></div>
-          <div className="w-24 h-4 bg-gray-100 rounded animate-pulse"></div>
+          <div className="w-48 h-6 bg-muted rounded animate-pulse mb-2"></div>
+          <div className="w-24 h-4 bg-muted/70 rounded animate-pulse"></div>
         </div>
       </div>
     );
@@ -75,7 +75,7 @@ export function UserFoodsPage({ embedded = false }: { embedded?: boolean } = {})
   if (!loading && error) {
     return (
       <div className="flex-1 w-full flex flex-col gap-12">
-        <div className="text-red-500">
+        <div className="text-destructive">
           Error loading profile: {error}
         </div>
       </div>

@@ -766,7 +766,7 @@ export function WeeklyMenusHistoryTab({
                   </div>
 
                   <Link
-                    href={`/protected/groups/${groupId}/challenges`}
+                    href={`/protected/groups/${groupId}/menu`}
                     className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-xl border border-border bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted sm:self-center"
                   >
                     Open menu

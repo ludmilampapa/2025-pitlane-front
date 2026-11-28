@@ -176,7 +176,7 @@ export function PreferenceFilteredFoodsPage({ preferenceId }: PreferenceFiltered
                 <Button
                     variant="ghost"
                     onClick={handleBackToFoods}
-                    className="text-amber-200 hover:text-amber-100 hover:bg-amber-800/30"
+                    className="text-muted-foreground hover:text-foreground hover:bg-muted"
                 >
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     Back to Foods
@@ -186,12 +186,12 @@ export function PreferenceFilteredFoodsPage({ preferenceId }: PreferenceFiltered
             {/* Header */}
             <div className="mb-6">
                 <div className="flex items-center gap-3 mb-2">
-                    <Filter className="w-6 h-6 text-amber-400" />
-                    <h1 className="font-bold text-2xl text-amber-200">
+                    <Filter className="w-6 h-6 text-primary" />
+                    <h1 className="font-bold text-2xl text-foreground">
                         {preferenceDetails ? preferenceDetails.name : `Preference ${prefId}`} Foods
                     </h1>
                 </div>
-                <p className="text-sm text-gray-400">
+                <p className="text-sm text-muted-foreground">
                     Foods that match your &ldquo;{preferenceDetails?.name || 'selected'}&rdquo; preference
                     {userPreferences?.dietaryRestrictions.length ? ' and dietary restrictions' : ''}
                 </p>

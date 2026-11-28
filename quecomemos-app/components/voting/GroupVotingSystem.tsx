@@ -138,26 +138,54 @@ export function GroupVotingSystem({
     return (
       <>
         <div className={`space-y-3 ${className}`}>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <SyncBar />
-            {!minigameModalOpen && (
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => setMinigameModalOpen(true)}
-                className="rounded-xl bg-secondary text-xs font-bold text-secondary-foreground hover:bg-secondary/90"
-              >
-                <Maximize2 className="mr-1.5 h-3.5 w-3.5" />
-                Open Minigame View
-              </Button>
-            )}
-          </div>
+          <SyncBar />
 
           {!canShowPortal && (
-            <VotingSessionCard
-              session={activeSession}
-              onVotingComplete={onVotingComplete}
-            />
+            <Card className="rounded-2xl border-border bg-card shadow-sm">
+              <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-start gap-3.5 min-w-0">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-secondary/15 text-secondary">
+                    <Gamepad2 className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                        Live Session
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {activeSession.status === 'proposal_phase'
+                          ? 'Round 1 · Build Pool'
+                          : activeSession.status === 'voting_phase'
+                          ? 'Round 2 · Voting'
+                          : 'Completed'}
+                      </span>
+                    </div>
+                    <h3 className="mt-1 truncate text-base font-bold text-foreground">
+                      {activeSession.title || 'Group Meal Game'}
+                    </h3>
+                    <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                      <span>{activeSession.proposals?.length || 0} dishes in pool</span>
+                      {activeSession.votingEndsAt && activeSession.status !== 'completed' && (
+                        <span className="inline-flex items-center gap-1 font-medium text-foreground">
+                          <Clock className="h-3.5 w-3.5 text-primary" />
+                          <VotingTimer endTime={activeSession.votingEndsAt} label="Remaining" />
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={() => setMinigameModalOpen(true)}
+                  className="shrink-0 rounded-xl bg-primary px-5 font-semibold text-primary-foreground hover:bg-primary/90"
+                >
+                  <Maximize2 className="mr-2 h-4 w-4" />
+                  {activeSession.status === 'completed' ? 'View Results' : 'Resume Game'}
+                </Button>
+              </CardContent>
+            </Card>
           )}
         </div>
 
@@ -208,7 +236,7 @@ export function GroupVotingSystem({
                       className="h-8 rounded-xl border-border bg-background text-xs font-semibold text-foreground hover:bg-muted"
                     >
                       <X className="mr-1 h-3.5 w-3.5" />
-                      Exit Minigame
+                      Minimize
                     </Button>
                   </div>
                 </div>

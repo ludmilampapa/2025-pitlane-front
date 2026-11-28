@@ -45,7 +45,6 @@ export default function GroupDetailPage() {
   const fetchGroup = useCallback(async () => {
     try {
       setLoading(true);
-      console.debug('Fetching group', `${API_BASE_URL}/groups/${groupId}`);
       const res = await fetch(`${API_BASE_URL}/groups/${groupId}`);
       if (!res.ok) {
         if (res.status === 404) {
@@ -56,10 +55,8 @@ export default function GroupDetailPage() {
         throw new Error(`HTTP ${res.status}`);
       }
       const data = await res.json();
-      console.debug('Group payload', data);
       setGroup(data);
     } catch (err) {
-      console.debug('Error fetching group', err);
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
@@ -106,7 +103,7 @@ export default function GroupDetailPage() {
           </div>
           </div>
           <div className="flex justify-center">
-            <Button onClick={() => router.replace('/protected/groups')} className="bg-amber-700 text-white">
+            <Button onClick={() => router.replace('/protected/groups')} className="bg-primary text-primary-foreground hover:bg-primary/90">
               Go to groups
             </Button>
           </div>
@@ -163,9 +160,9 @@ export default function GroupDetailPage() {
           <Button 
             variant="outline" 
             onClick={() => router.push(`/protected/groups/${groupId}/voting`)} 
-            className="w-full sm:w-auto border-amber-600 text-amber-600 hover:bg-amber-600 hover:text-white"
+            className="w-full sm:w-auto border-secondary text-secondary hover:bg-secondary hover:text-secondary-foreground"
           >
-            <ChefHat className="w-4 h-4 mr-2" /> Group voting
+            <ChefHat className="w-4 h-4 mr-2" /> Play / Voting
           </Button>
         </div>
       </div>

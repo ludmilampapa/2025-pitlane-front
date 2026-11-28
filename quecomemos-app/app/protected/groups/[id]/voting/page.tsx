@@ -127,18 +127,9 @@ export default function GroupVotingPage() {
 
   return (
     <div className="container mx-auto max-w-6xl space-y-6 p-4 sm:p-6">
-      {/* Editorial Hero Header */}
-      <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-secondary/10 blur-2xl"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -bottom-14 left-1/3 h-36 w-36 rounded-full bg-primary/10 blur-2xl"
-        />
-
-        <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      {/* Header */}
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-start gap-3.5">
             <Button
               variant="outline"
@@ -154,7 +145,7 @@ export default function GroupVotingPage() {
               <div className="flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-secondary">
                   <Gamepad2 className="h-3.5 w-3.5" />
-                  Meal Showdown
+                  Group Meal Game
                 </span>
                 <span className="text-muted-foreground/40">•</span>
                 <Badge

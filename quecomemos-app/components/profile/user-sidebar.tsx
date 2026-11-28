@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { User, Settings, LogOut, X, Home, Utensils, ChefHat, Users, Activity } from 'lucide-react';
+import { User, Settings, LogOut, X, Home, ChefHat, Users, Activity, Gamepad2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/lib/contexts/UserContext';
 import { PrimaryBadgeDisplay } from './PrimaryBadgeDisplay';
@@ -70,9 +70,8 @@ export function UserSidebar() {
       {/* Backdrop overlay */}
       <div
         onClick={() => setIsOpen(false)}
-        className={`fixed inset-0 z-[90] bg-black/50 transition-opacity duration-200 ${
-          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
+        className={`fixed inset-0 z-[90] bg-black/50 transition-opacity duration-200 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+          }`}
         aria-hidden={!isOpen}
       />
 
@@ -80,9 +79,8 @@ export function UserSidebar() {
       <aside
         ref={sidebarRef}
         aria-label="User Menu"
-        className={`fixed top-0 right-0 z-[100] flex h-screen w-80 max-w-[85vw] flex-col border-l border-border bg-card text-card-foreground shadow-2xl transform transition-transform duration-300 ease-in-out ${
-          isOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
+        className={`fixed top-0 right-0 z-[100] flex h-screen w-80 max-w-[85vw] flex-col border-l border-border bg-card text-card-foreground shadow-2xl transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'
+          }`}
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-4 py-4">
@@ -120,7 +118,7 @@ export function UserSidebar() {
                 {profile.role}
               </div>
               <div className="mt-1 text-xs font-medium text-muted-foreground">
-                View personal consumption history →
+                View activity history →
               </div>
             </div>
           </div>
@@ -141,26 +139,16 @@ export function UserSidebar() {
           </Link>
 
           <Link
-            href="/protected/foods"
-            onClick={() => setIsOpen(false)}
-            className="flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors hover:bg-muted"
-          >
-            <Utensils className="h-5 w-5 text-primary" />
-            <div>
-              <div className="text-sm font-medium text-foreground">Foods</div>
-              <div className="text-xs text-muted-foreground">Browse and manage foods</div>
-            </div>
-          </Link>
-
-          <Link
             href="/protected/meals"
             onClick={() => setIsOpen(false)}
             className="flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors hover:bg-muted"
           >
             <ChefHat className="h-5 w-5 text-primary" />
             <div>
-              <div className="text-sm font-medium text-foreground">Meals</div>
-              <div className="text-xs text-muted-foreground">Browse, create, and manage meals</div>
+              <div className="text-sm font-medium text-foreground">Food &amp; Meals</div>
+              <div className="text-xs text-muted-foreground">
+                Preferences, calorie goal, recipes &amp; foods
+              </div>
             </div>
           </Link>
 
@@ -173,6 +161,18 @@ export function UserSidebar() {
             <div>
               <div className="text-sm font-medium text-foreground">Groups</div>
               <div className="text-xs text-muted-foreground">Manage your meal groups</div>
+            </div>
+          </Link>
+
+          <Link
+            href="/protected/play"
+            onClick={() => setIsOpen(false)}
+            className="flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors hover:bg-muted"
+          >
+            <Gamepad2 className="h-5 w-5 text-secondary" />
+            <div>
+              <div className="text-sm font-medium text-foreground">Play</div>
+              <div className="text-xs text-muted-foreground">Swipe, roulette &amp; group voting</div>
             </div>
           </Link>
 

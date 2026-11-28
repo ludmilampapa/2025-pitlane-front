@@ -1,19 +1,23 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import {
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  ResponsiveContainer,
+  Tooltip,
+} from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { TrendingUp, Eye, EyeOff } from 'lucide-react';
+import { Leaf, TrendingUp } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/config/api';
 
-interface PreferenceData {
+interface RadarDatum {
   name: string;
   count: number;
   percentage: number;
-  color: string;
-  visible: boolean;
 }
 
 interface GroupMember {
@@ -48,6 +52,10 @@ interface Consumption {
             PreferenceID: number;
             name: string;
           }[];
+          dietaryRestrictions?: {
+            DietaryRestrictionID: number;
+            name: string;
+          }[];
         };
       }[];
     };
@@ -59,174 +67,170 @@ interface GroupMealPreferencesPieChartProps {
   members: GroupMember[];
 }
 
-// Color palette for the pie chart
-const COLORS = [
-  '#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#8dd1e1', 
-  '#d084d0', '#ffb347', '#87ceeb', '#dda0dd', '#98fb98',
-  '#f0e68c', '#ff6347', '#40e0d0', '#ee82ee', '#90ee90',
-  '#ffa07a', '#20b2aa', '#87cefa', '#ffd700', '#daa520'
-];
-
-export default function GroupMealPreferencesPieChart({ groupId, members }: GroupMealPreferencesPieChartProps) {
-  const [preferencesData, setPreferencesData] = useState<PreferenceData[]>([]);
+export default function GroupMealPreferencesPieChart({
+  groupId,
+  members,
+}: GroupMealPreferencesPieChartProps) {
+  const [radarData, setRadarData] = useState<RadarDatum[]>([]);
+  const [restrictionStats, setRestrictionStats] = useState<RadarDatum[]>([]);
+  const [totalMealsCounted, setTotalMealsCounted] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [visibilityState, setVisibilityState] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const fetchGroupMealPreferences = async () => {
-      if (!groupId || members.length === 0) return;
+      if (!groupId || members.length === 0) {
+        setLoading(false);
+        return;
+      }
 
       try {
         setLoading(true);
         setError(null);
 
-        // Get session for auth
         const { createClient } = await import('@/lib/supabase/client');
         const supabase = createClient();
-        const { data: { session } } = await supabase.auth.getSession();
-        
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
         if (!session) {
           throw new Error('No authenticated session');
         }
 
-        // Track preference occurrences across all group members
-        const preferenceCount = new Map<number, { name: string; count: number }>();
+        const headers = {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        };
 
-        // Fetch consumption history for each group member
-        for (const member of members) {
-          try {
-            const consumptionResponse = await fetch(`${API_BASE_URL}/consumptions/user/${member.profile.id}`, {
-              headers: {
-                'Authorization': `Bearer ${session.access_token}`,
-                'Content-Type': 'application/json',
-              },
-            });
+        const [allPrefsRes, allRestsRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/preferences`, { headers }).catch(() => null),
+          fetch(`${API_BASE_URL}/dietary-restrictions`, { headers }).catch(() => null),
+        ]);
 
-            if (!consumptionResponse.ok) {
-              console.warn(`Failed to fetch consumption for member ${member.profile.username || 'Anonymous'}`);
-              continue;
+        const restrictionNameSet = new Set<string>(['vegan', 'vegetarian']);
+        if (allRestsRes?.ok) {
+          const allRests = (await allRestsRes.json()) as Array<{ name?: string }>;
+          for (const r of allRests) {
+            if (r.name && !r.name.toLowerCase().includes('everyone')) {
+              restrictionNameSet.add(r.name.trim().toLowerCase());
             }
-
-            const consumptions: Consumption[] = await consumptionResponse.json();
-
-            // Process each member's consumption data
-            consumptions.forEach(consumption => {
-              consumption.consumptionMeals?.forEach(consumptionMeal => {
-                const meal = consumptionMeal.meal;
-                if (meal?.mealFoods) {
-                  // Collect unique preferences for this meal
-                  const mealPreferences = new Map<number, string>();
-                  
-                  meal.mealFoods.forEach(mealFood => {
-                    const food = mealFood.food;
-                    if (food?.preferences) {
-                      food.preferences.forEach(preference => {
-                        // Only add unique preferences per meal
-                        mealPreferences.set(preference.PreferenceID, preference.name);
-                      });
-                    }
-                  });
-
-                  // Count each unique preference in this meal (considering consumption quantity)
-                  mealPreferences.forEach((name, preferenceId) => {
-                    const existing = preferenceCount.get(preferenceId);
-                    if (existing) {
-                      existing.count += consumptionMeal.quantity;
-                    } else {
-                      preferenceCount.set(preferenceId, {
-                        name: name,
-                        count: consumptionMeal.quantity
-                      });
-                    }
-                  });
-                }
-              });
-            });
-          } catch (memberError) {
-            console.warn(`Failed to process consumption for member ${member.profile.username || 'Anonymous'}:`, memberError);
           }
         }
 
-        // Calculate total and percentages
-        const totalCount = Array.from(preferenceCount.values()).reduce((sum, item) => sum + item.count, 0);
-
-        if (totalCount === 0) {
-          setPreferencesData([]);
-          setLoading(false);
-          return;
+        const preferenceCount = new Map<string, number>();
+        if (allPrefsRes?.ok) {
+          const allPrefs = (await allPrefsRes.json()) as Array<{ name?: string }>;
+          for (const p of allPrefs) {
+            const name = p.name?.trim();
+            if (name && !restrictionNameSet.has(name.toLowerCase())) {
+              preferenceCount.set(name, 0);
+            }
+          }
         }
 
-        // Convert to chart data
-        const chartData: PreferenceData[] = Array.from(preferenceCount.entries()).map(([, data], index) => ({
-          name: data.name,
-          count: data.count,
-          percentage: Math.round((data.count / totalCount) * 100),
-          color: COLORS[index % COLORS.length],
-          visible: true,
-        }));
+        const restrictionCount = new Map<string, number>();
+        let mealsCounted = 0;
 
-        // Sort by count descending
-        chartData.sort((a, b) => b.count - a.count);
+        for (const member of members) {
+          try {
+            const consumptionResponse = await fetch(
+              `${API_BASE_URL}/consumptions/user/${member.profile.id}`,
+              { headers }
+            );
+            if (!consumptionResponse.ok) continue;
 
-        setPreferencesData(chartData);
+            const consumptions: Consumption[] = await consumptionResponse.json();
+            for (const consumption of consumptions) {
+              for (const cm of consumption.consumptionMeals || []) {
+                const meal = cm.meal;
+                if (!meal?.mealFoods) continue;
+                mealsCounted += cm.quantity || 1;
 
-        // Initialize visibility state
-        const initialVisibility = chartData.reduce((acc, item) => {
-          acc[item.name] = true;
-          return acc;
-        }, {} as Record<string, boolean>);
-        setVisibilityState(initialVisibility);
+                const mealPrefs = new Set<string>();
+                const mealRests = new Set<string>();
 
+                for (const mf of meal.mealFoods) {
+                  for (const pref of mf.food?.preferences || []) {
+                    const name = pref.name?.trim();
+                    if (!name) continue;
+                    if (restrictionNameSet.has(name.toLowerCase())) {
+                      mealRests.add(name);
+                    } else {
+                      mealPrefs.add(name);
+                    }
+                  }
+                  for (const rest of mf.food?.dietaryRestrictions || []) {
+                    const name = rest.name?.trim();
+                    if (name && !name.toLowerCase().includes('everyone')) {
+                      mealRests.add(name);
+                    }
+                  }
+                }
+
+                for (const name of mealPrefs) {
+                  preferenceCount.set(name, (preferenceCount.get(name) || 0) + (cm.quantity || 1));
+                }
+                for (const name of mealRests) {
+                  restrictionCount.set(
+                    name,
+                    (restrictionCount.get(name) || 0) + (cm.quantity || 1)
+                  );
+                }
+              }
+            }
+          } catch {
+            // Skip member if consumption endpoint fails
+          }
+        }
+
+        setTotalMealsCounted(mealsCounted);
+
+        const totalPrefHits = Array.from(preferenceCount.values()).reduce((s, n) => s + n, 0);
+        const prefList: RadarDatum[] = Array.from(preferenceCount.entries())
+          .map(([name, count]) => ({
+            name,
+            count,
+            percentage: totalPrefHits > 0 ? Math.round((count / totalPrefHits) * 100) : 0,
+          }))
+          .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+
+        const totalRestHits = Array.from(restrictionCount.values()).reduce((s, n) => s + n, 0);
+        const restList: RadarDatum[] = Array.from(restrictionCount.entries())
+          .filter(([, count]) => count > 0)
+          .map(([name, count]) => ({
+            name,
+            count,
+            percentage: totalRestHits > 0 ? Math.round((count / totalRestHits) * 100) : 0,
+          }))
+          .sort((a, b) => b.count - a.count);
+
+        setRadarData(totalPrefHits > 0 ? prefList : []);
+        setRestrictionStats(restList);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load group meal preferences data');
+        setError(err instanceof Error ? err.message : 'Failed to load group meal preferences');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchGroupMealPreferences();
+    void fetchGroupMealPreferences();
   }, [groupId, members]);
 
-  const togglePreferenceVisibility = (preferenceName: string) => {
-    setVisibilityState(prev => ({
-      ...prev,
-      [preferenceName]: !prev[preferenceName]
-    }));
-  };
-
-  const toggleAllVisibility = () => {
-    const allVisible = Object.values(visibilityState).every(visible => visible);
-    const newState = preferencesData.reduce((acc, item) => {
-      acc[item.name] = !allVisible;
-      return acc;
-    }, {} as Record<string, boolean>);
-    setVisibilityState(newState);
-  };
-
-  // Calculate data for visible preferences only and recalculate percentages
-  const getVisibleData = () => {
-    const visibleItems = preferencesData.filter(item => visibilityState[item.name]);
-    const visibleTotal = visibleItems.reduce((sum, item) => sum + item.count, 0);
-    
-    if (visibleTotal === 0) return [];
-
-    return visibleItems.map(item => ({
-      ...item,
-      percentage: Math.round((item.count / visibleTotal) * 100)
-    }));
-  };
-
-  const visibleData = getVisibleData();
-
-  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ payload: PreferenceData }> }) => {
+  const CustomTooltip = ({
+    active,
+    payload,
+  }: {
+    active?: boolean;
+    payload?: Array<{ payload: RadarDatum }>;
+  }) => {
     if (active && payload && payload.length) {
-      const data = payload[0].payload;
+      const d = payload[0].payload;
       return (
-        <div className="bg-background border border-border rounded shadow-lg p-3">
-          <p className="font-medium text-foreground">{data.name}</p>
-          <p className="text-sm text-muted-foreground">
-            {data.count} meal{data.count !== 1 ? 's' : ''} consumed by group ({data.percentage}%)
+        <div className="rounded-xl border border-border bg-card px-3 py-2 text-xs shadow-lg">
+          <p className="font-semibold text-foreground">{d.name}</p>
+          <p className="mt-0.5 text-muted-foreground">
+            {d.count} {d.count === 1 ? 'meal' : 'meals'} ({d.percentage}%)
           </p>
         </div>
       );
@@ -234,41 +238,18 @@ export default function GroupMealPreferencesPieChart({ groupId, members }: Group
     return null;
   };
 
-  const CustomLegend = ({ payload }: { payload?: Array<{ value: string; color: string; payload: PreferenceData }> }) => {
-    if (!payload) return null;
-
-    return (
-      <div className="flex flex-wrap gap-2 justify-center mt-4">
-        {payload.map((entry, index: number) => (
-          <div key={index} className="flex items-center gap-1 text-xs">
-            <div 
-              className="w-3 h-3 rounded-full" 
-              style={{ backgroundColor: entry.color }}
-            />
-            <span className="text-muted-foreground">
-              {entry.value} ({entry.payload.percentage}%)
-            </span>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
   if (loading) {
     return (
-      <Card>
+      <Card className="rounded-2xl border-border bg-card shadow-sm">
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <TrendingUp className="w-5 h-5" />
-            Group Meal Preferences Distribution
+          <CardTitle className="flex items-center gap-2 text-base">
+            <TrendingUp className="h-5 w-5 text-primary" />
+            Group Taste Radar
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-              <p className="text-sm text-muted-foreground">Loading group meal preferences...</p>
-            </div>
+          <div className="flex h-64 items-center justify-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
           </div>
         </CardContent>
       </Card>
@@ -277,38 +258,38 @@ export default function GroupMealPreferencesPieChart({ groupId, members }: Group
 
   if (error) {
     return (
-      <Card>
+      <Card className="rounded-2xl border-border bg-card shadow-sm">
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <TrendingUp className="w-5 h-5" />
-            Group Meal Preferences Distribution
+          <CardTitle className="flex items-center gap-2 text-base">
+            <TrendingUp className="h-5 w-5 text-primary" />
+            Group Taste Radar
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center h-64">
-            <p className="text-sm text-muted-foreground">{error}</p>
-          </div>
+          <p className="py-10 text-center text-sm text-destructive">{error}</p>
         </CardContent>
       </Card>
     );
   }
 
-  if (preferencesData.length === 0) {
+  if (radarData.length === 0 && restrictionStats.length === 0) {
     return (
-      <Card>
+      <Card className="rounded-2xl border-border bg-card shadow-sm">
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <TrendingUp className="w-5 h-5" />
-            Group Meal Preferences Distribution
+          <CardTitle className="flex items-center gap-2 text-base">
+            <TrendingUp className="h-5 w-5 text-primary" />
+            Group Taste Radar
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <TrendingUp className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">No group meal consumption history found</p>
-              <p className="text-xs text-muted-foreground mt-1">Group members need to start consuming meals to see preference distribution</p>
-            </div>
+          <div className="flex h-60 flex-col items-center justify-center text-center">
+            <TrendingUp className="mb-2 h-10 w-10 text-muted-foreground/60" />
+            <p className="text-sm font-medium text-foreground">
+              No group meal consumption history yet
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Log meals to visualize your group&apos;s taste preferences radar.
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -316,113 +297,83 @@ export default function GroupMealPreferencesPieChart({ groupId, members }: Group
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
-          <TrendingUp className="w-5 h-5" />
-          Group Meal Preferences Distribution
+    <Card className="rounded-2xl border-border bg-card shadow-sm">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-base font-bold text-foreground">
+          <TrendingUp className="h-5 w-5 text-primary" />
+          Group Taste Radar
         </CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Analysis of preferences in meals consumed by all group members
+        <p className="text-xs text-muted-foreground">
+          Taste preferences from meals consumed by the group (dietary restrictions shown separately)
         </p>
       </CardHeader>
-      <CardContent>
-        {/* Controls */}
-        <div className="mb-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <h4 className="text-sm font-medium">Preference Visibility</h4>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={toggleAllVisibility}
-              className="text-xs"
-            >
-              {Object.values(visibilityState).every(visible => visible) ? (
-                <>
-                  <EyeOff className="w-3 h-3 mr-1" />
-                  Hide All
-                </>
-              ) : (
-                <>
-                  <Eye className="w-3 h-3 mr-1" />
-                  Show All
-                </>
-              )}
-            </Button>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
-            {preferencesData.map((preference, index) => (
-              <div key={preference.name} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`preference-${index}`}
-                  checked={visibilityState[preference.name] || false}
-                  onCheckedChange={() => togglePreferenceVisibility(preference.name)}
-                />
-                <label
-                  htmlFor={`preference-${index}`}
-                  className="text-xs cursor-pointer flex items-center space-x-1"
-                >
-                  <div 
-                    className="w-3 h-3 rounded-full" 
-                    style={{ backgroundColor: preference.color }}
-                  />
-                  <span className="truncate">{preference.name}</span>
-                </label>
-              </div>
-            ))}
-          </div>
-        </div>
 
-        {/* Chart */}
-        {visibleData.length > 0 ? (
-          <div className="h-80 w-full">
+      <CardContent className="space-y-4">
+        {radarData.length > 0 && (
+          <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={visibleData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percentage }) => `${name}: ${percentage}%`}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="count"
-                >
-                  {visibleData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
+              <RadarChart cx="50%" cy="50%" outerRadius="72%" data={radarData}>
+                <PolarGrid stroke="hsl(var(--border))" />
+                <PolarAngleAxis
+                  dataKey="name"
+                  tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }}
+                />
+                <PolarRadiusAxis
+                  angle={90}
+                  domain={[0, 100]}
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+                  tickFormatter={(v) => `${v}%`}
+                />
+                <Radar
+                  name="Preferences"
+                  dataKey="percentage"
+                  stroke="hsl(var(--primary))"
+                  fill="hsl(var(--primary))"
+                  fillOpacity={0.32}
+                  strokeWidth={2}
+                />
                 <Tooltip content={<CustomTooltip />} />
-                <Legend content={<CustomLegend />} />
-              </PieChart>
+              </RadarChart>
             </ResponsiveContainer>
           </div>
-        ) : (
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <EyeOff className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">All preferences are hidden</p>
-              <p className="text-xs text-muted-foreground mt-1">Enable some preferences to view the chart</p>
+        )}
+
+        {restrictionStats.length > 0 && (
+          <div className="space-y-2 border-t border-border pt-3">
+            <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <Leaf className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+              Dietary Restrictions in Consumed Meals
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {restrictionStats.map((r) => (
+                <span
+                  key={r.name}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-emerald-600/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300"
+                >
+                  <span>{r.name}</span>
+                  <span className="opacity-75">· {r.count}</span>
+                </span>
+              ))}
             </div>
           </div>
         )}
-        
-        {/* Summary stats */}
-        <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
-          <div className="text-center p-2 bg-muted rounded">
-            <p className="font-medium">{preferencesData.length}</p>
-            <p className="text-muted-foreground">Total preferences</p>
-          </div>
-          <div className="text-center p-2 bg-muted rounded">
-            <p className="font-medium">{visibleData.length}</p>
-            <p className="text-muted-foreground">Visible preferences</p>
-          </div>
-          <div className="text-center p-2 bg-muted rounded">
-            <p className="font-medium">
-              {visibleData.reduce((sum, item) => sum + item.count, 0)}
+
+        <div className="grid grid-cols-3 gap-3 border-t border-border pt-3 text-center text-xs">
+          <div className="rounded-xl bg-muted/40 p-2.5">
+            <p className="text-base font-bold text-foreground">
+              {radarData.filter((d) => d.count > 0).length}
             </p>
-            <p className="text-muted-foreground">Group meals consumed</p>
+            <p className="text-muted-foreground">Active tastes</p>
+          </div>
+          <div className="rounded-xl bg-muted/40 p-2.5">
+            <p className="truncate text-base font-bold text-primary">
+              {radarData[0]?.count ? radarData[0].name : '—'}
+            </p>
+            <p className="text-muted-foreground">Top preference</p>
+          </div>
+          <div className="rounded-xl bg-muted/40 p-2.5">
+            <p className="text-base font-bold text-foreground">{totalMealsCounted}</p>
+            <p className="text-muted-foreground">Meals logged</p>
           </div>
         </div>
       </CardContent>

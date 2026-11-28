@@ -540,13 +540,14 @@ export default function AddMealForm({ onFoodAdded, onClose, initialMealName }: P
         </div>
 
         {/* total + guardar */}
-        <div className="flex items-center justify-between bg-primary p-3 rounded-lg text-foreground font-semibold">
-          <span>Total kcal</span><span>{totalKcal}</span>
+        <div className="flex items-center justify-between rounded-lg border border-primary/30 bg-primary/15 px-4 py-3 font-semibold text-foreground">
+          <span>Total kcal</span>
+          <span className="tabular-nums text-primary">{totalKcal}</span>
         </div>
         <button
           type="submit"
           disabled={isSubmitting || foods.length === 0 || !mealName}
-          className={`w-full ${COMMON_STYLES.CARD_BASE} border border-border disabled:cursor-not-allowed text-white py-3 rounded-lg font-semibold transition-opacity`}
+          className="w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isSubmitting ? "Saving..." : "Save Meal"}
         </button>

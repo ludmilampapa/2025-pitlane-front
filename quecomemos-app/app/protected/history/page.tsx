@@ -436,7 +436,7 @@ export default function UserHistoryPage() {
         </TabsList>
 
         {/* Tab: Consumption History */}
-        <TabsContent value="history" className="mt-6">
+        <TabsContent value="history" className="mt-6 space-y-6">
           {/* Filters */}
       <Card>
         <CardContent className="pt-6">

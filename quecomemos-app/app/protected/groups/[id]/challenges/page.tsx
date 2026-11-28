@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { AddFoodForm } from '@/components/food/forms/add-food-form';
 import { ChallengeCheckInStatus } from '@/components/challenges/ChallengeCheckInStatus';
+import { triggerBadgeCheck } from '@/components/common/BadgeUnlockWatcher';
 import { isAutoTrackedChallenge } from '@/lib/utils/challengeRules';
 import { GroupChallengesService } from '@/lib/services/GroupChallengesService';
 import { API_BASE_URL } from '@/lib/config/api';
@@ -286,6 +287,7 @@ export default function GroupChallengesPage() {
     try {
       await GroupChallengesService.markCompletion(challenge.ChallengeID, profileId, today, true);
       await fetchData();
+      triggerBadgeCheck();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
@@ -522,6 +524,12 @@ export default function GroupChallengesPage() {
           const status = userProgress?.status ?? getFallbackStatus(challenge, todayYmd);
           const goalReached = userProgress?.goalReached ?? pct >= targetPct;
           const badge = getOutcomeBadge(userProgress?.outcome, status);
+          const isLocked =
+            status === 'finished' ||
+            goalReached ||
+            (ranking[challenge.ChallengeID] || []).some(
+              (r) => r.goalReached || r.outcome === 'completed'
+            );
 
           return (
             <Card key={challenge.ChallengeID} className={status === 'finished' ? 'opacity-90' : ''}>
@@ -540,17 +548,19 @@ export default function GroupChallengesPage() {
                     <span className="text-sm font-bold text-primary">{pct}%</span>
                     {isAdmin && (
                       <>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => startEditChallenge(challenge)}
-                          disabled={deletingChallengeId !== null}
-                          className="h-8 px-2.5 text-xs"
-                        >
-                          <Pencil className="mr-1 h-3.5 w-3.5" />
-                          Edit
-                        </Button>
+                        {!isLocked && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => startEditChallenge(challenge)}
+                            disabled={deletingChallengeId !== null}
+                            className="h-8 px-2.5 text-xs"
+                          >
+                            <Pencil className="mr-1 h-3.5 w-3.5" />
+                            Edit
+                          </Button>
+                        )}
                         <Button
                           type="button"
                           variant="outline"

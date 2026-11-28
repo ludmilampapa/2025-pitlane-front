@@ -19,7 +19,7 @@ export function FoodIcon({ food, size = 'md', className = "" }: FoodIconProps) {
   const sizeConfig = iconSizes[size];
   
   return (
-    <div className={`${sizeConfig.container} flex items-center justify-center bg-amber-800/30 rounded-full border border-amber-700/50 flex-shrink-0 ${className}`}>
+    <div className={`${sizeConfig.container} flex items-center justify-center bg-muted/60 rounded-full border border-border flex-shrink-0 ${className}`}>
       {food.svgLink ? (
         <Image 
           src={food.svgLink} 
@@ -29,7 +29,7 @@ export function FoodIcon({ food, size = 'md', className = "" }: FoodIconProps) {
           className={`${sizeConfig.icon} object-contain`} 
         />
       ) : (
-        <Utensils className={`${sizeConfig.icon} text-amber-400`} />
+        <Utensils className={`${sizeConfig.icon} text-primary`} />
       )}
     </div>
   );
@@ -50,7 +50,7 @@ export function KcalDisplay({ kcal, size = 'md', showLabel = true, className = "
   };
   
   return (
-    <span className={`${textSizes[size]} text-amber-300 ${className}`}>
+    <span className={`${textSizes[size]} text-primary ${className}`}>
       <span className="font-semibold">{kcal}</span>
       {showLabel && ' kCal'}
     </span>
@@ -66,12 +66,12 @@ interface FoodQuantityDisplayProps {
 
 export function FoodQuantityDisplay({ quantity, kcalPerUnit, totalKcal, className = "" }: FoodQuantityDisplayProps) {
   return (
-    <div className={`text-sm text-gray-400 ${className}`}>
+    <div className={`text-sm text-muted-foreground ${className}`}>
       <span>Quantity: {quantity} units</span>
       <span className="mx-2">•</span>
       <span>{Math.round(kcalPerUnit)} kCal per unit</span>
       <span className="mx-2">•</span>
-      <span className="text-amber-300 font-medium">{totalKcal} kCal total</span>
+      <span className="text-primary font-medium">{totalKcal} kCal total</span>
     </div>
   );
 }
